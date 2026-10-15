@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"strconv"
@@ -266,110 +267,90 @@ func drawSwatch(gtx layout.Context, c color.NRGBA, active bool) {
 	paint.FillShape(gtx.Ops, c, dot.Op(gtx.Ops))
 }
 
-// line рисует ломаную в нормированных координатах иконки (0..1).
-func line(ops *op.Ops, s float32, c color.NRGBA, w float32, pts ...[2]float32) {
-	var p clip.Path
-	p.Begin(ops)
-	for i, pt := range pts {
-		fp := f32.Pt(pt[0]*s, pt[1]*s)
-		if i == 0 {
-			p.MoveTo(fp)
-		} else {
-			p.LineTo(fp)
-		}
+// Иконки в стиле Tabler Icons (MIT): сетка 24×24, линия 2, скруглённые концы.
+// Рисуются на 60% размера кнопки по центру.
+const iconShare = 0.6
+
+func tabler(ops *op.Ops, s float32, c color.NRGBA, paths ...string) {
+	size := s * iconShare
+	off := f32.Pt((s-size)/2, (s-size)/2)
+	scale := size / 24
+	for _, d := range paths {
+		strokeSVG(ops, c, d, off, scale, 2*scale)
 	}
-	paint.FillShape(ops, c, clip.Stroke{Path: p.End(), Width: w}.Op())
 }
 
-func iconW(s float32) float32 { return s * 0.07 }
-
 func iconSelect(ops *op.Ops, s float32, c color.NRGBA) {
-	w := iconW(s)
-	line(ops, s, c, w, [2]float32{0.2, 0.4}, [2]float32{0.2, 0.2}, [2]float32{0.4, 0.2})
-	line(ops, s, c, w, [2]float32{0.6, 0.2}, [2]float32{0.8, 0.2}, [2]float32{0.8, 0.4})
-	line(ops, s, c, w, [2]float32{0.8, 0.6}, [2]float32{0.8, 0.8}, [2]float32{0.6, 0.8})
-	line(ops, s, c, w, [2]float32{0.4, 0.8}, [2]float32{0.2, 0.8}, [2]float32{0.2, 0.6})
+	tabler(ops, s, c, "M8 5v10a1 1 0 0 0 1 1h10", "M5 8h10a1 1 0 0 1 1 1v10")
 }
 
 func iconPen(ops *op.Ops, s float32, c color.NRGBA) {
-	line(ops, s, c, iconW(s), [2]float32{0.2, 0.7}, [2]float32{0.35, 0.35}, [2]float32{0.5, 0.65},
-		[2]float32{0.65, 0.3}, [2]float32{0.8, 0.5})
+	tabler(ops, s, c, "M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4", "M13.5 6.5l4 4")
 }
 
 func iconLine(ops *op.Ops, s float32, c color.NRGBA) {
-	line(ops, s, c, iconW(s), [2]float32{0.2, 0.8}, [2]float32{0.8, 0.2})
+	tabler(ops, s, c, "M4 20l16 -16")
 }
 
 func iconArrow(ops *op.Ops, s float32, c color.NRGBA) {
-	w := iconW(s)
-	line(ops, s, c, w, [2]float32{0.2, 0.8}, [2]float32{0.75, 0.25})
-	line(ops, s, c, w, [2]float32{0.45, 0.2}, [2]float32{0.8, 0.2}, [2]float32{0.8, 0.55})
+	tabler(ops, s, c, "M17 7l-10 10", "M8 7l9 0l0 9")
 }
 
 func iconRect(ops *op.Ops, s float32, c color.NRGBA) {
-	line(ops, s, c, iconW(s), [2]float32{0.2, 0.28}, [2]float32{0.8, 0.28}, [2]float32{0.8, 0.72},
-		[2]float32{0.2, 0.72}, [2]float32{0.2, 0.28})
+	tabler(ops, s, c, "M3 3m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z")
 }
 
 func iconMarker(ops *op.Ops, s float32, c color.NRGBA) {
-	hl := c
-	hl.A = 130
-	line(ops, s, hl, s*0.26, [2]float32{0.28, 0.68}, [2]float32{0.72, 0.32})
-	line(ops, s, c, iconW(s), [2]float32{0.2, 0.84}, [2]float32{0.5, 0.84})
+	tabler(ops, s, c, "M3 19h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4", "M12.5 5.5l4 4",
+		"M4.5 13.5l4 4", "M21 15v4h-8l4 -4z")
 }
 
-// iconBlur: рамка с полосами, которые по мере движения вправо «растворяются».
+// blurDots — растр из точек: радиус тает слева направо и сверху вниз.
+var blurDots = [][3]float32{
+	{8, 8, 1.9}, {8, 12, 1.5}, {8, 16, 1.1},
+	{12.5, 8, 1.5}, {12.5, 12, 1.1}, {12.5, 16, 0.75},
+	{16.5, 8, 1.1}, {16.5, 12, 0.75}, {16.5, 16, 0.45},
+}
+
 func iconBlur(ops *op.Ops, s float32, c color.NRGBA) {
-	w := iconW(s)
-	line(ops, s, c, w, [2]float32{0.2, 0.25}, [2]float32{0.8, 0.25}, [2]float32{0.8, 0.75},
-		[2]float32{0.2, 0.75}, [2]float32{0.2, 0.25})
-	for i, y := range []float32{0.4, 0.5, 0.6} {
-		fade := c
-		fade.A = uint8(255 - 70*i)
-		line(ops, s, fade, w*0.9, [2]float32{0.3, y}, [2]float32{0.7, y})
+	tabler(ops, s, c, "M3 3m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z")
+	size := s * iconShare
+	off := f32.Pt((s-size)/2, (s-size)/2)
+	scale := size / 24
+	for _, d := range blurDots {
+		cx, cy, r := d[0], d[1], d[2]
+		circle := fmt.Sprintf("M%g %gm%g 0a%g %g 0 1 0 %g 0a%g %g 0 1 0 %g 0z", cx, cy, -r, r, r, 2*r, r, r, -2*r)
+		fillSVG(ops, c, circle, off, scale)
 	}
 }
 
 func iconMinus(ops *op.Ops, s float32, c color.NRGBA) {
-	line(ops, s, c, iconW(s)*1.2, [2]float32{0.28, 0.5}, [2]float32{0.72, 0.5})
+	tabler(ops, s, c, "M5 12l14 0")
 }
 
 func iconPlus(ops *op.Ops, s float32, c color.NRGBA) {
-	w := iconW(s) * 1.2
-	line(ops, s, c, w, [2]float32{0.28, 0.5}, [2]float32{0.72, 0.5})
-	line(ops, s, c, w, [2]float32{0.5, 0.28}, [2]float32{0.5, 0.72})
+	tabler(ops, s, c, "M12 5l0 14", "M5 12l14 0")
 }
 
 func iconText(ops *op.Ops, s float32, c color.NRGBA) {
-	w := iconW(s) * 1.2
-	line(ops, s, c, w, [2]float32{0.25, 0.25}, [2]float32{0.75, 0.25})
-	line(ops, s, c, w, [2]float32{0.5, 0.25}, [2]float32{0.5, 0.8})
+	tabler(ops, s, c, "M4 20l3 0", "M14 20l7 0", "M6.8 15l7.4 0", "M5 20l5.5 -16", "M16 20l-5.5 -16")
 }
 
 func iconUndo(ops *op.Ops, s float32, c color.NRGBA) {
-	w := iconW(s)
-	line(ops, s, c, w, [2]float32{0.32, 0.36}, [2]float32{0.62, 0.36}, [2]float32{0.78, 0.5},
-		[2]float32{0.62, 0.68}, [2]float32{0.34, 0.68})
-	line(ops, s, c, w, [2]float32{0.44, 0.22}, [2]float32{0.3, 0.36}, [2]float32{0.44, 0.5})
+	tabler(ops, s, c, "M9 14l-4 -4l4 -4", "M5 10h11a4 4 0 1 1 0 8h-1")
 }
 
 func iconCopy(ops *op.Ops, s float32, c color.NRGBA) {
-	w := iconW(s)
-	line(ops, s, c, w, [2]float32{0.38, 0.2}, [2]float32{0.8, 0.2}, [2]float32{0.8, 0.62},
-		[2]float32{0.38, 0.62}, [2]float32{0.38, 0.2})
-	line(ops, s, c, w, [2]float32{0.2, 0.38}, [2]float32{0.62, 0.38}, [2]float32{0.62, 0.8},
-		[2]float32{0.2, 0.8}, [2]float32{0.2, 0.38})
+	tabler(ops, s, c,
+		"M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z",
+		"M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1")
 }
 
 func iconSave(ops *op.Ops, s float32, c color.NRGBA) {
-	w := iconW(s)
-	line(ops, s, c, w, [2]float32{0.5, 0.2}, [2]float32{0.5, 0.6})
-	line(ops, s, c, w, [2]float32{0.32, 0.45}, [2]float32{0.5, 0.63}, [2]float32{0.68, 0.45})
-	line(ops, s, c, w, [2]float32{0.2, 0.64}, [2]float32{0.2, 0.8}, [2]float32{0.8, 0.8}, [2]float32{0.8, 0.64})
+	tabler(ops, s, c, "M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2",
+		"M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0", "M14 4l0 4l-6 0l0 -4")
 }
 
 func iconClose(ops *op.Ops, s float32, c color.NRGBA) {
-	w := iconW(s)
-	line(ops, s, c, w, [2]float32{0.26, 0.26}, [2]float32{0.74, 0.74})
-	line(ops, s, c, w, [2]float32{0.74, 0.26}, [2]float32{0.26, 0.74})
+	tabler(ops, s, c, "M18 6l-12 12", "M6 6l12 12")
 }
