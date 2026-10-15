@@ -1,0 +1,205 @@
+// Package annotate описывает аннотации поверх скриншота (стрелки, фигуры, текст)
+// и рисует их в Gio. Один и тот же код используется для показа на экране и для
+// экспорта в PNG, поэтому результат совпадает с тем, что видел пользователь.
+//
+// Все координаты и размеры задаются в пикселях кадра.
+package annotate
+
+import (
+	"image"
+	"image/color"
+	"math"
+
+	"gioui.org/f32"
+	"gioui.org/font/gofont"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
+	"gioui.org/text"
+	"gioui.org/unit"
+	"gioui.org/widget"
+)
+
+// Tool — инструмент рисования.
+type Tool int
+
+const (
+	ToolSelect Tool = iota // выделение области
+	ToolPen
+	ToolLine
+	ToolArrow
+	ToolRect
+	ToolMarker
+	ToolText
+)
+
+// Palette — цвета в панели инструментов.
+var Palette = []color.NRGBA{
+	{R: 229, G: 57, B: 53, A: 255},   // красный
+	{R: 251, G: 140, B: 0, A: 255},   // оранжевый
+	{R: 253, G: 216, B: 53, A: 255},  // жёлтый
+	{R: 67, G: 160, B: 71, A: 255},   // зелёный
+	{R: 30, G: 136, B: 229, A: 255},  // синий
+	{R: 142, G: 36, B: 170, A: 255},  // фиолетовый
+	{R: 255, G: 255, B: 255, A: 255}, // белый
+	{R: 20, G: 20, B: 20, A: 255},    // чёрный
+}
+
+const (
+	DefaultWidth = 4
+	MinWidth     = 1
+	MaxWidth     = 30
+)
+
+// Shape — одна аннотация.
+type Shape struct {
+	Tool  Tool
+	Color color.NRGBA
+	Width float32     // толщина линии, пиксели кадра
+	Pts   []f32.Point // ключевые точки
+	Text  string      // только для ToolText
+}
+
+// TextSize возвращает размер шрифта текстовой аннотации в пикселях кадра.
+func TextSize(width float32) float32 { return 12 + width*3 }
+
+// NewShaper создаёт шрифтовой шейпер для текстовых аннотаций.
+func NewShaper() *text.Shaper {
+	return text.NewShaper(text.WithCollection(gofont.Collection()))
+}
+
+// Font — шрифт текстовых аннотаций.
+var Font = gofont.Collection()[0].Font
+
+// Degenerate сообщает, что фигура слишком мала, чтобы её сохранять.
+func (s Shape) Degenerate() bool {
+	switch s.Tool {
+	case ToolText:
+		return s.Text == ""
+	case ToolPen:
+		return len(s.Pts) < 1
+	default:
+		if len(s.Pts) < 2 {
+			return true
+		}
+		return dist(s.Pts[0], s.Pts[1]) < 3
+	}
+}
+
+// Draw рисует фигуру. Координаты фигуры считаются координатами пространства ops.
+func (s Shape) Draw(ops *op.Ops, shaper *text.Shaper) {
+	if len(s.Pts) == 0 {
+		return
+	}
+	switch s.Tool {
+	case ToolPen:
+		stroke(ops, s.Color, s.Width, s.Pts...)
+	case ToolLine:
+		if len(s.Pts) >= 2 {
+			stroke(ops, s.Color, s.Width, s.Pts[0], s.Pts[1])
+		}
+	case ToolArrow:
+		if len(s.Pts) >= 2 {
+			drawArrow(ops, s.Color, s.Width, s.Pts[0], s.Pts[1])
+		}
+	case ToolRect:
+		if len(s.Pts) >= 2 {
+			a, b := s.Pts[0], s.Pts[1]
+			strokeClosed(ops, s.Color, s.Width,
+				f32.Pt(a.X, a.Y), f32.Pt(b.X, a.Y), f32.Pt(b.X, b.Y), f32.Pt(a.X, b.Y))
+		}
+	case ToolMarker:
+		c := s.Color
+		c.A = 110
+		stroke(ops, c, s.Width*4, s.Pts...)
+	case ToolText:
+		drawText(ops, shaper, s.Color, s.Width, s.Pts[0], s.Text)
+	}
+}
+
+// DrawAll рисует все фигуры по порядку.
+func DrawAll(ops *op.Ops, shaper *text.Shaper, shapes []Shape) {
+	for _, s := range shapes {
+		s.Draw(ops, shaper)
+	}
+}
+
+func dist(a, b f32.Point) float32 {
+	return float32(math.Hypot(float64(a.X-b.X), float64(a.Y-b.Y)))
+}
+
+func stroke(ops *op.Ops, c color.NRGBA, width float32, pts ...f32.Point) {
+	if len(pts) == 0 {
+		return
+	}
+	if len(pts) == 1 {
+		// Точка: короткий отрезок, чтобы штрих был виден.
+		pts = []f32.Point{pts[0], pts[0].Add(f32.Pt(0.01, 0))}
+	}
+	var p clip.Path
+	p.Begin(ops)
+	p.MoveTo(pts[0])
+	for _, pt := range pts[1:] {
+		p.LineTo(pt)
+	}
+	paint.FillShape(ops, c, clip.Stroke{Path: p.End(), Width: width}.Op())
+}
+
+func strokeClosed(ops *op.Ops, c color.NRGBA, width float32, pts ...f32.Point) {
+	var p clip.Path
+	p.Begin(ops)
+	p.MoveTo(pts[0])
+	for _, pt := range pts[1:] {
+		p.LineTo(pt)
+	}
+	p.Close()
+	paint.FillShape(ops, c, clip.Stroke{Path: p.End(), Width: width}.Op())
+}
+
+// drawArrow рисует линию с треугольным наконечником в точке to.
+func drawArrow(ops *op.Ops, c color.NRGBA, width float32, from, to f32.Point) {
+	d := to.Sub(from)
+	length := dist(from, to)
+	if length < 1 {
+		return
+	}
+	dir := f32.Pt(d.X/length, d.Y/length)
+	normal := f32.Pt(-dir.Y, dir.X)
+
+	head := float32(math.Max(float64(width*4), 14))
+	if head > length {
+		head = length
+	}
+	half := head * 0.5
+	base := to.Sub(dir.Mul(head))
+
+	// Древко заканчивается внутри наконечника, чтобы не было щели.
+	stroke(ops, c, width, from, base.Add(dir.Mul(head*0.3)))
+
+	var p clip.Path
+	p.Begin(ops)
+	p.MoveTo(to)
+	p.LineTo(base.Add(normal.Mul(half)))
+	p.LineTo(base.Sub(normal.Mul(half)))
+	p.Close()
+	paint.FillShape(ops, c, clip.Outline{Path: p.End()}.Op())
+}
+
+// drawText рисует текст в пространстве кадра: метрика единичная, поэтому
+// размер шрифта задаётся в пикселях кадра независимо от масштаба окна.
+func drawText(ops *op.Ops, shaper *text.Shaper, c color.NRGBA, width float32, at f32.Point, txt string) {
+	if txt == "" || shaper == nil {
+		return
+	}
+	defer op.Offset(image.Pt(int(at.X), int(at.Y))).Push(ops).Pop()
+	gtx := layout.Context{
+		Ops:         ops,
+		Constraints: layout.Constraints{Max: image.Pt(1<<14, 1<<14)},
+		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
+	}
+	rec := op.Record(ops)
+	paint.ColorOp{Color: c}.Add(ops)
+	mat := rec.Stop()
+	widget.Label{}.Layout(gtx, shaper, Font, unit.Sp(TextSize(width)), txt, mat)
+}

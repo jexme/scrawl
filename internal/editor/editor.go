@@ -1,0 +1,510 @@
+// Package editor показывает замороженный кадр на весь монитор, даёт выделить
+// область, нарисовать аннотации и сохранить результат.
+package editor
+
+import (
+	"fmt"
+	"image"
+	"image/color"
+	"math"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	"gioui.org/app"
+	"gioui.org/f32"
+	"gioui.org/io/event"
+	"gioui.org/io/key"
+	"gioui.org/io/pointer"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
+	"gioui.org/text"
+	"gioui.org/unit"
+	"gioui.org/widget"
+
+	"github.com/jexme/screen-editor/internal/annotate"
+	"github.com/jexme/screen-editor/internal/screencast"
+)
+
+// Config — параметры запуска редактора.
+type Config struct {
+	Frames  []screencast.Frame
+	Finish  func()    // освобождает ресурсы и завершает процесс
+	T0      time.Time // момент «нажатия хоткея» для замеров
+	Verbose bool
+}
+
+var (
+	shade      = color.NRGBA{A: 120}
+	selBorder  = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+	textFrame  = color.NRGBA{R: 255, G: 255, B: 255, A: 160}
+	identity   = unit.Metric{PxPerDp: 1, PxPerSp: 1}
+	noMaterial = op.CallOp{}
+)
+
+// Run открывает по fullscreen-окну на каждый кадр. Вызывающий должен после
+// этого вызвать app.Main().
+func Run(cfg Config) {
+	app.ID = screencast.AppID
+	var once sync.Once
+	finish := func() { once.Do(cfg.Finish) }
+	for i := range cfg.Frames {
+		m := newMonitor(cfg, &cfg.Frames[i], finish)
+		go m.loop()
+	}
+}
+
+// monitor — окно-оверлей одного монитора со своим состоянием редактирования.
+type monitor struct {
+	cfg    Config
+	frame  *screencast.Frame
+	finish func()
+	shaper *text.Shaper
+	bar    *toolbar
+
+	imageOp paint.ImageOp
+	canvas  int // тег холста
+
+	// Выделение в пикселях кадра.
+	sel      image.Rectangle
+	hasSel   bool
+	dragging bool
+	selStart f32.Point
+
+	tool   annotate.Tool
+	color  color.NRGBA
+	width  float32
+	shapes []annotate.Shape
+	cur    *annotate.Shape
+
+	editing bool
+	editAt  f32.Point
+	ed      widget.Editor
+
+	focusCanvas bool
+	focusEditor bool
+	reported    bool
+}
+
+func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
+	m := &monitor{
+		cfg:         cfg,
+		frame:       f,
+		finish:      finish,
+		shaper:      annotate.NewShaper(),
+		bar:         newToolbar(),
+		imageOp:     paint.NewImageOp(f.Img),
+		color:       annotate.Palette[0],
+		width:       annotate.DefaultWidth,
+		focusCanvas: true,
+	}
+	m.ed.Submit = true
+	return m
+}
+
+func (m *monitor) loop() {
+	w := new(app.Window)
+	w.Option(app.Title("screen-editor"), app.FullscreenAt(m.frame.X, m.frame.Y))
+	var ops op.Ops
+	for {
+		switch e := w.Event().(type) {
+		case app.DestroyEvent:
+			m.finish()
+			return
+		case app.FrameEvent:
+			gtx := app.NewContext(&ops, e)
+			m.layout(gtx, e.Size)
+			e.Frame(gtx.Ops)
+			if !m.reported {
+				m.reported = true
+				if m.cfg.Verbose {
+					fmt.Printf("монитор (%d,%d) %dx%d: картинка на экране через %s от «хоткея»\n",
+						m.frame.X, m.frame.Y, e.Size.X, e.Size.Y, time.Since(m.cfg.T0).Round(time.Millisecond))
+				}
+			}
+		}
+	}
+}
+
+func (m *monitor) frameSize() image.Point {
+	b := m.frame.Img.Bounds()
+	return image.Pt(b.Dx(), b.Dy())
+}
+
+// layout обрабатывает ввод и рисует один кадр окна. Порядок важен: области
+// ввода, зарегистрированные позже, лежат выше (редактор текста и панель
+// инструментов выше холста).
+func (m *monitor) layout(gtx layout.Context, win image.Point) {
+	fs := m.frameSize()
+	sx := float32(win.X) / float32(fs.X)
+	sy := float32(win.Y) / float32(fs.Y)
+	toFrame := func(p f32.Point) f32.Point { return f32.Pt(p.X/sx, p.Y/sy) }
+
+	m.handleKeys(gtx)
+	m.handlePointer(gtx, toFrame)
+
+	// Холст: область ввода на всё окно.
+	area := clip.Rect(image.Rectangle{Max: win}).Push(gtx.Ops)
+	event.Op(gtx.Ops, &m.canvas)
+	pointer.CursorCrosshair.Add(gtx.Ops)
+	area.Pop()
+
+	if !m.editing && m.focusCanvas {
+		gtx.Execute(key.FocusCmd{Tag: &m.canvas})
+		m.focusCanvas = false
+	}
+
+	// Сцена в пространстве кадра, масштабируется на окно.
+	scale := op.Affine(f32.Affine2D{}.Scale(f32.Pt(0, 0), f32.Pt(sx, sy))).Push(gtx.Ops)
+	m.drawScene(gtx, fs, sx)
+	m.layoutEditor(gtx)
+	scale.Pop()
+
+	if m.hasSel {
+		selWin := image.Rect(
+			int(float32(m.sel.Min.X)*sx), int(float32(m.sel.Min.Y)*sy),
+			int(float32(m.sel.Max.X)*sx), int(float32(m.sel.Max.Y)*sy),
+		)
+		m.layoutToolbar(gtx, win, selWin)
+	}
+}
+
+func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
+	full := image.Rectangle{Max: fs}
+
+	clipImg := clip.Rect(full).Push(gtx.Ops)
+	m.imageOp.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	clipImg.Pop()
+
+	if !m.hasSel && !m.dragging {
+		paint.FillShape(gtx.Ops, shade, clip.Rect(full).Op())
+		return
+	}
+
+	r := m.sel
+	for _, side := range []image.Rectangle{
+		{Min: full.Min, Max: image.Pt(full.Max.X, r.Min.Y)},
+		{Min: image.Pt(full.Min.X, r.Max.Y), Max: full.Max},
+		{Min: image.Pt(full.Min.X, r.Min.Y), Max: image.Pt(r.Min.X, r.Max.Y)},
+		{Min: image.Pt(r.Max.X, r.Min.Y), Max: image.Pt(full.Max.X, r.Max.Y)},
+	} {
+		paint.FillShape(gtx.Ops, shade, clip.Rect(side).Op())
+	}
+
+	// Аннотации видны только внутри выделения.
+	cl := clip.Rect(r).Push(gtx.Ops)
+	annotate.DrawAll(gtx.Ops, m.shaper, m.shapes)
+	if m.cur != nil {
+		m.cur.Draw(gtx.Ops, m.shaper)
+	}
+	cl.Pop()
+
+	bw := 2 / sx
+	var p clip.Path
+	p.Begin(gtx.Ops)
+	p.MoveTo(f32.Pt(float32(r.Min.X), float32(r.Min.Y)))
+	p.LineTo(f32.Pt(float32(r.Max.X), float32(r.Min.Y)))
+	p.LineTo(f32.Pt(float32(r.Max.X), float32(r.Max.Y)))
+	p.LineTo(f32.Pt(float32(r.Min.X), float32(r.Max.Y)))
+	p.Close()
+	paint.FillShape(gtx.Ops, selBorder, clip.Stroke{Path: p.End(), Width: bw}.Op())
+}
+
+// layoutEditor показывает редактор текста в позиции editAt. Размеры считаются
+// в пикселях кадра, как и у готовой аннотации.
+func (m *monitor) layoutEditor(gtx layout.Context) {
+	if !m.editing {
+		return
+	}
+	defer op.Offset(image.Pt(int(m.editAt.X), int(m.editAt.Y))).Push(gtx.Ops).Pop()
+
+	size := annotate.TextSize(m.width)
+	egtx := gtx
+	egtx.Metric = identity
+	egtx.Constraints = layout.Constraints{
+		Min: image.Pt(int(size*3), int(size*1.4)),
+		Max: image.Pt(1<<14, 1<<14),
+	}
+
+	rec := op.Record(gtx.Ops)
+	paint.ColorOp{Color: m.color}.Add(gtx.Ops)
+	mat := rec.Stop()
+	rec = op.Record(gtx.Ops)
+	paint.ColorOp{Color: color.NRGBA{R: 66, G: 133, B: 244, A: 120}}.Add(gtx.Ops)
+	selMat := rec.Stop()
+
+	dims := m.ed.Layout(egtx, m.shaper, annotate.Font, unit.Sp(size), mat, selMat)
+
+	// Рамка вокруг редактируемого текста.
+	var p clip.Path
+	p.Begin(gtx.Ops)
+	p.MoveTo(f32.Pt(0, 0))
+	p.LineTo(f32.Pt(float32(dims.Size.X), 0))
+	p.LineTo(f32.Pt(float32(dims.Size.X), float32(dims.Size.Y)))
+	p.LineTo(f32.Pt(0, float32(dims.Size.Y)))
+	p.Close()
+	paint.FillShape(gtx.Ops, textFrame, clip.Stroke{Path: p.End(), Width: 1}.Op())
+
+	if m.focusEditor {
+		gtx.Execute(key.FocusCmd{Tag: &m.ed})
+		m.focusEditor = false
+	}
+}
+
+func (m *monitor) handleKeys(gtx layout.Context) {
+	if m.editing {
+		for {
+			ev, ok := gtx.Event(key.Filter{Focus: &m.ed, Name: key.NameEscape})
+			if !ok {
+				break
+			}
+			if e, ok := ev.(key.Event); ok && e.State == key.Press {
+				m.cancelText()
+			}
+		}
+		for {
+			ev, ok := m.ed.Update(gtx)
+			if !ok {
+				break
+			}
+			if _, ok := ev.(widget.SubmitEvent); ok {
+				m.commitText()
+			}
+		}
+		return
+	}
+
+	for {
+		ev, ok := gtx.Event(
+			key.Filter{Focus: &m.canvas, Name: key.NameEscape},
+			key.Filter{Focus: &m.canvas, Name: key.NameReturn},
+			key.Filter{Focus: &m.canvas, Name: key.NameEnter},
+			key.Filter{Focus: &m.canvas, Name: "Z", Required: key.ModCtrl},
+			key.Filter{Focus: &m.canvas, Name: "C", Required: key.ModCtrl},
+			key.Filter{Focus: &m.canvas, Name: "S", Required: key.ModCtrl},
+		)
+		if !ok {
+			break
+		}
+		e, ok := ev.(key.Event)
+		if !ok || e.State != key.Press {
+			continue
+		}
+		ctrl := e.Modifiers.Contain(key.ModCtrl)
+		switch {
+		case e.Name == key.NameEscape:
+			m.finish()
+		case e.Name == key.NameReturn || e.Name == key.NameEnter:
+			m.export(true, true)
+		case ctrl && e.Name == "Z":
+			m.undo()
+		case ctrl && e.Name == "C":
+			m.export(true, false)
+		case ctrl && e.Name == "S":
+			m.export(false, true)
+		}
+	}
+}
+
+func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.Point) {
+	for {
+		ev, ok := gtx.Event(
+			pointer.Filter{Target: &m.canvas, Kinds: pointer.Press | pointer.Drag | pointer.Release},
+			pointer.Filter{Target: &m.canvas, Kinds: pointer.Scroll, ScrollY: pointer.ScrollRange{Min: -100, Max: 100}},
+		)
+		if !ok {
+			break
+		}
+		e, ok := ev.(pointer.Event)
+		if !ok {
+			continue
+		}
+		p := toFrame(e.Position)
+		switch e.Kind {
+		case pointer.Press:
+			if e.Buttons.Contain(pointer.ButtonPrimary) {
+				m.press(p)
+			}
+		case pointer.Drag:
+			m.drag(p)
+		case pointer.Release:
+			m.release(p)
+		case pointer.Scroll:
+			m.scroll(e.Scroll.Y)
+		}
+	}
+}
+
+func (m *monitor) setTool(t annotate.Tool) {
+	if m.editing {
+		m.commitText()
+	}
+	m.tool = t
+}
+
+func (m *monitor) press(p f32.Point) {
+	if m.editing {
+		m.commitText()
+	}
+	if !m.hasSel || m.tool == annotate.ToolSelect {
+		m.dragging = true
+		m.selStart = p
+		m.sel = rectOf(p, p)
+		m.hasSel = false
+		return
+	}
+	if !inRect(p, m.sel) {
+		return
+	}
+	switch m.tool {
+	case annotate.ToolText:
+		m.editing = true
+		m.editAt = p
+		m.ed.SetText("")
+		m.focusEditor = true
+	case annotate.ToolPen, annotate.ToolMarker:
+		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.width, Pts: []f32.Point{p}}
+	default:
+		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.width, Pts: []f32.Point{p, p}}
+	}
+}
+
+func (m *monitor) drag(p f32.Point) {
+	switch {
+	case m.dragging:
+		m.sel = rectOf(m.selStart, p)
+	case m.cur != nil:
+		p = m.clamp(p)
+		switch m.cur.Tool {
+		case annotate.ToolPen, annotate.ToolMarker:
+			m.cur.Pts = append(m.cur.Pts, p)
+		default:
+			m.cur.Pts[1] = p
+		}
+	}
+}
+
+func (m *monitor) release(p f32.Point) {
+	switch {
+	case m.dragging:
+		m.dragging = false
+		m.sel = rectOf(m.selStart, p).Intersect(m.frame.Img.Bounds())
+		// Простой клик без выделения не считаем областью.
+		m.hasSel = m.sel.Dx() >= 4 && m.sel.Dy() >= 4
+		if !m.hasSel {
+			m.sel = image.Rectangle{}
+		}
+	case m.cur != nil:
+		if !m.cur.Degenerate() {
+			m.shapes = append(m.shapes, *m.cur)
+		}
+		m.cur = nil
+	}
+}
+
+func (m *monitor) scroll(dy float32) {
+	switch {
+	case dy < 0:
+		m.width++
+	case dy > 0:
+		m.width--
+	}
+	m.width = float32(math.Min(math.Max(float64(m.width), annotate.MinWidth), annotate.MaxWidth))
+}
+
+func (m *monitor) clamp(p f32.Point) f32.Point {
+	r := m.sel
+	p.X = float32(math.Min(math.Max(float64(p.X), float64(r.Min.X)), float64(r.Max.X)))
+	p.Y = float32(math.Min(math.Max(float64(p.Y), float64(r.Min.Y)), float64(r.Max.Y)))
+	return p
+}
+
+func (m *monitor) undo() {
+	if m.editing {
+		m.cancelText()
+		return
+	}
+	if n := len(m.shapes); n > 0 {
+		m.shapes = m.shapes[:n-1]
+	}
+}
+
+func (m *monitor) commitText() {
+	txt := strings.TrimSpace(m.ed.Text())
+	if txt != "" {
+		m.shapes = append(m.shapes, annotate.Shape{
+			Tool: annotate.ToolText, Color: m.color, Width: m.width,
+			Pts: []f32.Point{m.editAt}, Text: txt,
+		})
+	}
+	m.cancelText()
+}
+
+func (m *monitor) cancelText() {
+	m.editing = false
+	m.ed.SetText("")
+	m.focusCanvas = true
+}
+
+// export рендерит выделение с аннотациями, при необходимости сохраняет в файл
+// и копирует в буфер обмена, затем завершает работу.
+func (m *monitor) export(toClipboard, toFile bool) {
+	if m.editing {
+		m.commitText()
+	}
+	if !m.hasSel {
+		return
+	}
+	img, err := render(m.frame.Img, m.sel, m.shapes, m.shaper)
+	if err != nil {
+		fail("рендер", err)
+		return
+	}
+	data, err := encodePNG(img)
+	if err != nil {
+		fail("PNG", err)
+		return
+	}
+
+	msg := ""
+	if toFile {
+		path, err := saveFile(data)
+		if err != nil {
+			fail("сохранение", err)
+			return
+		}
+		msg = path
+	}
+	if toClipboard {
+		if err := copyPNG(data); err != nil {
+			fail("буфер обмена", err)
+		} else if msg == "" {
+			msg = "скопирован в буфер обмена"
+		} else {
+			msg += " (и в буфер обмена)"
+		}
+	}
+	notify("Скриншот готов", msg)
+	m.finish()
+}
+
+func fail(what string, err error) {
+	fmt.Fprintf(os.Stderr, "%s: %v\n", what, err)
+	notify("Ошибка: "+what, err.Error())
+}
+
+func rectOf(a, b f32.Point) image.Rectangle {
+	return image.Rect(
+		int(math.Min(float64(a.X), float64(b.X))), int(math.Min(float64(a.Y), float64(b.Y))),
+		int(math.Max(float64(a.X), float64(b.X))), int(math.Max(float64(a.Y), float64(b.Y))),
+	)
+}
+
+func inRect(p f32.Point, r image.Rectangle) bool {
+	return p.X >= float32(r.Min.X) && p.X < float32(r.Max.X) &&
+		p.Y >= float32(r.Min.Y) && p.Y < float32(r.Max.Y)
+}

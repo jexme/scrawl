@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/godbus/dbus/v5"
@@ -37,9 +38,11 @@ const AppID = "io.github.jexme.ScreenEditor"
 // Portal — подключение к session bus для вызовов ScreenCast.
 type Portal struct {
 	conn   *dbus.Conn
-	sigs   chan *dbus.Signal
 	sender string
-	n      int
+	n      atomic.Int64
+
+	mu      sync.Mutex
+	waiters map[dbus.ObjectPath]chan *dbus.Signal
 
 	// Registered сообщает, принял ли portal регистрацию app_id.
 	// Если нет (старый portal), restore_token работать не будет.
@@ -81,7 +84,30 @@ func New() (*Portal, error) {
 	ch := make(chan *dbus.Signal, 32)
 	conn.Signal(ch)
 	sender := strings.ReplaceAll(strings.TrimPrefix(conn.Names()[0], ":"), ".", "_")
-	return &Portal{conn: conn, sigs: ch, sender: sender, Registered: regErr == nil}, nil
+	p := &Portal{
+		conn:       conn,
+		sender:     sender,
+		waiters:    make(map[dbus.ObjectPath]chan *dbus.Signal),
+		Registered: regErr == nil,
+	}
+	go p.dispatch(ch)
+	return p, nil
+}
+
+// dispatch раздаёт сигналы Response по ожидающим запросам. Это позволяет
+// запускать несколько сессий параллельно.
+func (p *Portal) dispatch(ch <-chan *dbus.Signal) {
+	for sig := range ch {
+		if sig.Name != reqIface+".Response" {
+			continue
+		}
+		p.mu.Lock()
+		w := p.waiters[sig.Path]
+		p.mu.Unlock()
+		if w != nil {
+			w <- sig
+		}
+	}
 }
 
 // Close закрывает соединение с D-Bus.
@@ -96,54 +122,64 @@ func TokenPath() string {
 	return filepath.Join(dir, "screen-editor", "screencast.token")
 }
 
-// LoadToken читает сохранённый restore_token, пустая строка если его нет.
-func LoadToken() string {
+// LoadTokens читает сохранённые restore_token, по одному на монитор.
+func LoadTokens() []string {
 	b, err := os.ReadFile(TokenPath())
 	if err != nil {
-		return ""
+		return nil
 	}
-	return strings.TrimSpace(string(b))
+	var out []string
+	for _, line := range strings.Split(string(b), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			out = append(out, line)
+		}
+	}
+	return out
 }
 
-// SaveToken сохраняет restore_token, чтобы следующий запуск обошёлся без диалога.
-func SaveToken(token string) error {
+// SaveTokens сохраняет restore_token, чтобы следующий запуск обошёлся без диалога.
+func SaveTokens(tokens []string) error {
 	path := TokenPath()
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(token), 0o600)
+	return os.WriteFile(path, []byte(strings.Join(tokens, "\n")+"\n"), 0o600)
 }
 
 // request вызывает метод ScreenCast, возвращающий Request, и ждёт его Response.
 func (p *Portal) request(method string, timeout time.Duration, lead []any, extra map[string]dbus.Variant) (map[string]dbus.Variant, error) {
-	p.n++
-	token := fmt.Sprintf("se%d_%d", os.Getpid(), p.n)
+	token := fmt.Sprintf("se%d_%d", os.Getpid(), p.n.Add(1))
 	opts := map[string]dbus.Variant{"handle_token": dbus.MakeVariant(token)}
 	for k, v := range extra {
 		opts[k] = v
 	}
 	reqPath := dbus.ObjectPath(fmt.Sprintf("/org/freedesktop/portal/desktop/request/%s/%s", p.sender, token))
 
+	// Ожидание регистрируется до вызова, иначе Response можно пропустить.
+	w := make(chan *dbus.Signal, 1)
+	p.mu.Lock()
+	p.waiters[reqPath] = w
+	p.mu.Unlock()
+	defer func() {
+		p.mu.Lock()
+		delete(p.waiters, reqPath)
+		p.mu.Unlock()
+	}()
+
 	call := p.conn.Object(portalDest, portalPath).Call(scIface+"."+method, 0, append(lead, opts)...)
 	if call.Err != nil {
 		return nil, fmt.Errorf("%s: %w", method, call.Err)
 	}
-	deadline := time.After(timeout)
-	for {
-		select {
-		case sig := <-p.sigs:
-			if sig.Path != reqPath || sig.Name != reqIface+".Response" {
-				continue
-			}
-			code, _ := sig.Body[0].(uint32)
-			res, _ := sig.Body[1].(map[string]dbus.Variant)
-			if code != 0 {
-				return nil, fmt.Errorf("%s: портал вернул код %d (отмена или отказ)", method, code)
-			}
-			return res, nil
-		case <-deadline:
-			return nil, fmt.Errorf("%s: таймаут %v", method, timeout)
+	select {
+	case sig := <-w:
+		code, _ := sig.Body[0].(uint32)
+		res, _ := sig.Body[1].(map[string]dbus.Variant)
+		if code != 0 {
+			return nil, fmt.Errorf("%s: портал вернул код %d (отмена или отказ)", method, code)
 		}
+		return res, nil
+	case <-time.After(timeout):
+		return nil, fmt.Errorf("%s: таймаут %v", method, timeout)
 	}
 }
 
@@ -151,7 +187,7 @@ func (p *Portal) request(method string, timeout time.Duration, lead []any, extra
 // показывается. Новый restore_token (если портал его отдал) возвращается вторым значением.
 func (p *Portal) NewSession(restore string) (*Session, string, error) {
 	res, err := p.request("CreateSession", 10*time.Second, nil, map[string]dbus.Variant{
-		"session_handle_token": dbus.MakeVariant(fmt.Sprintf("sess%d_%d", os.Getpid(), p.n)),
+		"session_handle_token": dbus.MakeVariant(fmt.Sprintf("sess%d_%d", os.Getpid(), p.n.Add(1))),
 	})
 	if err != nil {
 		return nil, "", err
@@ -176,12 +212,14 @@ func (p *Portal) NewSession(restore string) (*Session, string, error) {
 	}
 
 	// Диалог выбора может ждать ответа пользователя, поэтому таймаут большой.
+	startedAt := time.Now()
 	res, err = p.request("Start", 120*time.Second, []any{sh, ""}, nil)
 	if err != nil {
 		return nil, "", err
 	}
 	if os.Getenv("SCREENCAST_DEBUG") != "" {
-		fmt.Fprintf(os.Stderr, "[debug] registered=%v Start results: %v\n", p.Registered, res)
+		fmt.Fprintf(os.Stderr, "[debug] Start за %s, restore передан=%v, результат: %v\n",
+			time.Since(startedAt).Round(time.Millisecond), restore != "", res)
 	}
 	s := &Session{p: p, handle: handle}
 	if err := res["streams"].Store(&s.streams); err != nil {
@@ -230,7 +268,7 @@ func (s *Session) Grab() ([]Frame, error) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			frames[i], errs[i] = grab(st, files[i])
+			frames[i], errs[i] = s.grabRetry(st, files[i])
 		}()
 	}
 	wg.Wait()
@@ -240,6 +278,26 @@ func (s *Session) Grab() ([]Frame, error) {
 		}
 	}
 	return frames, nil
+}
+
+// grabRetry делает несколько попыток получить кадр: сразу после Start узел
+// PipeWire иногда ещё не отдаёт буферы, и единственная попытка зависает.
+func (s *Session) grabRetry(st stream, remote *os.File) (Frame, error) {
+	var (
+		f   Frame
+		err error
+	)
+	for attempt := 0; attempt < 3; attempt++ {
+		if attempt > 0 {
+			if remote, err = s.openRemote(); err != nil {
+				return f, err
+			}
+		}
+		if f, err = grab(st, remote, 3*time.Second); err == nil {
+			return f, nil
+		}
+	}
+	return f, err
 }
 
 // pair достаёт (int32, int32) из свойства потока вида "(ii)".
@@ -258,7 +316,7 @@ func pair(props map[string]dbus.Variant, key string) (int, int, bool) {
 }
 
 // grab читает один кадр BGRx из PipeWire-узла через gst-launch-1.0.
-func grab(st stream, remote *os.File) (Frame, error) {
+func grab(st stream, remote *os.File, timeout time.Duration) (Frame, error) {
 	f := Frame{NodeID: st.ID}
 	f.X, f.Y, _ = pair(st.Props, "position")
 	w, h, sized := pair(st.Props, "size")
@@ -267,7 +325,7 @@ func grab(st stream, remote *os.File) (Frame, error) {
 		return f, fmt.Errorf("портал не сообщил размер потока %d", st.ID)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "gst-launch-1.0", "-q",
 		"pipewiresrc", "fd=3", "path="+strconv.Itoa(int(st.ID)), "num-buffers=1",
