@@ -101,8 +101,11 @@ type monitor struct {
 	adjStartSel image.Rectangle
 	adjStartPt  f32.Point
 	hover       f32.Point // последнее положение курсора, пиксели кадра
-	hoverSeen   bool      // курсор уже побывал над окном
-	scaleX      float32   // масштаб кадр -> окно по X, для толщины линий интерфейса
+
+	// Плашка с новым значением силы инструмента.
+	toastUntil time.Time
+	toastTool  annotate.Tool
+	toastValue int
 
 	// Область предыдущего скриншота: не подставляется сама, возвращается по кнопке или клавише R.
 	last    image.Rectangle
@@ -185,7 +188,6 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 	toFrame := func(p f32.Point) f32.Point { return f32.Pt(p.X/sx, p.Y/sy) }
 
 	m.tol = float32(gtx.Dp(8)) / sx
-	m.scaleX = sx
 	if m.reset.Swap(false) {
 		m.resetState()
 	}
@@ -218,6 +220,7 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 		)
 		m.layoutToolbar(gtx, win, selWin)
 		m.layoutSizeLabel(gtx, selWin)
+		m.layoutToast(gtx, win, selWin)
 	}
 }
 
@@ -298,7 +301,6 @@ func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 	if m.cur != nil {
 		m.cur.Draw(gtx.Ops, m.env)
 	}
-	m.drawToolPreview(gtx)
 	cl.Pop()
 
 	bw := 2 / sx
@@ -436,7 +438,7 @@ func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.
 			continue
 		}
 		p := toFrame(e.Position)
-		m.hover, m.hoverSeen = p, true
+		m.hover = p
 		switch e.Kind {
 		case pointer.Press:
 			if e.Buttons.Contain(pointer.ButtonPrimary) {
@@ -599,6 +601,7 @@ func (m *monitor) bumpWidth(delta float32) {
 	if m.cur != nil {
 		m.cur.Width = w
 	}
+	m.showToast()
 }
 
 func (m *monitor) clamp(p f32.Point) f32.Point {
