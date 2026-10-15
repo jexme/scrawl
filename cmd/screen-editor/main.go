@@ -89,6 +89,11 @@ func main() {
 	if err != nil {
 		fatal("кадр: %v", err)
 	}
+	// Кадры получены: сессии захвата больше не нужны. Пока они открыты, GNOME
+	// вынужден композитить экран вместо прямого вывода (это бьёт по FPS в играх).
+	for _, s := range sessions {
+		s.Close()
+	}
 	if *verbose {
 		how := "PipeWire"
 		if fallback {
@@ -97,22 +102,17 @@ func main() {
 		fmt.Printf("кадры (%d) получены за %s: %s\n", len(frames), time.Since(t0).Round(time.Millisecond), how)
 	}
 
-	finish := func() {
-		for _, s := range sessions {
-			s.Close()
-		}
-		os.Exit(0)
-	}
-	if *exitAfter > 0 {
-		time.AfterFunc(*exitAfter, finish)
-	}
-	editor.Run(editor.Config{
+	finish := func() { os.Exit(0) }
+	closeEditor := editor.Run(editor.Config{
 		Frames:  frames,
 		Finish:  finish,
 		T0:      t0,
 		Verbose: *verbose,
 		Fresh:   *fresh,
 	})
+	if *exitAfter > 0 {
+		time.AfterFunc(*exitAfter, closeEditor)
+	}
 	app.Main()
 }
 

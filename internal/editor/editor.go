@@ -18,6 +18,7 @@ import (
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
+	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -65,7 +66,9 @@ const (
 
 // Run открывает по fullscreen-окну на каждый кадр. Вызывающий должен после
 // этого вызвать app.Main().
-func Run(cfg Config) {
+//
+// Возвращает функцию, которая закрывает все окна так же, как их закрывает пользователь.
+func Run(cfg Config) (closeAll func()) {
 	app.ID = screencast.AppID
 	var once sync.Once
 	finish := func() { once.Do(cfg.Finish) }
@@ -73,10 +76,17 @@ func Run(cfg Config) {
 	for i := range cfg.Frames {
 		monitors[i] = newMonitor(cfg, &cfg.Frames[i], finish)
 	}
+	alive := new(atomic.Int32)
+	alive.Store(int32(len(monitors)))
 	for _, m := range monitors {
 		m.peers = monitors
+		m.alive = alive
 		go m.loop()
 	}
+	if len(monitors) == 0 {
+		return finish
+	}
+	return monitors[0].closeWindows
 }
 
 // monitor — окно-оверлей одного монитора со своим состоянием редактирования.
@@ -91,6 +101,7 @@ type monitor struct {
 	// peers — все окна-оверлеи (включая это). Активна одна область на все мониторы:
 	// когда выделение начинается в одном окне, остальные сбрасываются.
 	peers []*monitor
+	alive *atomic.Int32 // сколько окон ещё не закрыто
 	win   atomic.Pointer[app.Window]
 	reset atomic.Bool // другое окно забрало выделение, нужно сбросить своё
 
@@ -178,7 +189,16 @@ func (m *monitor) loop() {
 	for {
 		switch e := w.Event().(type) {
 		case app.DestroyEvent:
-			m.quit()
+			// Окно закрыто (нами или композитором): запоминаем область, закрываем
+			// остальные окна и завершаем работу, когда закрыты все.
+			if m.hasSel {
+				saveLastRegion(m.frame, m.sel)
+			}
+			if m.alive.Add(-1) <= 0 {
+				m.finish()
+			} else {
+				m.closeWindows()
+			}
 			return
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)
@@ -709,7 +729,26 @@ func (m *monitor) quit() {
 	if m.hasSel {
 		saveLastRegion(m.frame, m.sel)
 	}
-	m.finish()
+	m.closeWindows()
+}
+
+// closeWindows закрывает окна по-человечески и завершает работу, когда они
+// закрылись: если выйти из процесса при открытых полноэкранных окнах, GNOME
+// подвисает на секунду-две, что заметно в играх. Если окна не закрылись за
+// 800 мс, завершаем принудительно.
+func (m *monitor) closeWindows() {
+	closed := 0
+	for _, p := range m.peers {
+		if w := p.win.Load(); w != nil {
+			w.Perform(system.ActionClose)
+			closed++
+		}
+	}
+	if closed == 0 {
+		m.finish() // окон нет (например, в тестах): закрывать нечего
+		return
+	}
+	time.AfterFunc(800*time.Millisecond, m.finish)
 }
 
 func fail(what string, err error) {
