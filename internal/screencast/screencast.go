@@ -75,8 +75,11 @@ func New() (*Portal, error) {
 		return nil, err
 	}
 	// Регистрация должна идти раньше любых других вызовов portal на этом соединении.
+	// Таймаут короткий: если portal завис, лучше работать без регистрации, чем висеть.
+	regCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 	regErr := conn.Object(portalDest, portalPath).
-		Call("org.freedesktop.host.portal.Registry.Register", 0, AppID, map[string]dbus.Variant{}).Err
+		CallWithContext(regCtx, "org.freedesktop.host.portal.Registry.Register", 0, AppID, map[string]dbus.Variant{}).Err
 	err = conn.AddMatchSignal(dbus.WithMatchInterface(reqIface), dbus.WithMatchMember("Response"))
 	if err != nil {
 		return nil, err
@@ -211,9 +214,14 @@ func (p *Portal) NewSession(restore string) (*Session, string, error) {
 		return nil, "", err
 	}
 
-	// Диалог выбора может ждать ответа пользователя, поэтому таймаут большой.
+	// Диалог выбора ждёт пользователя, поэтому без токена таймаут большой. С токеном
+	// диалога быть не должно: если portal молчит, лучше сообщить об ошибке.
+	startTimeout := 120 * time.Second
+	if restore != "" {
+		startTimeout = 15 * time.Second
+	}
 	startedAt := time.Now()
-	res, err = p.request("Start", 120*time.Second, []any{sh, ""}, nil)
+	res, err = p.request("Start", startTimeout, []any{sh, ""}, nil)
 	if err != nil {
 		return nil, "", err
 	}

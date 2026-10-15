@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gioui.org/app"
@@ -51,8 +52,12 @@ func Run(cfg Config) {
 	app.ID = screencast.AppID
 	var once sync.Once
 	finish := func() { once.Do(cfg.Finish) }
+	monitors := make([]*monitor, len(cfg.Frames))
 	for i := range cfg.Frames {
-		m := newMonitor(cfg, &cfg.Frames[i], finish)
+		monitors[i] = newMonitor(cfg, &cfg.Frames[i], finish)
+	}
+	for _, m := range monitors {
+		m.peers = monitors
 		go m.loop()
 	}
 }
@@ -64,6 +69,12 @@ type monitor struct {
 	finish func()
 	shaper *text.Shaper
 	bar    *toolbar
+
+	// peers — все окна-оверлеи (включая это). Активна одна область на все мониторы:
+	// когда выделение начинается в одном окне, остальные сбрасываются.
+	peers []*monitor
+	win   atomic.Pointer[app.Window]
+	reset atomic.Bool // другое окно забрало выделение, нужно сбросить своё
 
 	imageOp paint.ImageOp
 	canvas  int // тег холста
@@ -107,6 +118,7 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 
 func (m *monitor) loop() {
 	w := new(app.Window)
+	m.win.Store(w)
 	w.Option(app.Title("screen-editor"), app.FullscreenAt(m.frame.X, m.frame.Y))
 	var ops op.Ops
 	for {
@@ -143,6 +155,9 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 	sy := float32(win.Y) / float32(fs.Y)
 	toFrame := func(p f32.Point) f32.Point { return f32.Pt(p.X/sx, p.Y/sy) }
 
+	if m.reset.Swap(false) {
+		m.resetState()
+	}
 	m.handleKeys(gtx)
 	m.handlePointer(gtx, toFrame)
 
@@ -339,6 +354,33 @@ func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.
 	}
 }
 
+// claim забирает единственную активную область себе: у остальных окон
+// выделение и рисунки сбрасываются.
+func (m *monitor) claim() {
+	for _, o := range m.peers {
+		if o == m {
+			continue
+		}
+		o.reset.Store(true)
+		if w := o.win.Load(); w != nil {
+			w.Invalidate()
+		}
+	}
+}
+
+// resetState убирает выделение, рисунки и редактирование текста.
+func (m *monitor) resetState() {
+	m.dragging = false
+	m.hasSel = false
+	m.sel = image.Rectangle{}
+	m.shapes = nil
+	m.cur = nil
+	m.tool = annotate.ToolSelect
+	if m.editing {
+		m.cancelText()
+	}
+}
+
 func (m *monitor) setTool(t annotate.Tool) {
 	if m.editing {
 		m.commitText()
@@ -351,6 +393,7 @@ func (m *monitor) press(p f32.Point) {
 		m.commitText()
 	}
 	if !m.hasSel || m.tool == annotate.ToolSelect {
+		m.claim()
 		m.dragging = true
 		m.selStart = p
 		m.sel = rectOf(p, p)

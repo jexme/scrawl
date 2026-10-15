@@ -103,7 +103,11 @@ func where(m screencast.MonitorInfo, _ []screencast.MonitorInfo) string {
 	return "справа"
 }
 
+// fatal печатает ошибку и показывает уведомление: при запуске по хоткею
+// терминала нет, и без уведомления сбой остаётся незаметным.
 func fatal(f string, a ...any) {
-	fmt.Fprintf(os.Stderr, f+"\n", a...)
+	msg := fmt.Sprintf(f, a...)
+	fmt.Fprintln(os.Stderr, msg)
+	exec.Command("notify-send", "-a", "Screen Editor", "Не удалось сделать скриншот", msg).Run()
 	os.Exit(1)
 }
