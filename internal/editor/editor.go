@@ -30,6 +30,7 @@ import (
 	"github.com/jexme/screen-editor/internal/annotate"
 	"github.com/jexme/screen-editor/internal/collection"
 	"github.com/jexme/screen-editor/internal/screencast"
+	"github.com/jexme/screen-editor/internal/settings"
 )
 
 // Config — параметры запуска редактора.
@@ -78,9 +79,11 @@ func Run(cfg Config) (closeAll func()) {
 	}
 	alive := new(atomic.Int32)
 	alive.Store(int32(len(monitors)))
+	store := settings.NewStore() // общие настройки для всех окон
 	for _, m := range monitors {
 		m.peers = monitors
 		m.alive = alive
+		m.store = store
 		go m.loop()
 	}
 	if len(monitors) == 0 {
@@ -120,6 +123,11 @@ type monitor struct {
 	adjStartSel image.Rectangle
 	adjStartPt  f32.Point
 	hover       f32.Point // последнее положение курсора, пиксели кадра
+
+	// Настройки (общие для окон) и двойной клик.
+	store        *settings.Store
+	lastClickAt  time.Time
+	lastClickPos f32.Point
 
 	// Подборка скриншотов («было/стало»).
 	queued int // сколько картинок накоплено на диске
@@ -170,6 +178,7 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 	m.ed.Submit = true
 	m.env = annotate.Env{Shaper: m.shaper, Blur: annotate.NewBlurrer(f.Img)}
 	m.queued = collection.Count()
+	m.store = settings.NewStore()
 	if !cfg.Fresh {
 		m.last, m.hasLast = loadLastRegion(f)
 		// Если собирают подборку («было/стало»), снимать «стало» нужно в том же
@@ -536,6 +545,9 @@ func (m *monitor) press(p f32.Point) {
 	if m.editing {
 		m.commitText()
 	}
+	if m.isDoubleClick(p) && m.doubleClickAction(p) {
+		return
+	}
 	if m.hasSel {
 		// Ручки рамки важнее любого инструмента.
 		if e, ok := hitHandle(m.sel, p, m.tol, m.tool == annotate.ToolSelect); ok {
@@ -703,7 +715,7 @@ func (m *monitor) export(toClipboard, toFile bool) {
 
 	msg := ""
 	if toFile {
-		path, err := saveFile(data)
+		path, err := saveFile(m.store.Get().SaveDir, data)
 		if err != nil {
 			fail("сохранение", err)
 			return

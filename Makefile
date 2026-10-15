@@ -44,7 +44,7 @@ notices:
 install: build
 	install -Dm755 bin/screen-editor $(DESTDIR)$(BINDIR)/screen-editor
 	install -d $(DESTDIR)$(APPDIR)
-	sed 's|^Exec=.*|Exec=$(BINDIR)/screen-editor|' packaging/$(DESKTOP) > $(DESTDIR)$(APPDIR)/$(DESKTOP)
+	sed 's|^Exec=screen-editor|Exec=$(BINDIR)/screen-editor|' packaging/$(DESKTOP) > $(DESTDIR)$(APPDIR)/$(DESKTOP)
 	chmod 644 $(DESTDIR)$(APPDIR)/$(DESKTOP)
 	@echo "Установлено в $(BINDIR). Дальше: screen-editor -setup, затем screen-editor -grant-screenshot"
 

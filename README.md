@@ -23,6 +23,8 @@ you want to share?" dialog on every shot.
   are Russian only for now), or send them as separate files.
 - Remembers the last area and brings it back with one key (`R`).
 - Saves PNG to `~/Pictures/Screenshots` and copies the image to the clipboard.
+- A separate settings window (gear button): for example, a double click inside
+  the selection can copy it to the clipboard.
 
 ## Requirements
 
@@ -75,10 +77,31 @@ Press the hotkey, drag to select. Keys:
 | mouse wheel | thickness, text size or blur strength of the current tool |
 
 Flags: `-v` prints timings, `-fresh` ignores the remembered area, `-setup` picks
-monitors again.
+monitors again, `-settings` opens the settings window.
 
 Files: images in `~/Pictures/Screenshots`; state (monitor tokens, last area,
 collection) in `~/.cache/screen-editor/`.
+
+## Settings
+
+Open the settings window with the gear button on the toolbar (it closes the
+overlay and opens a separate window), with `screen-editor -settings`, or from the
+application menu entry "Settings". Changes apply immediately. Settings are stored in
+`~/.config/screen-editor/config.json`, which you can also edit by hand:
+
+```json
+{
+  "double_click": "copy",
+  "save_dir": "/home/me/Pictures/Shots"
+}
+```
+
+| Key | Values | Meaning |
+| --- | --- | --- |
+| `double_click` | `off` (default), `copy`, `copy_save` | what a double click inside the selection does (with the *select* tool): nothing, copy to the clipboard, copy and save to a file |
+| `save_dir` | a directory, empty by default | where PNG files go; empty means `~/Pictures/Screenshots` |
+
+Missing or invalid values fall back to the defaults.
 
 ## How it works
 

@@ -90,7 +90,7 @@ func (m *monitor) glueCollection() {
 		fail("склейка", err)
 		return
 	}
-	path, err := saveFile(data)
+	path, err := saveFile(m.store.Get().SaveDir, data)
 	if err != nil {
 		fail("склейка", err)
 		return
@@ -138,7 +138,7 @@ func (m *monitor) sendSeparately() {
 	stamp := time.Now().Format("20060102-150405")
 	var saved []string
 	for i, data := range datas {
-		path, err := saveNumbered(data, stamp, i+1)
+		path, err := saveNumbered(m.store.Get().SaveDir, data, stamp, i+1)
 		if err != nil {
 			fail("отдельные файлы", err)
 			return

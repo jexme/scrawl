@@ -8,4 +8,10 @@ Exec=screen-editor
 Icon=applets-screenshooter
 Terminal=false
 Categories=Graphics;2DGraphics;
+Actions=Settings;
 Keywords=screenshot;screen capture;annotate;blur;скриншот;снимок экрана;
+
+[Desktop Action Settings]
+Name=Settings
+Name[ru]=Настройки
+Exec=screen-editor -settings

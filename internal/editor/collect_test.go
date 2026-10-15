@@ -20,6 +20,7 @@ func sandbox(t *testing.T) (home string) {
 	home = t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(home, ".cache"))
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 
 	bin := t.TempDir()
 	script := func(name, body string) {

@@ -17,6 +17,7 @@ import (
 	"gioui.org/text"
 
 	"github.com/jexme/screen-editor/internal/annotate"
+	"github.com/jexme/screen-editor/internal/settings"
 )
 
 // render рисует выделенную область кадра вместе с аннотациями тем же кодом
@@ -48,28 +49,37 @@ func render(src *image.RGBA, sel image.Rectangle, shapes []annotate.Shape, shape
 	return out, nil
 }
 
-// saveFile пишет PNG в ~/Pictures/Screenshots и возвращает путь.
-func saveFile(data []byte) (string, error) {
-	home, err := os.UserHomeDir()
+// outputDir возвращает каталог для скриншотов: из настроек или
+// ~/Pictures/Screenshots, если в настройках пусто. Каталог создаётся.
+func outputDir(configured string) (string, error) {
+	dir, err := settings.ExpandDir(configured)
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(home, "Pictures", "Screenshots")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if dir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		dir = filepath.Join(home, "Pictures", "Screenshots")
+	}
+	return dir, os.MkdirAll(dir, 0o755)
+}
+
+// saveFile пишет PNG в каталог скриншотов и возвращает путь.
+func saveFile(configuredDir string, data []byte) (string, error) {
+	dir, err := outputDir(configuredDir)
+	if err != nil {
 		return "", err
 	}
 	path := filepath.Join(dir, "screen-editor-"+time.Now().Format("20060102-150405")+".png")
 	return path, os.WriteFile(path, data, 0o644)
 }
 
-// saveNumbered пишет PNG в ~/Pictures/Screenshots под именем с номером в наборе.
-func saveNumbered(data []byte, stamp string, n int) (string, error) {
-	home, err := os.UserHomeDir()
+// saveNumbered пишет PNG в каталог скриншотов под именем с номером в наборе.
+func saveNumbered(configuredDir string, data []byte, stamp string, n int) (string, error) {
+	dir, err := outputDir(configuredDir)
 	if err != nil {
-		return "", err
-	}
-	dir := filepath.Join(home, "Pictures", "Screenshots")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
 	path := filepath.Join(dir, fmt.Sprintf("screen-editor-%s-%d.png", stamp, n))
