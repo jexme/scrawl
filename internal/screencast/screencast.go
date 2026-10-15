@@ -154,6 +154,9 @@ func SaveTokens(tokens []string) error {
 
 // request вызывает метод ScreenCast, возвращающий Request, и ждёт его Response.
 func (p *Portal) request(method string, timeout time.Duration, lead []any, extra map[string]dbus.Variant) (map[string]dbus.Variant, error) {
+	if !strings.Contains(method, ".") {
+		method = scIface + "." + method // короткое имя считается методом ScreenCast
+	}
 	token := fmt.Sprintf("se%d_%d", os.Getpid(), p.n.Add(1))
 	opts := map[string]dbus.Variant{"handle_token": dbus.MakeVariant(token)}
 	for k, v := range extra {
@@ -172,7 +175,7 @@ func (p *Portal) request(method string, timeout time.Duration, lead []any, extra
 		p.mu.Unlock()
 	}()
 
-	call := p.conn.Object(portalDest, portalPath).Call(scIface+"."+method, 0, append(lead, opts)...)
+	call := p.conn.Object(portalDest, portalPath).Call(method, 0, append(lead, opts)...)
 	if call.Err != nil {
 		return nil, fmt.Errorf("%s: %w", method, call.Err)
 	}
@@ -263,8 +266,10 @@ func (s *Session) openRemote() (*os.File, error) {
 	return os.NewFile(uintptr(fd), "pipewire-remote"), nil
 }
 
-// Grab получает по одному кадру со всех мониторов параллельно.
-func (s *Session) Grab() ([]Frame, error) {
+// Grab получает по одному кадру со всех мониторов параллельно. Кадр, который не
+// пришёл за deadline, считается неудачей: Mutter отдаёт кадры только когда на
+// мониторе есть перерисовка, и на статичном экране поток может молчать.
+func (s *Session) Grab(deadline time.Duration) ([]Frame, error) {
 	files := make([]*os.File, len(s.streams))
 	for i := range s.streams {
 		f, err := s.openRemote()
@@ -281,7 +286,7 @@ func (s *Session) Grab() ([]Frame, error) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			frames[i], errs[i] = s.grabRetry(st, files[i])
+			frames[i], errs[i] = grab(st, files[i], deadline)
 		}()
 	}
 	wg.Wait()
@@ -291,26 +296,6 @@ func (s *Session) Grab() ([]Frame, error) {
 		}
 	}
 	return frames, nil
-}
-
-// grabRetry делает несколько попыток получить кадр: сразу после Start узел
-// PipeWire иногда ещё не отдаёт буферы, и единственная попытка зависает.
-func (s *Session) grabRetry(st stream, remote *os.File) (Frame, error) {
-	var (
-		f   Frame
-		err error
-	)
-	for attempt := 0; attempt < 3; attempt++ {
-		if attempt > 0 {
-			if remote, err = s.openRemote(); err != nil {
-				return f, err
-			}
-		}
-		if f, err = grab(st, remote, 3*time.Second); err == nil {
-			return f, nil
-		}
-	}
-	return f, err
 }
 
 // pair достаёт (int32, int32) из свойства потока вида "(ii)".
@@ -340,10 +325,18 @@ func grab(st stream, remote *os.File, timeout time.Duration) (Frame, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "gst-launch-1.0", "-q",
-		"pipewiresrc", "fd=3", "path="+strconv.Itoa(int(st.ID)), "num-buffers=1",
+	args := []string{"-q"}
+	debug := os.Getenv("SCREENCAST_DEBUG") != ""
+	if debug {
+		args = nil // без -q gst-launch печатает цепочку и причину остановки
+	}
+	args = append(args, "pipewiresrc", "fd=3", "path="+strconv.Itoa(int(st.ID)), "num-buffers=1",
 		"!", "videoconvert", "!", "video/x-raw,format=BGRx", "!", "fdsink", "fd=1")
+	cmd := exec.CommandContext(ctx, "gst-launch-1.0", args...)
 	cmd.ExtraFiles = []*os.File{remote}
+	if debug {
+		cmd.Env = append(os.Environ(), "GST_DEBUG=2")
+	}
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.StdoutPipe()
@@ -358,10 +351,11 @@ func grab(st stream, remote *os.File, timeout time.Duration) (Frame, error) {
 	remote.Close() // копия в дочернем процессе остаётся
 
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
-	if _, err := io.ReadFull(out, img.Pix); err != nil {
+	if n, err := io.ReadFull(out, img.Pix); err != nil {
 		cmd.Process.Kill()
 		cmd.Wait()
-		return f, fmt.Errorf("кадр %dx%d: %w: %s", w, h, err, strings.TrimSpace(stderr.String()))
+		return f, fmt.Errorf("кадр %dx%d: получено %d из %d байт: %w: %s",
+			w, h, n, len(img.Pix), err, strings.TrimSpace(stderr.String()))
 	}
 	// Дочитываем остаток, чтобы Wait не завис на полном канале.
 	io.Copy(io.Discard, out)

@@ -36,7 +36,7 @@ type Config struct {
 	Finish  func()    // освобождает ресурсы и завершает процесс
 	T0      time.Time // момент «нажатия хоткея» для замеров
 	Verbose bool
-	Fresh   bool // не показывать область предыдущего скриншота
+	Fresh   bool // не предлагать область предыдущего скриншота
 }
 
 var (
@@ -100,7 +100,12 @@ type monitor struct {
 	adjStartSel image.Rectangle
 	adjStartPt  f32.Point
 	hover       f32.Point // последнее положение курсора, пиксели кадра
-	tol         float32   // допуск попадания в ручку, пиксели кадра
+
+	// Область предыдущего скриншота: не подставляется сама, возвращается по кнопке или клавише R.
+	last    image.Rectangle
+	hasLast bool
+	lastBtn widget.Clickable
+	tol     float32 // допуск попадания в ручку, пиксели кадра
 
 	tool   annotate.Tool
 	color  color.NRGBA
@@ -131,9 +136,7 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 	}
 	m.ed.Submit = true
 	if !cfg.Fresh {
-		if r, ok := loadLastRegion(f); ok {
-			m.sel, m.hasSel = r, true
-		}
+		m.last, m.hasLast = loadLastRegion(f)
 	}
 	return m
 }
@@ -200,6 +203,8 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 	m.drawScene(gtx, fs, sx)
 	m.layoutEditor(gtx)
 	scale.Pop()
+
+	m.layoutLastButton(gtx, win)
 
 	if m.hasSel {
 		selWin := image.Rect(
@@ -269,6 +274,7 @@ func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 
 	if !m.hasSel && !m.dragging {
 		paint.FillShape(gtx.Ops, shade, clip.Rect(full).Op())
+		m.drawLastOutline(gtx, sx)
 		return
 	}
 
@@ -381,6 +387,7 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 			key.Filter{Name: key.NameEscape},
 			key.Filter{Name: key.NameReturn},
 			key.Filter{Name: key.NameEnter},
+			key.Filter{Name: "R"},
 			key.Filter{Name: "Z", Required: key.ModCtrl},
 			key.Filter{Name: "C", Required: key.ModCtrl},
 			key.Filter{Name: "S", Required: key.ModCtrl},
@@ -398,6 +405,8 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 			m.quit()
 		case e.Name == key.NameReturn || e.Name == key.NameEnter:
 			m.export(true, true)
+		case !ctrl && e.Name == "R":
+			m.applyLast()
 		case ctrl && e.Name == "Z":
 			m.undo()
 		case ctrl && e.Name == "C":

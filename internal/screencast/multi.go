@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 )
 
 // MonitorInfo описывает логический монитор по данным GNOME Mutter.
@@ -157,8 +158,11 @@ func (p *Portal) restoreAll(restore []string) ([]*Session, []string, error) {
 	return sessions, tokens, nil
 }
 
-// GrabAll получает кадры со всех мониторов всех сессий параллельно.
-func GrabAll(sessions []*Session) ([]Frame, error) {
+// GrabAll получает кадры со всех мониторов всех сессий. Сначала быстрый путь
+// через PipeWire (десятки миллисекунд); если за deadline кадр не пришёл
+// (статичный экран), снимается Screenshot-portal и режется по мониторам.
+// Второе значение true, если понадобился запасной путь.
+func (p *Portal) GrabAll(sessions []*Session, deadline time.Duration) ([]Frame, bool, error) {
 	results := make([][]Frame, len(sessions))
 	errs := make([]error, len(sessions))
 	var wg sync.WaitGroup
@@ -166,17 +170,29 @@ func GrabAll(sessions []*Session) ([]Frame, error) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			results[i], errs[i] = s.Grab()
+			results[i], errs[i] = s.Grab(deadline)
 		}()
 	}
 	wg.Wait()
 
-	var all []Frame
+	var (
+		all    []Frame
+		failed error
+	)
 	for i, e := range errs {
 		if e != nil {
-			return nil, e
+			failed = e
+			continue
 		}
 		all = append(all, results[i]...)
 	}
-	return all, nil
+	if failed == nil {
+		return all, false, nil
+	}
+
+	frames, err := p.grabViaScreenshot(sessions)
+	if err != nil {
+		return nil, true, fmt.Errorf("PipeWire: %v; Screenshot: %w", failed, err)
+	}
+	return frames, true, nil
 }

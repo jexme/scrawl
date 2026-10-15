@@ -21,7 +21,7 @@ import (
 func main() {
 	setup := flag.Bool("setup", false, "заново выбрать мониторы (покажет диалоги GNOME)")
 	verbose := flag.Bool("v", false, "печатать замеры времени")
-	fresh := flag.Bool("fresh", false, "не показывать область предыдущего скриншота")
+	fresh := flag.Bool("fresh", false, "не предлагать область предыдущего скриншота")
 	exitAfter := flag.Duration("exit-after", 0, "закрыться штатно через указанное время (для проверок)")
 	flag.Parse()
 
@@ -84,12 +84,17 @@ func main() {
 	}
 
 	t0 := time.Now() // момент «нажатия хоткея»
-	frames, err := screencast.GrabAll(sessions)
+	// Обычно кадры приходят за ~100 мс; если нет, экран статичен и PipeWire молчит.
+	frames, fallback, err := p.GrabAll(sessions, 250*time.Millisecond)
 	if err != nil {
 		fatal("кадр: %v", err)
 	}
 	if *verbose {
-		fmt.Printf("кадры (%d) получены за %s\n", len(frames), time.Since(t0).Round(time.Millisecond))
+		how := "PipeWire"
+		if fallback {
+			how = "запасной путь, Screenshot-portal"
+		}
+		fmt.Printf("кадры (%d) получены за %s: %s\n", len(frames), time.Since(t0).Round(time.Millisecond), how)
 	}
 
 	finish := func() {
