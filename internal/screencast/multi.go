@@ -132,49 +132,27 @@ func (p *Portal) OpenAll(restore []string, prompt func(i, n int, again bool, lef
 	return sessions, tokens, nil
 }
 
-// restoreAll параллельно поднимает сессии по сохранённым токенам.
+// restoreAll поднимает сессии по сохранённым токенам. Запросы к portal идут
+// строго по одному: старт по токену занимает миллисекунды, а параллельные
+// вызовы замечены в зависании xdg-desktop-portal.
 func (p *Portal) restoreAll(restore []string) ([]*Session, []string, error) {
-	type result struct {
-		s   *Session
-		tok string
-		err error
-	}
-	res := make([]result, len(restore))
-	var wg sync.WaitGroup
-	for i, t := range restore {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			s, tok, err := p.NewSession(t)
-			res[i] = result{s, tok, err}
-		}()
-	}
-	wg.Wait()
-
 	var (
 		sessions []*Session
 		tokens   []string
-		firstErr error
 	)
-	for i, r := range res {
-		if r.err != nil {
-			if firstErr == nil {
-				firstErr = r.err
+	for _, t := range restore {
+		s, tok, err := p.NewSession(t)
+		if err != nil {
+			for _, open := range sessions {
+				open.Close()
 			}
-			continue
+			return nil, nil, err
 		}
-		sessions = append(sessions, r.s)
-		tok := r.tok
+		sessions = append(sessions, s)
 		if tok == "" {
-			tok = restore[i]
+			tok = t
 		}
 		tokens = append(tokens, tok)
-	}
-	if firstErr != nil {
-		for _, s := range sessions {
-			s.Close()
-		}
-		return nil, nil, firstErr
 	}
 	return sessions, tokens, nil
 }

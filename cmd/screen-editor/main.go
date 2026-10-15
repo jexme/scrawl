@@ -15,12 +15,21 @@ import (
 
 	"github.com/jexme/screen-editor/internal/editor"
 	"github.com/jexme/screen-editor/internal/screencast"
+	"github.com/jexme/screen-editor/internal/singleton"
 )
 
 func main() {
 	setup := flag.Bool("setup", false, "заново выбрать мониторы (покажет диалоги GNOME)")
 	verbose := flag.Bool("v", false, "печатать замеры времени")
+	fresh := flag.Bool("fresh", false, "не показывать область предыдущего скриншота")
+	exitAfter := flag.Duration("exit-after", 0, "закрыться штатно через указанное время (для проверок)")
 	flag.Parse()
+
+	// Повторное нажатие хоткея не должно открывать второй оверлей поверх первого
+	// (и слать параллельные запросы в portal).
+	if ok, err := singleton.Acquire("screen-editor"); err == nil && !ok {
+		return
+	}
 
 	p, err := screencast.New()
 	if err != nil {
@@ -33,6 +42,11 @@ func main() {
 	var tokens []string
 	if !*setup {
 		tokens = screencast.LoadTokens()
+	}
+	// Без регистрации portal не примет сохранённые токены и покажет диалоги, которых
+	// при запуске по хоткею никто не ждёт. Чаще всего это зависший portal.
+	if !p.Registered && len(tokens) > 0 {
+		fatal("xdg-desktop-portal не отвечает. Перезапустите его: systemctl --user restart xdg-desktop-portal")
 	}
 
 	// Старт сессий в замер не входит: в будущем их будет держать демон.
@@ -78,16 +92,21 @@ func main() {
 		fmt.Printf("кадры (%d) получены за %s\n", len(frames), time.Since(t0).Round(time.Millisecond))
 	}
 
+	finish := func() {
+		for _, s := range sessions {
+			s.Close()
+		}
+		os.Exit(0)
+	}
+	if *exitAfter > 0 {
+		time.AfterFunc(*exitAfter, finish)
+	}
 	editor.Run(editor.Config{
-		Frames: frames,
-		Finish: func() {
-			for _, s := range sessions {
-				s.Close()
-			}
-			os.Exit(0)
-		},
+		Frames:  frames,
+		Finish:  finish,
 		T0:      t0,
 		Verbose: *verbose,
+		Fresh:   *fresh,
 	})
 	app.Main()
 }

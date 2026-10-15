@@ -44,6 +44,9 @@ type Portal struct {
 	mu      sync.Mutex
 	waiters map[dbus.ObjectPath]chan *dbus.Signal
 
+	// remoteMu делает вызовы OpenPipeWireRemote последовательными.
+	remoteMu sync.Mutex
+
 	// Registered сообщает, принял ли portal регистрацию app_id.
 	// Если нет (старый portal), restore_token работать не будет.
 	Registered bool
@@ -249,6 +252,8 @@ func (s *Session) Close() {
 func (s *Session) Streams() int { return len(s.streams) }
 
 func (s *Session) openRemote() (*os.File, error) {
+	s.p.remoteMu.Lock()
+	defer s.p.remoteMu.Unlock()
 	var fd dbus.UnixFD
 	call := s.p.conn.Object(portalDest, portalPath).
 		Call(scIface+".OpenPipeWireRemote", 0, dbus.ObjectPath(s.handle), map[string]dbus.Variant{})

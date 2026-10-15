@@ -157,7 +157,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 		{&t.undo, m.undo},
 		{&t.copy, func() { m.export(true, false) }},
 		{&t.save, func() { m.export(false, true) }},
-		{&t.close, m.finish},
+		{&t.close, m.quit},
 	}
 	for _, act := range actions {
 		if act.a.btn.Clicked(gtx) {

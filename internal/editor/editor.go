@@ -36,14 +36,23 @@ type Config struct {
 	Finish  func()    // освобождает ресурсы и завершает процесс
 	T0      time.Time // момент «нажатия хоткея» для замеров
 	Verbose bool
+	Fresh   bool // не показывать область предыдущего скриншота
 }
 
 var (
-	shade      = color.NRGBA{A: 120}
-	selBorder  = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
-	textFrame  = color.NRGBA{R: 255, G: 255, B: 255, A: 160}
-	identity   = unit.Metric{PxPerDp: 1, PxPerSp: 1}
-	noMaterial = op.CallOp{}
+	shade     = color.NRGBA{A: 185}
+	selBorder = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+	handleFg  = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+	handleBg  = color.NRGBA{R: 30, G: 30, B: 30, A: 255}
+	textFrame = color.NRGBA{R: 255, G: 255, B: 255, A: 160}
+	identity  = unit.Metric{PxPerDp: 1, PxPerSp: 1}
+)
+
+// Режимы правки готовой области.
+const (
+	adjustNone = iota
+	adjustResize
+	adjustMove
 )
 
 // Run открывает по fullscreen-окну на каждый кадр. Вызывающий должен после
@@ -85,6 +94,14 @@ type monitor struct {
 	dragging bool
 	selStart f32.Point
 
+	// Изменение размера и перемещение готовой области.
+	adjust      int
+	adjEdge     edge
+	adjStartSel image.Rectangle
+	adjStartPt  f32.Point
+	hover       f32.Point // последнее положение курсора, пиксели кадра
+	tol         float32   // допуск попадания в ручку, пиксели кадра
+
 	tool   annotate.Tool
 	color  color.NRGBA
 	width  float32
@@ -113,6 +130,11 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 		focusCanvas: true,
 	}
 	m.ed.Submit = true
+	if !cfg.Fresh {
+		if r, ok := loadLastRegion(f); ok {
+			m.sel, m.hasSel = r, true
+		}
+	}
 	return m
 }
 
@@ -124,7 +146,7 @@ func (m *monitor) loop() {
 	for {
 		switch e := w.Event().(type) {
 		case app.DestroyEvent:
-			m.finish()
+			m.quit()
 			return
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)
@@ -155,6 +177,7 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 	sy := float32(win.Y) / float32(fs.Y)
 	toFrame := func(p f32.Point) f32.Point { return f32.Pt(p.X/sx, p.Y/sy) }
 
+	m.tol = float32(gtx.Dp(8)) / sx
 	if m.reset.Swap(false) {
 		m.resetState()
 	}
@@ -164,7 +187,7 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 	// Холст: область ввода на всё окно.
 	area := clip.Rect(image.Rectangle{Max: win}).Push(gtx.Ops)
 	event.Op(gtx.Ops, &m.canvas)
-	pointer.CursorCrosshair.Add(gtx.Ops)
+	m.cursor().Add(gtx.Ops)
 	area.Pop()
 
 	if !m.editing && m.focusCanvas {
@@ -184,7 +207,56 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 			int(float32(m.sel.Max.X)*sx), int(float32(m.sel.Max.Y)*sy),
 		)
 		m.layoutToolbar(gtx, win, selWin)
+		m.layoutSizeLabel(gtx, selWin)
 	}
+}
+
+// cursor выбирает курсор по положению мыши: ручки рамки, перемещение, прицел.
+func (m *monitor) cursor() pointer.Cursor {
+	if m.adjust == adjustMove {
+		return pointer.CursorGrabbing
+	}
+	if m.adjust == adjustResize {
+		return cursorFor(m.adjEdge)
+	}
+	if m.hasSel && !m.editing {
+		if e, ok := hitHandle(m.sel, m.hover, m.tol, m.tool == annotate.ToolSelect); ok {
+			return cursorFor(e)
+		}
+		if m.tool == annotate.ToolSelect && inRect(m.hover, m.sel) {
+			return pointer.CursorGrab
+		}
+	}
+	return pointer.CursorCrosshair
+}
+
+// layoutSizeLabel показывает размер выделения рядом с левым верхним углом.
+func (m *monitor) layoutSizeLabel(gtx layout.Context, selWin image.Rectangle) {
+	txt := fmt.Sprintf("%d × %d", m.sel.Dx(), m.sel.Dy())
+	pad := gtx.Dp(6)
+
+	rec := op.Record(gtx.Ops)
+	paint.ColorOp{Color: iconColor}.Add(gtx.Ops)
+	mat := rec.Stop()
+
+	lgtx := gtx
+	lgtx.Constraints = layout.Constraints{Max: image.Pt(1<<12, 1<<12)}
+	rec = op.Record(gtx.Ops)
+	dims := widget.Label{MaxLines: 1}.Layout(lgtx, m.shaper, annotate.Font, 13, txt, mat)
+	label := rec.Stop()
+
+	w, h := dims.Size.X+2*pad, dims.Size.Y+pad
+	x, y := selWin.Min.X, selWin.Min.Y-h-gtx.Dp(4)
+	if y < 0 {
+		y = selWin.Min.Y + gtx.Dp(4)
+		x += gtx.Dp(4)
+	}
+	defer op.Offset(image.Pt(x, y)).Push(gtx.Ops).Pop()
+	bg := clip.UniformRRect(image.Rect(0, 0, w, h), gtx.Dp(4))
+	paint.FillShape(gtx.Ops, barBG, bg.Op(gtx.Ops))
+	st := op.Offset(image.Pt(pad, pad/2)).Push(gtx.Ops)
+	label.Add(gtx.Ops)
+	st.Pop()
 }
 
 func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
@@ -227,6 +299,15 @@ func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 	p.LineTo(f32.Pt(float32(r.Min.X), float32(r.Max.Y)))
 	p.Close()
 	paint.FillShape(gtx.Ops, selBorder, clip.Stroke{Path: p.End(), Width: bw}.Op())
+
+	// Ручки для изменения размера: 8 квадратиков на рамке.
+	hs := float32(5) / sx
+	for _, c := range handlePoints(r) {
+		outer := image.Rect(int(c.X-hs-1/sx), int(c.Y-hs-1/sx), int(c.X+hs+1/sx), int(c.Y+hs+1/sx))
+		inner := image.Rect(int(c.X-hs), int(c.Y-hs), int(c.X+hs), int(c.Y+hs))
+		paint.FillShape(gtx.Ops, handleBg, clip.Rect(outer).Op())
+		paint.FillShape(gtx.Ops, handleFg, clip.Rect(inner).Op())
+	}
 }
 
 // layoutEditor показывает редактор текста в позиции editAt. Размеры считаются
@@ -278,7 +359,7 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 				break
 			}
 			if e, ok := ev.(key.Event); ok && e.State == key.Press {
-				m.cancelText()
+				m.quit()
 			}
 		}
 		for {
@@ -295,12 +376,14 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 
 	for {
 		ev, ok := gtx.Event(
-			key.Filter{Focus: &m.canvas, Name: key.NameEscape},
-			key.Filter{Focus: &m.canvas, Name: key.NameReturn},
-			key.Filter{Focus: &m.canvas, Name: key.NameEnter},
-			key.Filter{Focus: &m.canvas, Name: "Z", Required: key.ModCtrl},
-			key.Filter{Focus: &m.canvas, Name: "C", Required: key.ModCtrl},
-			key.Filter{Focus: &m.canvas, Name: "S", Required: key.ModCtrl},
+			// Без привязки к фокусу: после клика по кнопке панели фокус уходит
+			// с холста, а Esc и Enter должны работать всегда.
+			key.Filter{Name: key.NameEscape},
+			key.Filter{Name: key.NameReturn},
+			key.Filter{Name: key.NameEnter},
+			key.Filter{Name: "Z", Required: key.ModCtrl},
+			key.Filter{Name: "C", Required: key.ModCtrl},
+			key.Filter{Name: "S", Required: key.ModCtrl},
 		)
 		if !ok {
 			break
@@ -312,7 +395,7 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 		ctrl := e.Modifiers.Contain(key.ModCtrl)
 		switch {
 		case e.Name == key.NameEscape:
-			m.finish()
+			m.quit()
 		case e.Name == key.NameReturn || e.Name == key.NameEnter:
 			m.export(true, true)
 		case ctrl && e.Name == "Z":
@@ -328,7 +411,7 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.Point) {
 	for {
 		ev, ok := gtx.Event(
-			pointer.Filter{Target: &m.canvas, Kinds: pointer.Press | pointer.Drag | pointer.Release},
+			pointer.Filter{Target: &m.canvas, Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Move},
 			pointer.Filter{Target: &m.canvas, Kinds: pointer.Scroll, ScrollY: pointer.ScrollRange{Min: -100, Max: 100}},
 		)
 		if !ok {
@@ -339,6 +422,7 @@ func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.
 			continue
 		}
 		p := toFrame(e.Position)
+		m.hover = p
 		switch e.Kind {
 		case pointer.Press:
 			if e.Buttons.Contain(pointer.ButtonPrimary) {
@@ -371,6 +455,7 @@ func (m *monitor) claim() {
 // resetState убирает выделение, рисунки и редактирование текста.
 func (m *monitor) resetState() {
 	m.dragging = false
+	m.adjust = adjustNone
 	m.hasSel = false
 	m.sel = image.Rectangle{}
 	m.shapes = nil
@@ -391,6 +476,20 @@ func (m *monitor) setTool(t annotate.Tool) {
 func (m *monitor) press(p f32.Point) {
 	if m.editing {
 		m.commitText()
+	}
+	if m.hasSel {
+		// Ручки рамки важнее любого инструмента.
+		if e, ok := hitHandle(m.sel, p, m.tol, m.tool == annotate.ToolSelect); ok {
+			m.claim()
+			m.adjust, m.adjEdge, m.adjStartSel = adjustResize, e, m.sel
+			return
+		}
+		// Перетаскивание готовой области за её внутреннюю часть.
+		if m.tool == annotate.ToolSelect && inRect(p, m.sel) {
+			m.claim()
+			m.adjust, m.adjStartSel, m.adjStartPt = adjustMove, m.sel, p
+			return
+		}
 	}
 	if !m.hasSel || m.tool == annotate.ToolSelect {
 		m.claim()
@@ -418,6 +517,10 @@ func (m *monitor) press(p f32.Point) {
 
 func (m *monitor) drag(p f32.Point) {
 	switch {
+	case m.adjust == adjustResize:
+		m.sel = applyResize(m.adjStartSel, m.adjEdge, p, m.frame.Img.Bounds())
+	case m.adjust == adjustMove:
+		m.sel = applyMove(m.adjStartSel, int(p.X-m.adjStartPt.X), int(p.Y-m.adjStartPt.Y), m.frame.Img.Bounds())
 	case m.dragging:
 		m.sel = rectOf(m.selStart, p)
 	case m.cur != nil:
@@ -433,6 +536,8 @@ func (m *monitor) drag(p f32.Point) {
 
 func (m *monitor) release(p f32.Point) {
 	switch {
+	case m.adjust != adjustNone:
+		m.adjust = adjustNone
 	case m.dragging:
 		m.dragging = false
 		m.sel = rectOf(m.selStart, p).Intersect(m.frame.Img.Bounds())
@@ -532,6 +637,15 @@ func (m *monitor) export(toClipboard, toFile bool) {
 		}
 	}
 	notify("Скриншот готов", msg)
+	m.quit()
+}
+
+// quit запоминает область (если она есть) и завершает работу. Область
+// запоминается при любом закрытии, а не только после успешного скриншота.
+func (m *monitor) quit() {
+	if m.hasSel {
+		saveLastRegion(m.frame, m.sel)
+	}
 	m.finish()
 }
 
