@@ -62,6 +62,20 @@ func saveFile(data []byte) (string, error) {
 	return path, os.WriteFile(path, data, 0o644)
 }
 
+// saveNumbered пишет PNG в ~/Pictures/Screenshots под именем с номером в наборе.
+func saveNumbered(data []byte, stamp string, n int) (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	dir := filepath.Join(home, "Pictures", "Screenshots")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	path := filepath.Join(dir, fmt.Sprintf("screen-editor-%s-%d.png", stamp, n))
+	return path, os.WriteFile(path, data, 0o644)
+}
+
 func encodePNG(img image.Image) ([]byte, error) {
 	var buf bytes.Buffer
 	if err := png.Encode(&buf, img); err != nil {

@@ -24,7 +24,7 @@ func abs32(v float32) float32 { return float32(math.Abs(float64(v))) }
 
 // hitHandle проверяет, попала ли точка p в ручку рамки r с допуском tol (пиксели кадра).
 // С bands=true рамка захватывается по всей длине сторон (инструмент выделения),
-// иначе только за 8 ручек: углы и середины сторон (чтобы не мешать рисованию).
+// иначе только за четыре угловые ручки (чтобы не мешать рисованию).
 func hitHandle(r image.Rectangle, p f32.Point, tol float32, bands bool) (edge, bool) {
 	minX, maxX := float32(r.Min.X), float32(r.Max.X)
 	minY, maxY := float32(r.Min.Y), float32(r.Max.Y)
@@ -49,35 +49,25 @@ func hitHandle(r image.Rectangle, p f32.Point, tol float32, bands bool) (edge, b
 		return e, e != edge{}
 	}
 
-	xs := [3]float32{minX, (minX + maxX) / 2, maxX}
-	ys := [3]float32{minY, (minY + maxY) / 2, maxY}
-	for hy := -1; hy <= 1; hy++ {
-		for hx := -1; hx <= 1; hx++ {
-			if hx == 0 && hy == 0 {
-				continue
-			}
-			if near(p.X, xs[hx+1]) && near(p.Y, ys[hy+1]) {
-				return edge{hx, hy}, true
-			}
+	// Без полос рамка берётся только за углы: именно они нарисованы ручками.
+	corners := [4]struct {
+		x, y   float32
+		hx, hy int
+	}{{minX, minY, -1, -1}, {maxX, minY, 1, -1}, {minX, maxY, -1, 1}, {maxX, maxY, 1, 1}}
+	for _, c := range corners {
+		if near(p.X, c.x) && near(p.Y, c.y) {
+			return edge{c.hx, c.hy}, true
 		}
 	}
 	return edge{}, false
 }
 
-// handlePoints возвращает центры 8 ручек рамки.
-func handlePoints(r image.Rectangle) []f32.Point {
-	xs := [3]float32{float32(r.Min.X), float32(r.Min.X+r.Max.X) / 2, float32(r.Max.X)}
-	ys := [3]float32{float32(r.Min.Y), float32(r.Min.Y+r.Max.Y) / 2, float32(r.Max.Y)}
-	var pts []f32.Point
-	for hy := 0; hy < 3; hy++ {
-		for hx := 0; hx < 3; hx++ {
-			if hx == 1 && hy == 1 {
-				continue
-			}
-			pts = append(pts, f32.Pt(xs[hx], ys[hy]))
-		}
+// cornerPoints возвращает четыре угла рамки: центры ручек.
+func cornerPoints(r image.Rectangle) []f32.Point {
+	return []f32.Point{
+		f32.Pt(float32(r.Min.X), float32(r.Min.Y)), f32.Pt(float32(r.Max.X), float32(r.Min.Y)),
+		f32.Pt(float32(r.Min.X), float32(r.Max.Y)), f32.Pt(float32(r.Max.X), float32(r.Max.Y)),
 	}
-	return pts
 }
 
 func clampInt(v, lo, hi int) int {

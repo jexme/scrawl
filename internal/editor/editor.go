@@ -27,6 +27,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/jexme/screen-editor/internal/annotate"
+	"github.com/jexme/screen-editor/internal/collection"
 	"github.com/jexme/screen-editor/internal/screencast"
 )
 
@@ -40,12 +41,19 @@ type Config struct {
 }
 
 var (
-	shade     = color.NRGBA{A: 185}
+	shade     = color.NRGBA{A: 219} // затемнение вне области, 86%
 	selBorder = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
 	handleFg  = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
-	handleBg  = color.NRGBA{R: 30, G: 30, B: 30, A: 255}
 	textFrame = color.NRGBA{R: 255, G: 255, B: 255, A: 160}
 	identity  = unit.Metric{PxPerDp: 1, PxPerSp: 1}
+)
+
+// Вид рамки выделения, подобран на макете.
+const (
+	borderWidth  = 1.0 // толщина линии
+	borderDash   = 4.6 // длина штриха
+	borderGap    = 2.0 // пауза между штрихами
+	handleRadius = 3.0 // радиус угловой ручки
 )
 
 // Режимы правки готовой области.
@@ -102,6 +110,14 @@ type monitor struct {
 	adjStartPt  f32.Point
 	hover       f32.Point // последнее положение курсора, пиксели кадра
 
+	// Подборка скриншотов («было/стало»).
+	queued int // сколько картинок накоплено на диске
+	dock   dock
+
+	// Положение элементов в пикселях окна: нужно, чтобы док не перекрывал выделение и панель.
+	selWin  image.Rectangle
+	barRect image.Rectangle
+
 	// Плашка с новым значением силы инструмента.
 	toastUntil time.Time
 	toastTool  annotate.Tool
@@ -142,8 +158,14 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 	}
 	m.ed.Submit = true
 	m.env = annotate.Env{Shaper: m.shaper, Blur: annotate.NewBlurrer(f.Img)}
+	m.queued = collection.Count()
 	if !cfg.Fresh {
 		m.last, m.hasLast = loadLastRegion(f)
+		// Если собирают подборку («было/стало»), снимать «стало» нужно в том же
+		// месте: прошлая область выставляется сразу.
+		if m.hasLast && m.queued > 0 {
+			m.sel, m.hasSel = m.last, true
+		}
 	}
 	return m
 }
@@ -211,17 +233,17 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 	m.layoutEditor(gtx)
 	scale.Pop()
 
-	m.layoutLastButton(gtx, win)
-
+	m.selWin, m.barRect = image.Rectangle{}, image.Rectangle{}
 	if m.hasSel {
-		selWin := image.Rect(
+		m.selWin = image.Rect(
 			int(float32(m.sel.Min.X)*sx), int(float32(m.sel.Min.Y)*sy),
 			int(float32(m.sel.Max.X)*sx), int(float32(m.sel.Max.Y)*sy),
 		)
-		m.layoutToolbar(gtx, win, selWin)
-		m.layoutSizeLabel(gtx, selWin)
-		m.layoutToast(gtx, win, selWin)
+		m.layoutToolbar(gtx, win, m.selWin)
+		m.layoutSizeLabel(gtx, m.selWin)
+		m.layoutToast(gtx, win, m.selWin)
 	}
+	m.layoutDock(gtx, win)
 }
 
 // cursor выбирает курсор по положению мыши: ручки рамки, перемещение, прицел.
@@ -303,23 +325,15 @@ func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 	}
 	cl.Pop()
 
-	bw := 2 / sx
-	var p clip.Path
-	p.Begin(gtx.Ops)
-	p.MoveTo(f32.Pt(float32(r.Min.X), float32(r.Min.Y)))
-	p.LineTo(f32.Pt(float32(r.Max.X), float32(r.Min.Y)))
-	p.LineTo(f32.Pt(float32(r.Max.X), float32(r.Max.Y)))
-	p.LineTo(f32.Pt(float32(r.Min.X), float32(r.Max.Y)))
-	p.Close()
-	paint.FillShape(gtx.Ops, selBorder, clip.Stroke{Path: p.End(), Width: bw}.Op())
+	// Рамка пунктиром: толщина, штрих и пауза в пикселях экрана, при любом масштабе
+	// окна остаются теми же.
+	dashedRect(gtx.Ops, r, selBorder, borderWidth/sx, borderDash/sx, borderGap/sx)
 
-	// Ручки для изменения размера: 8 квадратиков на рамке.
-	hs := float32(5) / sx
-	for _, c := range handlePoints(r) {
-		outer := image.Rect(int(c.X-hs-1/sx), int(c.Y-hs-1/sx), int(c.X+hs+1/sx), int(c.Y+hs+1/sx))
-		inner := image.Rect(int(c.X-hs), int(c.Y-hs), int(c.X+hs), int(c.Y+hs))
-		paint.FillShape(gtx.Ops, handleBg, clip.Rect(outer).Op())
-		paint.FillShape(gtx.Ops, handleFg, clip.Rect(inner).Op())
+	// Ручки только в углах: за стороны рамку тянут инструментом «выделение».
+	hr := handleRadius / sx
+	for _, c := range cornerPoints(r) {
+		dot := clip.Ellipse(image.Rect(int(c.X-hr), int(c.Y-hr), int(c.X+hr), int(c.Y+hr)))
+		paint.FillShape(gtx.Ops, handleFg, dot.Op(gtx.Ops))
 	}
 }
 
@@ -395,6 +409,9 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 			key.Filter{Name: key.NameReturn},
 			key.Filter{Name: key.NameEnter},
 			key.Filter{Name: "R"},
+			key.Filter{Name: "A"},
+			key.Filter{Name: "G"},
+			key.Filter{Name: "D"},
 			key.Filter{Name: "Z", Required: key.ModCtrl},
 			key.Filter{Name: "C", Required: key.ModCtrl},
 			key.Filter{Name: "S", Required: key.ModCtrl},
@@ -414,6 +431,12 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 			m.export(true, true)
 		case !ctrl && e.Name == "R":
 			m.applyLast()
+		case !ctrl && e.Name == "A":
+			m.addToCollection()
+		case !ctrl && e.Name == "G" && m.queued+boolInt(m.hasSel) >= 2:
+			m.glueCollection()
+		case !ctrl && e.Name == "D" && m.queued+boolInt(m.hasSel) >= 1:
+			m.sendSeparately()
 		case ctrl && e.Name == "Z":
 			m.undo()
 		case ctrl && e.Name == "C":
@@ -704,4 +727,11 @@ func rectOf(a, b f32.Point) image.Rectangle {
 func inRect(p f32.Point, r image.Rectangle) bool {
 	return p.X >= float32(r.Min.X) && p.X < float32(r.Max.X) &&
 		p.Y >= float32(r.Min.Y) && p.Y < float32(r.Max.Y)
+}
+
+func boolInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
