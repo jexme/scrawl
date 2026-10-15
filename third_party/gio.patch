@@ -1,0 +1,81 @@
+--- a/app/os.go
++++ b/app/os.go
+@@ -49,6 +49,10 @@
+ 	TopMost bool
+ 	// Focused reports whether the window is focused.
+ 	Focused bool
++	// OutputPos, if not nil, selects the monitor whose top-left corner is at
++	// this position in the compositor's coordinate space for Fullscreen mode.
++	// Supported on Wayland only; ignored elsewhere.
++	OutputPos *image.Point
+ 	// decoHeight is the height of the fallback decoration for platforms such
+ 	// as Wayland that may need fallback client-side decorations.
+ 	decoHeight unit.Dp
+--- a/app/os_wayland.go
++++ b/app/os_wayland.go
+@@ -233,6 +233,7 @@
+ }
+ 
+ type wlOutput struct {
++	x, y       int
+ 	width      int
+ 	height     int
+ 	physWidth  int
+@@ -627,6 +628,8 @@
+ func gio_onOutputGeometry(data unsafe.Pointer, output *C.struct_wl_output, x, y, physWidth, physHeight, subpixel C.int32_t, make, model *C.char, transform C.int32_t) {
+ 	d := callbackLoad(data).(*wlDisplay)
+ 	c := d.outputConfig[output]
++	c.x = int(x)
++	c.y = int(y)
+ 	c.transform = transform
+ 	c.physWidth = int(physWidth)
+ 	c.physHeight = int(physHeight)
+@@ -1095,7 +1098,16 @@
+ 		default:
+ 			w.config.Mode = Fullscreen
+ 			w.wsize = w.config.Size
+-			C.xdg_toplevel_set_fullscreen(w.topLvl, nil)
++			var out *C.struct_wl_output
++			if pos := cnf.OutputPos; pos != nil {
++				for o, c := range w.disp.outputConfig {
++					if c.x == pos.X && c.y == pos.Y {
++						out = o
++						break
++					}
++				}
++			}
++			C.xdg_toplevel_set_fullscreen(w.topLvl, out)
+ 		}
+ 	case Minimized:
+ 		switch prev.Mode {
+@@ -1966,6 +1978,11 @@
+ 	if cfg == (unit.Metric{}) {
+ 		return
+ 	}
++	// A fullscreen request for a specific output may be answered with a
++	// 0x0 configure first. Wait for the real size instead of drawing.
++	if size.X == 0 || size.Y == 0 {
++		return
++	}
+ 	if size != w.config.Size {
+ 		w.config.Size = size
+ 		w.ProcessEvent(ConfigEvent{Config: w.config})
+--- a/app/window.go
++++ b/app/window.go
+@@ -980,6 +980,16 @@
+ 	}
+ }
+ 
++// FullscreenAt sets the Fullscreen mode on the monitor whose top-left corner
++// is at (x, y) in the compositor's coordinate space. It is supported on
++// Wayland only; other platforms behave like Fullscreen.
++func FullscreenAt(x, y int) Option {
++	return func(_ unit.Metric, cnf *Config) {
++		cnf.Mode = Fullscreen
++		cnf.OutputPos = &image.Point{X: x, Y: y}
++	}
++}
++
+ // TopMost windows will be rendered above all other non-top-most windows.
+ //
+ // TopMost windows are supported on macOS, Windows.

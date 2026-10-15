@@ -1,25 +1,23 @@
 // Package screencast получает кадры экрана через xdg-desktop-portal ScreenCast
-// и PipeWire. D-Bus часть делает Go, кадр читает gst-launch-1.0 (pipewiresrc)
-// из выданного порталом fd. Это временное решение для spike: для релиза
-// gst-launch нужно заменить клиентом libpipewire.
+// и PipeWire. D-Bus часть делает Go, кадр читает клиент libpipewire
+// (internal/pwcapture) из выданного порталом fd.
 package screencast
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"image"
-	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/godbus/dbus/v5"
+
+	"github.com/jexme/screen-editor/internal/pwcapture"
 )
 
 const (
@@ -313,61 +311,20 @@ func pair(props map[string]dbus.Variant, key string) (int, int, bool) {
 	return int(a), int(b), ok1 && ok2
 }
 
-// grab читает один кадр BGRx из PipeWire-узла через gst-launch-1.0.
+// grab читает один кадр из PipeWire-узла. remote закрывается: библиотека PipeWire
+// получает собственную копию fd и сама закрывает её.
 func grab(st stream, remote *os.File, timeout time.Duration) (Frame, error) {
 	f := Frame{NodeID: st.ID}
 	f.X, f.Y, _ = pair(st.Props, "position")
-	w, h, sized := pair(st.Props, "size")
-	if !sized {
-		remote.Close()
-		return f, fmt.Errorf("портал не сообщил размер потока %d", st.ID)
-	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	args := []string{"-q"}
-	debug := os.Getenv("SCREENCAST_DEBUG") != ""
-	if debug {
-		args = nil // без -q gst-launch печатает цепочку и причину остановки
-	}
-	args = append(args, "pipewiresrc", "fd=3", "path="+strconv.Itoa(int(st.ID)), "num-buffers=1",
-		"!", "videoconvert", "!", "video/x-raw,format=BGRx", "!", "fdsink", "fd=1")
-	cmd := exec.CommandContext(ctx, "gst-launch-1.0", args...)
-	cmd.ExtraFiles = []*os.File{remote}
-	if debug {
-		cmd.Env = append(os.Environ(), "GST_DEBUG=2")
-	}
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	out, err := cmd.StdoutPipe()
+	fd, err := syscall.Dup(int(remote.Fd()))
+	remote.Close()
 	if err != nil {
-		remote.Close()
-		return f, err
+		return f, fmt.Errorf("dup fd: %w", err)
 	}
-	if err := cmd.Start(); err != nil {
-		remote.Close()
-		return f, err
-	}
-	remote.Close() // копия в дочернем процессе остаётся
-
-	img := image.NewRGBA(image.Rect(0, 0, w, h))
-	if n, err := io.ReadFull(out, img.Pix); err != nil {
-		cmd.Process.Kill()
-		cmd.Wait()
-		return f, fmt.Errorf("кадр %dx%d: получено %d из %d байт: %w: %s",
-			w, h, n, len(img.Pix), err, strings.TrimSpace(stderr.String()))
-	}
-	// Дочитываем остаток, чтобы Wait не завис на полном канале.
-	io.Copy(io.Discard, out)
-	if err := cmd.Wait(); err != nil {
-		return f, fmt.Errorf("gst-launch: %v: %s", err, strings.TrimSpace(stderr.String()))
-	}
-
-	// BGRx -> RGBA: меняем местами B и R, альфа непрозрачная.
-	px := img.Pix
-	for i := 0; i < len(px); i += 4 {
-		px[i], px[i+2] = px[i+2], px[i]
-		px[i+3] = 255
+	img, err := pwcapture.Capture(fd, st.ID, timeout)
+	if err != nil {
+		return f, fmt.Errorf("узел %d: %w", st.ID, err)
 	}
 	f.Img = img
 	return f, nil
