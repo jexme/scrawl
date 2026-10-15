@@ -5,12 +5,16 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"image"
 	"image/color"
+	"image/png"
 	"math"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"sync/atomic"
 	"time"
 
@@ -108,6 +112,11 @@ func run(s *screencast.Session, t0 time.Time) {
 			if chosen == nil {
 				if fr := frames.Load(); fr != nil {
 					chosen = pick(*fr, e.Size)
+					// Окно открылось на другом мониторе, чем снят кадр.
+					if !sameAspect(chosen.Img.Bounds(), e.Size) {
+						notify("Скриншот отменён", "Нажмите хоткей, когда курсор на главном мониторе")
+						return
+					}
 					imageOp = paint.NewImageOp(chosen.Img)
 				}
 			}
@@ -140,8 +149,15 @@ func run(s *screencast.Session, t0 time.Time) {
 					case pointer.Release:
 						cur = ev.Position
 						if selecting && chosen != nil {
-							printSelection(chosen, e.Size, start, cur)
-							done = true
+							r := selection(chosen, e.Size, start, cur)
+							// Простой клик без выделения не считаем скриншотом.
+							if r.Dx() >= 2 && r.Dy() >= 2 {
+								if err := save(chosen.Img, r); err != nil {
+									fmt.Fprintf(os.Stderr, "сохранение: %v\n", err)
+									notify("Скриншот не сохранён", err.Error())
+								}
+								done = true
+							}
 						}
 						selecting = false
 					}
@@ -225,15 +241,61 @@ func rectOf(a, b f32.Point) image.Rectangle {
 	)
 }
 
-// printSelection переводит выделение из координат окна в пиксели кадра.
-func printSelection(f *screencast.Frame, win image.Point, a, b f32.Point) {
+func sameAspect(src image.Rectangle, win image.Point) bool {
+	sa := float64(src.Dx()) / float64(src.Dy())
+	wa := float64(win.X) / float64(win.Y)
+	return math.Abs(sa-wa) < 0.01
+}
+
+// selection переводит выделение из координат окна в пиксели кадра.
+func selection(f *screencast.Frame, win image.Point, a, b f32.Point) image.Rectangle {
 	r := rectOf(a, b)
 	src := f.Img.Bounds()
 	sx := float64(src.Dx()) / float64(win.X)
 	sy := float64(src.Dy()) / float64(win.Y)
-	fmt.Printf("выделение в кадре: x=%d y=%d %dx%d (монитор node %d)\n",
+	out := image.Rect(
 		int(float64(r.Min.X)*sx), int(float64(r.Min.Y)*sy),
-		int(float64(r.Dx())*sx), int(float64(r.Dy())*sy), f.NodeID)
+		int(float64(r.Max.X)*sx), int(float64(r.Max.Y)*sy),
+	)
+	fmt.Printf("выделение в кадре: x=%d y=%d %dx%d (монитор node %d)\n",
+		out.Min.X, out.Min.Y, out.Dx(), out.Dy(), f.NodeID)
+	return out.Intersect(src)
+}
+
+// save вырезает область, сохраняет PNG в ~/Pictures/Screenshots и копирует в буфер обмена.
+func save(img *image.RGBA, r image.Rectangle) error {
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img.SubImage(r)); err != nil {
+		return err
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	dir := filepath.Join(home, "Pictures", "Screenshots")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	path := filepath.Join(dir, "screen-editor-"+time.Now().Format("20060102-150405")+".png")
+	if err := os.WriteFile(path, buf.Bytes(), 0o644); err != nil {
+		return err
+	}
+
+	// wl-copy сам уходит в фон и держит буфер, пока его не заменят.
+	cp := exec.Command("wl-copy", "--type", "image/png")
+	cp.Stdin = bytes.NewReader(buf.Bytes())
+	if err := cp.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "wl-copy: %v\n", err)
+	}
+	fmt.Println("сохранено:", path)
+	notify("Скриншот сохранён", path)
+	return nil
+}
+
+// notify показывает уведомление, если есть notify-send. Ошибки не важны.
+func notify(title, body string) {
+	exec.Command("notify-send", "-a", "Screen Editor", title, body).Run()
 }
 
 func ms(d time.Duration) string { return fmt.Sprintf("%.0fms", float64(d.Microseconds())/1000) }
