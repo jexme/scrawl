@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Screen Editor
+Name[ru]=Скриншоты
+Comment=Fast screenshot capture and annotation
+Comment[ru]=Быстрый скриншот с выделением области и аннотациями
+Exec=screen-editor
+Icon=applets-screenshooter
+Terminal=false
+Categories=Utility;Graphics;
