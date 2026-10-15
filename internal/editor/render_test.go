@@ -63,3 +63,50 @@ func TestRenderAnnotations(t *testing.T) {
 		}
 	}
 }
+
+// TestRenderBlur проверяет, что инструмент размытия стирает мелкие детали внутри
+// рамки и не трогает остальное. Кадр: чёрно-белые вертикальные полосы шириной 2 px.
+func TestRenderBlur(t *testing.T) {
+	src := image.NewRGBA(image.Rect(0, 0, 400, 240))
+	for y := 0; y < 240; y++ {
+		for x := 0; x < 400; x++ {
+			v := uint8(0)
+			if (x/2)%2 == 0 {
+				v = 255
+			}
+			src.SetRGBA(x, y, color.RGBA{R: v, G: v, B: v, A: 255})
+		}
+	}
+	shapes := []annotate.Shape{
+		{Tool: annotate.ToolBlur, Width: annotate.DefaultWidth, Pts: []f32.Point{{X: 100, Y: 60}, {X: 300, Y: 180}}},
+	}
+	sel := image.Rect(0, 0, 400, 240)
+	out, err := render(src, sel, shapes, annotate.NewShaper())
+	if err != nil {
+		t.Skipf("headless рендер недоступен: %v", err)
+	}
+
+	// Размах значений в строке: снаружи рамки полосы, внутри почти ровный серый.
+	spread := func(y, x0, x1 int) int {
+		lo, hi := 255, 0
+		for x := x0; x < x1; x++ {
+			v := int(out.RGBAAt(x, y).R)
+			lo, hi = min(lo, v), max(hi, v)
+		}
+		return hi - lo
+	}
+	if s := spread(120, 20, 80); s < 200 {
+		t.Errorf("снаружи рамки полосы должны остаться: размах %d", s)
+	}
+	if s := spread(120, 140, 260); s > 60 {
+		t.Errorf("внутри рамки должно быть размыто: размах %d", s)
+	}
+	if mid := int(out.RGBAAt(200, 120).R); mid < 90 || mid > 170 {
+		t.Errorf("центр размытой области должен быть серым: %d", mid)
+	}
+
+	if path := os.Getenv("SCREEN_EDITOR_TEST_OUT"); path != "" {
+		data, _ := encodePNG(out)
+		os.WriteFile(path+".blur.png", data, 0o644)
+	}
+}

@@ -2,9 +2,7 @@ package editor
 
 import (
 	"image"
-	"image/color"
 
-	"gioui.org/f32"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -15,9 +13,7 @@ import (
 	"github.com/jexme/screen-editor/internal/annotate"
 )
 
-const lastButtonText = "Прошлая область  ·  R"
-
-var lastOutline = color.NRGBA{R: 255, G: 255, B: 255, A: 110}
+const lastButtonText = "Восстановить прошлую область  ·  R"
 
 // applyLast возвращает область предыдущего скриншота.
 func (m *monitor) applyLast() {
@@ -32,23 +28,6 @@ func (m *monitor) applyLast() {
 // canOfferLast сообщает, нужно ли сейчас показывать кнопку прошлой области.
 func (m *monitor) canOfferLast() bool {
 	return m.hasLast && !m.hasSel && !m.dragging && !m.editing
-}
-
-// drawLastOutline рисует тонкую рамку на месте прошлой области, чтобы было
-// видно, что вернёт кнопка.
-func (m *monitor) drawLastOutline(gtx layout.Context, sx float32) {
-	if !m.canOfferLast() {
-		return
-	}
-	r := m.last
-	var p clip.Path
-	p.Begin(gtx.Ops)
-	p.MoveTo(f32.Pt(float32(r.Min.X), float32(r.Min.Y)))
-	p.LineTo(f32.Pt(float32(r.Max.X), float32(r.Min.Y)))
-	p.LineTo(f32.Pt(float32(r.Max.X), float32(r.Max.Y)))
-	p.LineTo(f32.Pt(float32(r.Min.X), float32(r.Max.Y)))
-	p.Close()
-	paint.FillShape(gtx.Ops, lastOutline, clip.Stroke{Path: p.End(), Width: 1.5 / sx}.Op())
 }
 
 // layoutLastButton рисует кнопку «Прошлая область» по центру сверху.

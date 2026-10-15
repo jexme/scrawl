@@ -31,6 +31,7 @@ const (
 	ToolArrow
 	ToolRect
 	ToolMarker
+	ToolBlur
 	ToolText
 )
 
@@ -77,6 +78,12 @@ func (s Shape) Degenerate() bool {
 	switch s.Tool {
 	case ToolText:
 		return s.Text == ""
+	case ToolBlur:
+		if len(s.Pts) < 2 {
+			return true
+		}
+		r := RectOf(s.Pts[0], s.Pts[1])
+		return r.Dx() < 4 || r.Dy() < 4
 	case ToolPen:
 		return len(s.Pts) < 1
 	default:
@@ -88,7 +95,7 @@ func (s Shape) Degenerate() bool {
 }
 
 // Draw рисует фигуру. Координаты фигуры считаются координатами пространства ops.
-func (s Shape) Draw(ops *op.Ops, shaper *text.Shaper) {
+func (s Shape) Draw(ops *op.Ops, env Env) {
 	if len(s.Pts) == 0 {
 		return
 	}
@@ -113,15 +120,17 @@ func (s Shape) Draw(ops *op.Ops, shaper *text.Shaper) {
 		c := s.Color
 		c.A = 110
 		stroke(ops, c, s.Width*4, s.Pts...)
+	case ToolBlur:
+		s.drawBlur(ops, env)
 	case ToolText:
-		drawText(ops, shaper, s.Color, s.Width, s.Pts[0], s.Text)
+		drawText(ops, env.Shaper, s.Color, s.Width, s.Pts[0], s.Text)
 	}
 }
 
 // DrawAll рисует все фигуры по порядку.
-func DrawAll(ops *op.Ops, shaper *text.Shaper, shapes []Shape) {
+func DrawAll(ops *op.Ops, env Env, shapes []Shape) {
 	for _, s := range shapes {
-		s.Draw(ops, shaper)
+		s.Draw(ops, env)
 	}
 }
 

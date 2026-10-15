@@ -35,7 +35,7 @@ func render(src *image.RGBA, sel image.Rectangle, shapes []annotate.Shape, shape
 	paint.NewImageOp(src).Add(&ops)
 	paint.PaintOp{}.Add(&ops)
 	clipArea.Pop()
-	annotate.DrawAll(&ops, shaper, shapes)
+	annotate.DrawAll(&ops, annotate.Env{Shaper: shaper, Blur: annotate.NewBlurrer(src)}, shapes)
 	shift.Pop()
 
 	if err := win.Frame(&ops); err != nil {

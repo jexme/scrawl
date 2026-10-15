@@ -57,6 +57,7 @@ func newToolbar() *toolbar {
 			{tool: annotate.ToolArrow, icon: iconArrow},
 			{tool: annotate.ToolRect, icon: iconRect},
 			{tool: annotate.ToolMarker, icon: iconMarker},
+			{tool: annotate.ToolBlur, icon: iconBlur},
 			{tool: annotate.ToolText, icon: iconText},
 		},
 		colors: make([]widget.Clickable, len(annotate.Palette)),
@@ -249,6 +250,18 @@ func iconMarker(ops *op.Ops, s float32, c color.NRGBA) {
 	hl.A = 130
 	line(ops, s, hl, s*0.26, [2]float32{0.28, 0.68}, [2]float32{0.72, 0.32})
 	line(ops, s, c, iconW(s), [2]float32{0.2, 0.84}, [2]float32{0.5, 0.84})
+}
+
+// iconBlur: рамка с полосами, которые по мере движения вправо «растворяются».
+func iconBlur(ops *op.Ops, s float32, c color.NRGBA) {
+	w := iconW(s)
+	line(ops, s, c, w, [2]float32{0.2, 0.25}, [2]float32{0.8, 0.25}, [2]float32{0.8, 0.75},
+		[2]float32{0.2, 0.75}, [2]float32{0.2, 0.25})
+	for i, y := range []float32{0.4, 0.5, 0.6} {
+		fade := c
+		fade.A = uint8(255 - 70*i)
+		line(ops, s, fade, w*0.9, [2]float32{0.3, y}, [2]float32{0.7, y})
+	}
 }
 
 func iconText(ops *op.Ops, s float32, c color.NRGBA) {

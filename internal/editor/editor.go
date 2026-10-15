@@ -77,6 +77,7 @@ type monitor struct {
 	frame  *screencast.Frame
 	finish func()
 	shaper *text.Shaper
+	env    annotate.Env // шрифт и размытие для отрисовки аннотаций
 	bar    *toolbar
 
 	// peers — все окна-оверлеи (включая это). Активна одна область на все мониторы:
@@ -135,6 +136,7 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 		focusCanvas: true,
 	}
 	m.ed.Submit = true
+	m.env = annotate.Env{Shaper: m.shaper, Blur: annotate.NewBlurrer(f.Img)}
 	if !cfg.Fresh {
 		m.last, m.hasLast = loadLastRegion(f)
 	}
@@ -274,7 +276,6 @@ func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 
 	if !m.hasSel && !m.dragging {
 		paint.FillShape(gtx.Ops, shade, clip.Rect(full).Op())
-		m.drawLastOutline(gtx, sx)
 		return
 	}
 
@@ -290,9 +291,9 @@ func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 
 	// Аннотации видны только внутри выделения.
 	cl := clip.Rect(r).Push(gtx.Ops)
-	annotate.DrawAll(gtx.Ops, m.shaper, m.shapes)
+	annotate.DrawAll(gtx.Ops, m.env, m.shapes)
 	if m.cur != nil {
-		m.cur.Draw(gtx.Ops, m.shaper)
+		m.cur.Draw(gtx.Ops, m.env)
 	}
 	cl.Pop()
 
