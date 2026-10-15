@@ -101,6 +101,8 @@ type monitor struct {
 	adjStartSel image.Rectangle
 	adjStartPt  f32.Point
 	hover       f32.Point // последнее положение курсора, пиксели кадра
+	hoverSeen   bool      // курсор уже побывал над окном
+	scaleX      float32   // масштаб кадр -> окно по X, для толщины линий интерфейса
 
 	// Область предыдущего скриншота: не подставляется сама, возвращается по кнопке или клавише R.
 	last    image.Rectangle
@@ -110,7 +112,7 @@ type monitor struct {
 
 	tool   annotate.Tool
 	color  color.NRGBA
-	width  float32
+	widths map[annotate.Tool]float32 // толщина или сила для каждого инструмента отдельно
 	shapes []annotate.Shape
 	cur    *annotate.Shape
 
@@ -132,7 +134,7 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 		bar:         newToolbar(),
 		imageOp:     paint.NewImageOp(f.Img),
 		color:       annotate.Palette[0],
-		width:       annotate.DefaultWidth,
+		widths:      make(map[annotate.Tool]float32),
 		focusCanvas: true,
 	}
 	m.ed.Submit = true
@@ -183,6 +185,7 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 	toFrame := func(p f32.Point) f32.Point { return f32.Pt(p.X/sx, p.Y/sy) }
 
 	m.tol = float32(gtx.Dp(8)) / sx
+	m.scaleX = sx
 	if m.reset.Swap(false) {
 		m.resetState()
 	}
@@ -295,6 +298,7 @@ func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 	if m.cur != nil {
 		m.cur.Draw(gtx.Ops, m.env)
 	}
+	m.drawToolPreview(gtx)
 	cl.Pop()
 
 	bw := 2 / sx
@@ -325,7 +329,7 @@ func (m *monitor) layoutEditor(gtx layout.Context) {
 	}
 	defer op.Offset(image.Pt(int(m.editAt.X), int(m.editAt.Y))).Push(gtx.Ops).Pop()
 
-	size := annotate.TextSize(m.width)
+	size := annotate.TextSize(m.curWidth())
 	egtx := gtx
 	egtx.Metric = identity
 	egtx.Constraints = layout.Constraints{
@@ -432,7 +436,7 @@ func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.
 			continue
 		}
 		p := toFrame(e.Position)
-		m.hover = p
+		m.hover, m.hoverSeen = p, true
 		switch e.Kind {
 		case pointer.Press:
 			if e.Buttons.Contain(pointer.ButtonPrimary) {
@@ -519,9 +523,9 @@ func (m *monitor) press(p f32.Point) {
 		m.ed.SetText("")
 		m.focusEditor = true
 	case annotate.ToolPen, annotate.ToolMarker:
-		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.width, Pts: []f32.Point{p}}
+		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p}}
 	default:
-		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.width, Pts: []f32.Point{p, p}}
+		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p, p}}
 	}
 }
 
@@ -567,11 +571,34 @@ func (m *monitor) release(p f32.Point) {
 func (m *monitor) scroll(dy float32) {
 	switch {
 	case dy < 0:
-		m.width++
+		m.bumpWidth(1)
 	case dy > 0:
-		m.width--
+		m.bumpWidth(-1)
 	}
-	m.width = float32(math.Min(math.Max(float64(m.width), annotate.MinWidth), annotate.MaxWidth))
+}
+
+// curWidth возвращает толщину (для размытия силу) текущего инструмента.
+func (m *monitor) curWidth() float32 { return m.widthOf(m.tool) }
+
+// widthOf возвращает толщину инструмента или значение по умолчанию.
+func (m *monitor) widthOf(t annotate.Tool) float32 {
+	if w, ok := m.widths[t]; ok {
+		return w
+	}
+	return annotate.DefaultWidth
+}
+
+// bumpWidth меняет толщину текущего инструмента. Фигура, которую рисуют
+// прямо сейчас, и редактируемый текст обновляются сразу.
+func (m *monitor) bumpWidth(delta float32) {
+	if m.tool == annotate.ToolSelect {
+		return
+	}
+	w := float32(math.Min(math.Max(float64(m.curWidth()+delta), annotate.MinWidth), annotate.MaxWidth))
+	m.widths[m.tool] = w
+	if m.cur != nil {
+		m.cur.Width = w
+	}
 }
 
 func (m *monitor) clamp(p f32.Point) f32.Point {
@@ -595,7 +622,7 @@ func (m *monitor) commitText() {
 	txt := strings.TrimSpace(m.ed.Text())
 	if txt != "" {
 		m.shapes = append(m.shapes, annotate.Shape{
-			Tool: annotate.ToolText, Color: m.color, Width: m.width,
+			Tool: annotate.ToolText, Color: m.color, Width: m.widthOf(annotate.ToolText),
 			Pts: []f32.Point{m.editAt}, Text: txt,
 		})
 	}

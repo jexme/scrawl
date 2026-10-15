@@ -3,6 +3,7 @@ package editor
 import (
 	"image"
 	"image/color"
+	"strconv"
 
 	"gioui.org/f32"
 	"gioui.org/io/event"
@@ -11,6 +12,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/jexme/screen-editor/internal/annotate"
@@ -41,6 +43,8 @@ type actionButton struct {
 type toolbar struct {
 	tools  []*toolButton
 	colors []widget.Clickable
+	wMinus actionButton
+	wPlus  actionButton
 	undo   actionButton
 	copy   actionButton
 	save   actionButton
@@ -61,6 +65,8 @@ func newToolbar() *toolbar {
 			{tool: annotate.ToolText, icon: iconText},
 		},
 		colors: make([]widget.Clickable, len(annotate.Palette)),
+		wMinus: actionButton{icon: iconMinus},
+		wPlus:  actionButton{icon: iconPlus},
 		undo:   actionButton{icon: iconUndo},
 		copy:   actionButton{icon: iconCopy},
 		save:   actionButton{icon: iconSave},
@@ -70,8 +76,9 @@ func newToolbar() *toolbar {
 
 // width возвращает ширину панели в пикселях окна.
 func (t *toolbar) width(btn, gap, sep, pad int) int {
-	n := len(t.tools) + len(t.colors) + 4
-	return 2*pad + n*btn + (n-3)*gap + 2*sep
+	// Кнопки: инструменты, цвета, «−», значение, «+», четыре действия. Три разделителя.
+	n := len(t.tools) + len(t.colors) + 3 + 4
+	return 2*pad + n*btn + (n-4)*gap + 3*sep
 }
 
 // layoutToolbar рисует панель рядом с выделением sel (в пикселях окна) и
@@ -151,6 +158,36 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	}
 	cursor += sep - gap
 
+	// Толщина линии, размер текста, сила размытия: «−», текущее значение, «+».
+	enabled := m.tool != annotate.ToolSelect
+	ic := iconColor
+	if !enabled {
+		ic.A = 90
+	}
+	if t.wMinus.btn.Clicked(gtx) && enabled {
+		m.bumpWidth(-1)
+	}
+	place(func(g layout.Context) layout.Dimensions {
+		return t.wMinus.btn.Layout(g, func(g layout.Context) layout.Dimensions {
+			drawButtonColored(g, false, t.wMinus.icon, ic)
+			return layout.Dimensions{Size: g.Constraints.Min}
+		})
+	})
+	place(func(g layout.Context) layout.Dimensions {
+		m.drawWidthValue(g, enabled)
+		return layout.Dimensions{Size: g.Constraints.Min}
+	})
+	if t.wPlus.btn.Clicked(gtx) && enabled {
+		m.bumpWidth(1)
+	}
+	place(func(g layout.Context) layout.Dimensions {
+		return t.wPlus.btn.Layout(g, func(g layout.Context) layout.Dimensions {
+			drawButtonColored(g, false, t.wPlus.icon, ic)
+			return layout.Dimensions{Size: g.Constraints.Min}
+		})
+	})
+	cursor += sep - gap
+
 	actions := []struct {
 		a  *actionButton
 		do func()
@@ -181,12 +218,41 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 }
 
 func drawButton(gtx layout.Context, active bool, icon iconFunc) {
+	drawButtonColored(gtx, active, icon, iconColor)
+}
+
+func drawButtonColored(gtx layout.Context, active bool, icon iconFunc, c color.NRGBA) {
 	s := gtx.Constraints.Min.X
 	if active {
 		rr := clip.UniformRRect(image.Rect(0, 0, s, s), gtx.Dp(6))
 		paint.FillShape(gtx.Ops, accent, rr.Op(gtx.Ops))
 	}
-	icon(gtx.Ops, float32(s), iconColor)
+	icon(gtx.Ops, float32(s), c)
+}
+
+// drawWidthValue показывает число: толщину текущего инструмента (для размытия силу).
+func (m *monitor) drawWidthValue(gtx layout.Context, enabled bool) {
+	s := gtx.Constraints.Min.X
+	txt := "–"
+	col := iconColor
+	if enabled {
+		txt = strconv.Itoa(int(m.curWidth()))
+	} else {
+		col.A = 90
+	}
+
+	rec := op.Record(gtx.Ops)
+	paint.ColorOp{Color: col}.Add(gtx.Ops)
+	mat := rec.Stop()
+	lgtx := gtx
+	lgtx.Constraints = layout.Constraints{Max: image.Pt(s, s)}
+	rec = op.Record(gtx.Ops)
+	dims := widget.Label{Alignment: text.Middle, MaxLines: 1}.Layout(lgtx, m.shaper, annotate.Font, 15, txt, mat)
+	label := rec.Stop()
+
+	st := op.Offset(image.Pt(0, (s-dims.Size.Y)/2)).Push(gtx.Ops)
+	label.Add(gtx.Ops)
+	st.Pop()
 }
 
 func drawSwatch(gtx layout.Context, c color.NRGBA, active bool) {
@@ -262,6 +328,16 @@ func iconBlur(ops *op.Ops, s float32, c color.NRGBA) {
 		fade.A = uint8(255 - 70*i)
 		line(ops, s, fade, w*0.9, [2]float32{0.3, y}, [2]float32{0.7, y})
 	}
+}
+
+func iconMinus(ops *op.Ops, s float32, c color.NRGBA) {
+	line(ops, s, c, iconW(s)*1.2, [2]float32{0.28, 0.5}, [2]float32{0.72, 0.5})
+}
+
+func iconPlus(ops *op.Ops, s float32, c color.NRGBA) {
+	w := iconW(s) * 1.2
+	line(ops, s, c, w, [2]float32{0.28, 0.5}, [2]float32{0.72, 0.5})
+	line(ops, s, c, w, [2]float32{0.5, 0.28}, [2]float32{0.5, 0.72})
 }
 
 func iconText(ops *op.Ops, s float32, c color.NRGBA) {
