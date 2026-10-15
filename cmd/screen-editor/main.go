@@ -22,8 +22,17 @@ func main() {
 	setup := flag.Bool("setup", false, "заново выбрать мониторы (покажет диалоги GNOME)")
 	verbose := flag.Bool("v", false, "печатать замеры времени")
 	fresh := flag.Bool("fresh", false, "не предлагать область предыдущего скриншота")
+	grant := flag.Bool("grant-screenshot", false, "разрешить приложению запасной снимок через Screenshot portal и выйти")
 	exitAfter := flag.Duration("exit-after", 0, "закрыться штатно через указанное время (для проверок)")
 	flag.Parse()
+
+	if *grant {
+		if err := screencast.GrantScreenshotPermission(); err != nil {
+			fatal("не удалось выдать разрешение: %v", err)
+		}
+		fmt.Println("Разрешение на скриншоты выдано приложению", screencast.AppID)
+		return
+	}
 
 	// Повторное нажатие хоткея не должно открывать второй оверлей поверх первого
 	// (и слать параллельные запросы в portal).

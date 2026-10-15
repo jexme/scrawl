@@ -192,7 +192,7 @@ func (p *Portal) GrabAll(sessions []*Session, deadline time.Duration) ([]Frame, 
 
 	frames, err := p.grabViaScreenshot(sessions)
 	if err != nil {
-		return nil, true, fmt.Errorf("PipeWire: %v; Screenshot: %w", failed, err)
+		return nil, true, fmt.Errorf("PipeWire: %v; Screenshot: %w. Если portal отказал, выдайте разрешение командой: screen-editor -grant-screenshot", failed, err)
 	}
 	return frames, true, nil
 }

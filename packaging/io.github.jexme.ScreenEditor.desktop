@@ -7,4 +7,5 @@ Comment[ru]=Быстрый скриншот с выделением област
 Exec=screen-editor
 Icon=applets-screenshooter
 Terminal=false
-Categories=Utility;Graphics;
+Categories=Graphics;2DGraphics;
+Keywords=screenshot;screen capture;annotate;blur;скриншот;снимок экрана;
