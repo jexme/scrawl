@@ -559,3 +559,59 @@ func TestIncludeCursorDefaultOff(t *testing.T) {
 		t.Error("include_cursor=true должен читаться")
 	}
 }
+
+func writeLegacy(t *testing.T, body string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(LegacyPath()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(LegacyPath(), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestLegacyConfigIsReadAndKept(t *testing.T) {
+	sandbox(t)
+	if filepath.Base(filepath.Dir(Path())) != "scrawl" || filepath.Base(filepath.Dir(LegacyPath())) != "screen-editor" {
+		t.Fatalf("папки настроек: %s и %s", Path(), LegacyPath())
+	}
+	const old = `{"double_click":"copy","dim_percent":40,"future":"x"}`
+	writeLegacy(t, old)
+
+	// Нового файла нет: настройки берутся из старого, но ничего не пишется.
+	if got := Load(); got.DoubleClick != DoubleClickCopy || got.DimPercent != 40 {
+		t.Errorf("настройки прежней программы должны подхватиться: %+v", got)
+	}
+	if _, err := os.Stat(Path()); !os.IsNotExist(err) {
+		t.Error("чтение не должно создавать новый файл")
+	}
+
+	// Первое изменение создаёт новый файл с прежними значениями и чужими ключами.
+	st := NewStore()
+	if err := st.Update(func(s *Settings) { s.DimPercent = 55 }); err != nil {
+		t.Fatal(err)
+	}
+	keys := readKeys(t)
+	if string(keys["dim_percent"]) != "55" || string(keys["double_click"]) != `"copy"` || string(keys["future"]) != `"x"` {
+		t.Errorf("новый файл: %v", keys)
+	}
+	if data, _ := os.ReadFile(LegacyPath()); string(data) != old {
+		t.Errorf("старый файл не должен меняться: %q", data)
+	}
+	if _, err := os.Stat(Path() + ".bak"); !os.IsNotExist(err) {
+		t.Error("старый файл не копируется в .bak")
+	}
+
+	// Дальше действует только новый файл.
+	writeLegacy(t, `{"dim_percent":10}`)
+	if got := Load().DimPercent; got != 55 {
+		t.Errorf("новый файл главнее старого: %d", got)
+	}
+
+	// Повреждённый старый файл даёт значения по умолчанию.
+	sandbox(t)
+	writeLegacy(t, `{oops`)
+	if got := Load(); got != Default() {
+		t.Errorf("битый старый файл: %+v", got)
+	}
+}

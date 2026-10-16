@@ -18,7 +18,7 @@ func Dir() string {
 	if err != nil {
 		base = os.TempDir()
 	}
-	return filepath.Join(base, "screen-editor", "collection")
+	return filepath.Join(base, "scrawl", "collection")
 }
 
 // Add кладёт PNG в подборку и возвращает путь. Имя файла начинается со времени,

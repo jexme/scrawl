@@ -145,7 +145,7 @@ func lastRegionPath() string {
 	if err != nil {
 		dir = os.TempDir()
 	}
-	return filepath.Join(dir, "screen-editor", "last-region.json")
+	return filepath.Join(dir, "scrawl", "last-region.json")
 }
 
 // saveLastRegion запоминает область, чтобы следующий запуск показал её сразу.

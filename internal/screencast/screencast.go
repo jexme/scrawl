@@ -141,7 +141,7 @@ func TokenPath() string {
 	if err != nil {
 		dir = os.TempDir()
 	}
-	return filepath.Join(dir, "screen-editor", "screencast.token")
+	return filepath.Join(dir, "scrawl", "screencast.token")
 }
 
 // LoadTokens читает сохранённые restore_token, по одному на монитор.

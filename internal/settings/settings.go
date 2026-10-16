@@ -1,5 +1,5 @@
 // Package settings хранит пользовательские настройки в JSON-файле
-// ~/.config/screen-editor/config.json. Файл можно править руками; отсутствующие
+// ~/.config/scrawl/config.json. Файл можно править руками; отсутствующие
 // и неверные значения заменяются значениями по умолчанию (числа вне допустимого
 // диапазона подрезаются до его границ), а ключи, которых
 // программа не знает (от новой версии или дописанные руками), при записи
@@ -102,14 +102,26 @@ func Default() Settings {
 		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, DefaultTool: "select", Palette: DefaultPalette, MarkerOpacity: 43, Glue: DefaultGlue(), Format: FormatPNG, JPEGQuality: 90}
 }
 
-// Path возвращает путь к файлу настроек.
-func Path() string {
+// Имена папки настроек: нынешняя и от прежнего названия программы (screen-editor).
+const (
+	dirName       = "scrawl"
+	legacyDirName = "screen-editor"
+)
+
+func configFile(dirName string) string {
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		dir = os.TempDir()
 	}
-	return filepath.Join(dir, "screen-editor", "config.json")
+	return filepath.Join(dir, dirName, "config.json")
 }
+
+// Path возвращает путь к файлу настроек.
+func Path() string { return configFile(dirName) }
+
+// LegacyPath возвращает путь к файлу настроек прежнего названия программы. Из него
+// настройки читаются, пока нового файла нет; сам он не меняется и не удаляется.
+func LegacyPath() string { return configFile(legacyDirName) }
 
 // valid проверяет значение двойного клика.
 func (d DoubleClick) valid() bool {
@@ -203,12 +215,27 @@ func decodeStruct(v reflect.Value, raw map[string]json.RawMessage) {
 	}
 }
 
+// readConfigRaw читает файл настроек, а если его ещё нет, то файл прежнего
+// названия программы. Из прежнего файла возвращается только содержимое:
+// exists для него false, поэтому запись не принимает его за повреждённый файл
+// нового пути.
+func readConfigRaw() (raw map[string]json.RawMessage, exists, ok bool) {
+	raw, exists, ok = readRaw(Path())
+	if exists {
+		return raw, exists, ok
+	}
+	if legacy, lexists, lok := readRaw(LegacyPath()); lexists && lok {
+		return legacy, false, true
+	}
+	return nil, false, false
+}
+
 // Load читает настройки из файла. Каждый ключ разбирается отдельно: отсутствующий
 // или неверный по типу ключ получает значение по умолчанию и не портит остальные.
 // Нет файла или он повреждён: настройки по умолчанию.
 func Load() Settings {
 	s := Default()
-	raw, _, ok := readRaw(Path())
+	raw, _, ok := readConfigRaw()
 	if !ok {
 		return s
 	}
@@ -228,7 +255,7 @@ func Save(s Settings) error {
 		return err
 	}
 
-	merged, exists, ok := readRaw(path)
+	merged, exists, ok := readConfigRaw()
 	if exists && !ok {
 		os.Rename(path, path+".bak")
 	}
