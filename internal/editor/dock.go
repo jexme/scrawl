@@ -15,9 +15,14 @@ import (
 	"gioui.org/widget"
 
 	"github.com/jexme/scrawl/internal/annotate"
+	"github.com/jexme/scrawl/internal/i18n"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
-const restoreText = "Восстановить прошлую область  ·  R"
+// withKey дописывает к подписи кнопки клавишу действия из настроек.
+func (m *monitor) withKey(label, action string) string {
+	return label + "  ·  " + m.store.Get().Keys.Of(action)
+}
 
 // dock — плавающая панель внизу по центру: подборка («было/стало») и возврат
 // прошлой области. Не перекрывает выделение и панель инструментов: если место
@@ -92,7 +97,7 @@ func (m *monitor) layoutRestoreDock(gtx layout.Context, win image.Point) {
 		m.applyLast()
 		return
 	}
-	txt, size := m.label(gtx, restoreText, 15, iconColor)
+	txt, size := m.label(gtx, m.withKey(i18n.T("Восстановить прошлую область"), settings.ActionRestore), 15, iconColor)
 	icon := gtx.Dp(20)
 	padX, padY, gap := gtx.Dp(14), gtx.Dp(9), gtx.Dp(8)
 	w := padX + icon + gap + size.X + padX
@@ -135,23 +140,23 @@ func (m *monitor) collectItems() []dockItem {
 	var items []dockItem
 	total := m.queued + boolInt(m.hasSel)
 	if m.hasSel {
-		txt := "В подборку  ·  A"
+		txt := m.withKey(i18n.T("В подборку"), settings.ActionAdd)
 		if m.queued > 0 {
-			txt = "Добавить ещё  ·  A"
+			txt = m.withKey(i18n.T("Добавить ещё"), settings.ActionAdd)
 		}
 		items = append(items, dockItem{&m.dock.add, txt, m.queued == 0, m.addToCollection})
 	}
 	if total >= 2 {
-		txt := "Склеить  ·  G"
+		txt := m.withKey(i18n.T("Склеить"), settings.ActionGlue)
 		if m.hasSel {
-			txt = "Склеить с этой областью  ·  G"
+			txt = m.withKey(i18n.T("Склеить с этой областью"), settings.ActionGlue)
 		}
 		items = append(items, dockItem{&m.dock.glue, txt, m.queued > 0, m.glueCollection})
 	}
 	if m.queued > 0 {
 		items = append(items,
-			dockItem{&m.dock.separate, "Отдельно  ·  D", false, m.sendSeparately},
-			dockItem{&m.dock.clear, "Очистить", false, m.clearCollection})
+			dockItem{&m.dock.separate, m.withKey(i18n.T("Отдельно"), settings.ActionSend), false, m.sendSeparately},
+			dockItem{&m.dock.clear, i18n.T("Очистить"), false, m.clearCollection})
 	}
 	return items
 }
@@ -169,9 +174,9 @@ func (m *monitor) layoutCollectDock(gtx layout.Context, win image.Point) {
 	title := ""
 	switch {
 	case m.queued > 0 && !m.hasSel:
-		title = fmt.Sprintf("Подборка: %d  ·  выделите область", m.queued)
+		title = fmt.Sprintf(i18n.T("Подборка: %d  ·  выделите область"), m.queued)
 	case m.queued > 0:
-		title = fmt.Sprintf("Подборка: %d", m.queued)
+		title = fmt.Sprintf(i18n.T("Подборка: %d"), m.queued)
 	}
 
 	type chip struct {

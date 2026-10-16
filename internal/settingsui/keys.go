@@ -9,6 +9,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/jexme/scrawl/internal/i18n"
 	"github.com/jexme/scrawl/internal/keymap"
 	"github.com/jexme/scrawl/internal/settings"
 )
@@ -58,12 +59,12 @@ func (s *state) assignKey(row *keyRow, chord string) {
 		if a == row.action {
 			other = b
 		}
-		row.err = fmt.Sprintf("%s уже занята действием «%s»", keys.Of(row.action), keyLabels[other])
+		row.err = fmt.Sprintf(i18n.T("%s уже занята действием «%s»"), keys.Of(row.action), i18n.T(keyLabels[other]))
 		return
 	}
 	row.err = ""
 	if err := s.store.Update(func(c *settings.Settings) { c.Keys = keys }); err != nil {
-		row.err = "Не удалось сохранить: " + err.Error()
+		row.err = i18n.T("Не удалось сохранить: ") + err.Error()
 	}
 }
 
@@ -112,11 +113,11 @@ func (s *state) keyControls() layout.Widget {
 			row := row
 			label := keys.Of(row.action)
 			if s.capturing == row {
-				label = "Нажмите клавишу…"
+				label = i18n.T("Нажмите клавишу…")
 			}
 			children = append(children, layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Flexed(1, s.label(material.Body2, keyLabels[row.action], fgColor)),
+					layout.Flexed(1, s.label(material.Body2, i18n.T(keyLabels[row.action]), fgColor)),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						gtx.Constraints.Min.X = gtx.Dp(170)
 						b := material.Button(s.th, &row.btn, label)
@@ -128,7 +129,7 @@ func (s *state) keyControls() layout.Widget {
 					}),
 					layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						b := material.Button(s.th, &row.reset, "Сброс")
+						b := material.Button(s.th, &row.reset, i18n.T("Сброс"))
 						b.Background = borderColor
 						return b.Layout(gtx)
 					}),

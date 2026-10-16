@@ -677,3 +677,18 @@ func TestKeys(t *testing.T) {
 		t.Errorf("Conflict: %s %s %v", a, b, clash)
 	}
 }
+
+func TestLanguageSetting(t *testing.T) {
+	sandbox(t)
+	if got := Load().Language; got != "auto" {
+		t.Errorf("по умолчанию язык как в системе: %q", got)
+	}
+	for body, want := range map[string]string{
+		`{"language":"en"}`: "en", `{"language":"ru"}`: "ru", `{"language":"de"}`: "auto", `{"language":5}`: "auto",
+	} {
+		writeConfig(t, body)
+		if got := Load().Language; got != want {
+			t.Errorf("%s: %q, ожидали %q", body, got, want)
+		}
+	}
+}

@@ -30,6 +30,7 @@ import (
 
 	"github.com/jexme/scrawl/internal/annotate"
 	"github.com/jexme/scrawl/internal/collection"
+	"github.com/jexme/scrawl/internal/i18n"
 	"github.com/jexme/scrawl/internal/keymap"
 	"github.com/jexme/scrawl/internal/screencast"
 	"github.com/jexme/scrawl/internal/settings"
@@ -775,7 +776,7 @@ func (m *monitor) export(toClipboard, toFile bool) {
 	}
 	img, err := render(m.frame.Img, m.sel, m.shapes, m.shaper)
 	if err != nil {
-		fail("рендер", err)
+		fail(i18n.T("рендер"), err)
 		return
 	}
 	data, err := encodePNG(img)
@@ -788,22 +789,22 @@ func (m *monitor) export(toClipboard, toFile bool) {
 	if toFile {
 		path, err := saveFile(m.store.Get(), data)
 		if err != nil {
-			fail("сохранение", err)
+			fail(i18n.T("сохранение"), err)
 			return
 		}
-		msg, done = path, "Сохранено: "+filepath.Base(path)
+		msg, done = path, i18n.T("Сохранено: ")+filepath.Base(path)
 	}
 	if toClipboard {
 		if err := copyPNG(data); err != nil {
-			fail("буфер обмена", err)
+			fail(i18n.T("буфер обмена"), err)
 		} else if msg == "" {
-			msg, done = "скопирован в буфер обмена", "Скопировано в буфер обмена"
+			msg, done = i18n.T("скопирован в буфер обмена"), i18n.T("Скопировано в буфер обмена")
 		} else {
-			msg += " (и в буфер обмена)"
-			done += ", скопировано"
+			msg += i18n.T(" (и в буфер обмена)")
+			done += i18n.T(", скопировано")
 		}
 	}
-	m.inform("Скриншот готов", msg)
+	m.inform(i18n.T("Скриншот готов"), msg)
 	if m.store.Get().KeepOpen {
 		m.showMessage(done) // остаёмся в редакторе: подтверждаем действие на экране
 		return
@@ -839,7 +840,7 @@ func (m *monitor) closeWindows() {
 
 func fail(what string, err error) {
 	fmt.Fprintf(os.Stderr, "%s: %v\n", what, err)
-	notify("Ошибка: "+what, err.Error())
+	notify(i18n.T("Ошибка: ")+what, err.Error())
 }
 
 func rectOf(a, b f32.Point) image.Rectangle {

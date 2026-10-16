@@ -17,6 +17,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/jexme/scrawl/internal/hotkey"
+	"github.com/jexme/scrawl/internal/i18n"
 	"github.com/jexme/scrawl/internal/settings"
 )
 
@@ -622,4 +623,72 @@ func TestKeyAssignment(t *testing.T) {
 	if got := settings.Load().Keys.Of(settings.ActionRestore); got != "R" {
 		t.Errorf("кнопка «Сброс»: %q", got)
 	}
+}
+
+func TestLanguageSwitchesImmediately(t *testing.T) {
+	defer i18n.SetLanguage(i18n.RU)
+	s := testState(t)
+	if s.lang.Value != i18n.Auto {
+		t.Fatalf("по умолчанию язык как в системе: %q", s.lang.Value)
+	}
+	s.lang.Value = i18n.EN
+	s.layout(frameContext(700, 650))
+	if got := settings.Load().Language; got != "en" {
+		t.Errorf("в файле %q", got)
+	}
+	if i18n.Language() != i18n.EN {
+		t.Fatalf("язык интерфейса не переключился: %q", i18n.Language())
+	}
+	// Окно строится заново на каждом кадре, поэтому тексты уже английские.
+	if got := i18n.T("Закрыть"); got != "Close" {
+		t.Errorf("перевод: %q", got)
+	}
+	s.lang.Value = i18n.RU
+	s.layout(frameContext(700, 650))
+	if i18n.Language() != i18n.RU || i18n.T("Закрыть") != "Закрыть" {
+		t.Errorf("возврат на русский: %q", i18n.Language())
+	}
+}
+
+// Ни один экран окна настроек не должен падать и обязан рисоваться на английском.
+func TestRenderEnglishWindow(t *testing.T) {
+	defer i18n.SetLanguage(i18n.RU)
+	i18n.SetLanguage(i18n.EN)
+	s := testState(t)
+	s.layout(frameContext(700, 3300))
+	for _, ru := range []string{"Общие", "Язык интерфейса", "Захват экрана"} {
+		if i18n.T(ru) == ru {
+			t.Errorf("нет перевода: %q", ru)
+		}
+	}
+}
+
+// TestRenderEnglishPicture рисует окно на английском для просмотра (SCRAWL_TEST_OUT).
+func TestRenderEnglishPicture(t *testing.T) {
+	path := os.Getenv("SCRAWL_TEST_OUT")
+	if path == "" {
+		t.Skip("нужна переменная SCRAWL_TEST_OUT")
+	}
+	defer i18n.SetLanguage(i18n.RU)
+	i18n.SetLanguage(i18n.EN)
+	const W, H = 700, 1100
+	s := testState(t)
+	win, err := headless.NewWindow(W, H)
+	if err != nil {
+		t.Skipf("headless рендер недоступен: %v", err)
+	}
+	defer win.Release()
+	gtx := frameContext(W, H)
+	paint.Fill(gtx.Ops, bgColor)
+	s.layout(gtx)
+	if err := win.Frame(gtx.Ops); err != nil {
+		t.Fatal(err)
+	}
+	out := image.NewRGBA(image.Rect(0, 0, W, H))
+	if err := win.Screenshot(out); err != nil {
+		t.Fatal(err)
+	}
+	f, _ := os.Create(path + ".window-en.png")
+	defer f.Close()
+	png.Encode(f, out)
 }

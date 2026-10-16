@@ -9,7 +9,7 @@ you want to share?" dialog on every shot.
 
 > Status: personal project under active development, not released yet.
 > Linux (GNOME, Wayland) only for now; a Windows port is planned. The interface
-> text (buttons, notifications, captions) is Russian only at the moment.
+> is available in Russian and English (settings → "Interface language").
 
 ## Features
 
@@ -19,8 +19,8 @@ you want to share?" dialog on every shot.
 - Tools: pen, line, arrow, box, marker, **blur**, text. Eight colors; the mouse
   wheel or the `−`/`+` buttons change thickness, text size or blur strength.
 - **Before/after collections:** put shots aside, then glue them side by side with
-  captions "Было"/"Стало" ("Was"/"Became", or "Шаг N" for three and more; captions
-  are Russian only for now), or send them as separate files.
+  captions "Before"/"After" (or "Step N" for three and more; the words are
+  configurable), or send them as separate files.
 - Remembers the last area and brings it back with one key (`R`).
 - Saves PNG to `~/Pictures/Screenshots` and copies the image to the clipboard.
 - A separate settings window (gear button): for example, a double click inside
@@ -125,6 +125,7 @@ application menu entry "Settings". Changes apply immediately. Settings are store
 | `jpeg_quality` | 1-100, `90` | JPEG quality |
 | `default_tool` | `select` (default), `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text` | tool switched on once an area is selected |
 | `tools` | object per tool: `{"arrow": {"color": "#E53935", "width": 6}}` | default colour (`#RRGGBB`) and thickness per tool; applies until you pick a colour in the toolbar |
+| `language` | `auto` (default), `ru`, `en` | interface language; `auto` follows the system locale |
 | `keys` | object: `confirm`, `cancel`, `restore`, `add`, `glue`, `send`, `undo`, `copy`, `save` | overlay keys as `Ctrl+Shift+S`, `R`, `Enter`, `F5`; empty means the default, two actions cannot share a key |
 | `palette` | list of 8 colours `#RRGGBB` | colours in the toolbar |
 | `marker_opacity` | 5-100, `43` | marker opacity, % |

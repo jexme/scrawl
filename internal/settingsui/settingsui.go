@@ -25,6 +25,7 @@ import (
 	"gioui.org/widget/material"
 
 	"github.com/jexme/scrawl/internal/hotkey"
+	"github.com/jexme/scrawl/internal/i18n"
 	"github.com/jexme/scrawl/internal/screencast"
 	"github.com/jexme/scrawl/internal/settings"
 	"github.com/jexme/scrawl/internal/version"
@@ -88,6 +89,7 @@ type state struct {
 	monitors   task   // повторный выбор мониторов
 	hotkey     task   // назначение горячей клавиши
 	hotkeyEd   widget.Editor
+	lang       widget.Enum // язык интерфейса: auto, ru, en
 	keyRows    []*keyRow
 	capturing  *keyRow // строка, для которой ждём нажатия клавиши
 	capTag     bool    // тег фокуса для записи клавиши
@@ -120,7 +122,7 @@ func newState(store *settings.Store) *state {
 		func(c *settings.Settings, v float64) { c.MarkerOpacity = int(v) })
 	s.handle = s.addSlider(0, settings.MaxHandleRadius, 0.5, func(v float64) string {
 		if v == 0 {
-			return "нет"
+			return i18n.T("нет")
 		}
 		return fmt.Sprintf("%.1f px", v)
 	},
@@ -131,6 +133,7 @@ func newState(store *settings.Store) *state {
 		sl.Set(sl.get(cur))
 	}
 	s.initKeys()
+	s.lang.Value = store.Get().Language
 	s.hotkeyEd.SingleLine = true
 	s.hotkeyEd.SetText("Print")
 	if cur := currentHotkey(); cur != "" {
@@ -180,6 +183,7 @@ func newState(store *settings.Store) *state {
 
 // Run открывает окно настроек и работает, пока его не закроют. Вызывать из main.
 func Run(store *settings.Store) {
+	i18n.SetLanguage(store.Get().Language)
 	app.ID = screencast.AppID
 	go func() {
 		loop(newState(store))
@@ -191,7 +195,7 @@ func Run(store *settings.Store) {
 func loop(s *state) {
 	w := new(app.Window)
 	s.invalidate = w.Invalidate
-	w.Option(app.Title("Scrawl: настройки"), app.Size(unit.Dp(600), unit.Dp(600)), app.MinSize(unit.Dp(420), unit.Dp(300)))
+	w.Option(app.Title(i18n.T("Scrawl: настройки")), app.Size(unit.Dp(600), unit.Dp(600)), app.MinSize(unit.Dp(420), unit.Dp(300)))
 	var ops op.Ops
 	for {
 		switch e := w.Event().(type) {
@@ -225,6 +229,13 @@ func loop(s *state) {
 // apply приводит сохранённые настройки в соответствие с виджетами. Вызывается
 // на каждом кадре: ничего не пишет, пока значения не изменились.
 func (s *state) apply(gtx layout.Context) {
+	s.lang.Update(gtx)
+	if want := s.lang.Value; want != s.store.Get().Language {
+		if err := s.store.Update(func(c *settings.Settings) { c.Language = want }); err != nil {
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+		}
+		i18n.SetLanguage(s.store.Get().Language) // окно перерисуется на новом языке сразу
+	}
 	s.updateKeys(gtx)
 	if s.hotkey.btn.Clicked(gtx) {
 		accel := strings.TrimSpace(s.hotkeyEd.Text())
@@ -234,55 +245,55 @@ func (s *state) apply(gtx layout.Context) {
 			}
 			bin, err := hotkeyBinary()
 			if err != nil {
-				return "", fmt.Errorf("не найден путь к программе: %w", err)
+				return "", fmt.Errorf(i18n.T("не найден путь к программе: %w"), err)
 			}
 			res, err := assignHotkey(accel, bin)
 			if err != nil {
 				return "", err
 			}
-			msg := "Горячая клавиша " + accel + " назначена на " + bin
+			msg := i18n.T("Горячая клавиша ") + accel + i18n.T(" назначена на ") + bin
 			if res.Updated {
-				msg = "Ярлык обновлён: " + accel + " запускает " + bin
+				msg = i18n.T("Ярлык обновлён: ") + accel + i18n.T(" запускает ") + bin
 			}
 			if res.Warning != "" {
-				msg += ". Внимание: " + res.Warning
+				msg += i18n.T(". Внимание: ") + res.Warning
 			}
 			return msg, nil
 		})
 	}
 	if s.monitors.btn.Clicked(gtx) {
 		s.start(&s.monitors, func(progress func(string)) (string, error) {
-			progress("Ждём диалоги GNOME…")
+			progress(i18n.T("Ждём диалоги GNOME…"))
 			return setupMonitors(progress)
 		})
 	}
 	if s.grant.btn.Clicked(gtx) {
 		s.start(&s.grant, func(func(string)) (string, error) {
 			if err := grantPermission(); err != nil {
-				return "", fmt.Errorf("Не удалось выдать разрешение: %w", err)
+				return "", fmt.Errorf(i18n.T("Не удалось выдать разрешение: %w"), err)
 			}
-			return "Разрешение выдано приложению " + screencast.AppID, nil
+			return i18n.T("Разрешение выдано приложению ") + screencast.AppID, nil
 		})
 	}
 
 	s.choice.Update(gtx)
 	if want := settings.DoubleClick(s.choice.Value); want != s.store.Get().DoubleClick {
 		if err := s.store.Update(func(c *settings.Settings) { c.DoubleClick = want }); err != nil {
-			s.dirErr = "Не удалось сохранить: " + err.Error()
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 	}
 
 	s.enter.Update(gtx)
 	if want := settings.Enter(s.enter.Value); want != s.store.Get().Enter {
 		if err := s.store.Update(func(c *settings.Settings) { c.Enter = want }); err != nil {
-			s.dirErr = "Не удалось сохранить: " + err.Error()
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 	}
 
 	s.notify.Update(gtx)
 	if want := s.notify.Value; want != s.store.Get().Notifications {
 		if err := s.store.Update(func(c *settings.Settings) { c.Notifications = want }); err != nil {
-			s.dirErr = "Не удалось сохранить: " + err.Error()
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 	}
 
@@ -290,7 +301,7 @@ func (s *state) apply(gtx layout.Context) {
 		sl.Update(gtx)
 		if want := sl.Value(); want != sl.get(s.store.Get()) {
 			if err := s.store.Update(func(c *settings.Settings) { sl.set(c, want) }); err != nil {
-				s.dirErr = "Не удалось сохранить: " + err.Error()
+				s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 			}
 		}
 	}
@@ -312,19 +323,19 @@ func (s *state) apply(gtx layout.Context) {
 	s.glueLayout.Update(gtx)
 	if want := settings.GlueLayout(s.glueLayout.Value); want != s.store.Get().Glue.Layout {
 		if err := s.store.Update(func(c *settings.Settings) { c.Glue.Layout = want }); err != nil {
-			s.dirErr = "Не удалось сохранить: " + err.Error()
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 	}
 	s.format.Update(gtx)
 	if want := settings.FileFormat(s.format.Value); want != s.store.Get().Format {
 		if err := s.store.Update(func(c *settings.Settings) { c.Format = want }); err != nil {
-			s.dirErr = "Не удалось сохранить: " + err.Error()
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 	}
 	s.glueBg.Update(gtx)
 	if want := settings.GlueBackground(s.glueBg.Value); want != s.store.Get().Glue.Background {
 		if err := s.store.Update(func(c *settings.Settings) { c.Glue.Background = want }); err != nil {
-			s.dirErr = "Не удалось сохранить: " + err.Error()
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 	}
 	for i := range s.glue {
@@ -336,7 +347,7 @@ func (s *state) apply(gtx layout.Context) {
 	s.toolChoice.Update(gtx)
 	if want := s.toolChoice.Value; want != s.store.Get().DefaultTool {
 		if err := s.store.Update(func(c *settings.Settings) { c.DefaultTool = want }); err != nil {
-			s.dirErr = "Не удалось сохранить: " + err.Error()
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 	}
 	for _, row := range s.toolRows {
@@ -351,28 +362,28 @@ func (s *state) apply(gtx layout.Context) {
 	s.cursor.Update(gtx)
 	if want := s.cursor.Value; want != s.store.Get().IncludeCursor {
 		if err := s.store.Update(func(c *settings.Settings) { c.IncludeCursor = want }); err != nil {
-			s.dirErr = "Не удалось сохранить: " + err.Error()
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 	}
 
 	s.keepOpen.Update(gtx)
 	if want := s.keepOpen.Value; want != s.store.Get().KeepOpen {
 		if err := s.store.Update(func(c *settings.Settings) { c.KeepOpen = want }); err != nil {
-			s.dirErr = "Не удалось сохранить: " + err.Error()
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 	}
 
 	s.showSize.Update(gtx)
 	if want := s.showSize.Value; want != s.store.Get().ShowSize {
 		if err := s.store.Update(func(c *settings.Settings) { c.ShowSize = want }); err != nil {
-			s.dirErr = "Не удалось сохранить: " + err.Error()
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 	}
 
 	s.remember.Update(gtx)
 	if want := s.remember.Value; want != s.store.Get().RememberRegion {
 		if err := s.store.Update(func(c *settings.Settings) { c.RememberRegion = want }); err != nil {
-			s.dirErr = "Не удалось сохранить: " + err.Error()
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 	}
 
@@ -410,7 +421,7 @@ func (s *state) applyBorderColor(txt string) {
 	}
 	s.colorErr = ""
 	if err := s.store.Update(func(cfg *settings.Settings) { cfg.BorderColor = settings.FormatColor(c) }); err != nil {
-		s.colorErr = "Не удалось сохранить: " + err.Error()
+		s.colorErr = i18n.T("Не удалось сохранить: ") + err.Error()
 	}
 }
 
@@ -422,7 +433,7 @@ func (s *state) openOutputDir() {
 		err = openFolder(dir)
 	}
 	if err != nil {
-		s.dirErr = "Не удалось открыть папку: " + err.Error()
+		s.dirErr = i18n.T("Не удалось открыть папку: ") + err.Error()
 		return
 	}
 	s.dirErr = ""
@@ -460,7 +471,7 @@ func (s *state) applyPrefix(prefix string) {
 	}
 	s.prefixErr = ""
 	if err := s.store.Update(func(c *settings.Settings) { c.FilePrefix = prefix }); err != nil {
-		s.prefixErr = "Не удалось сохранить: " + err.Error()
+		s.prefixErr = i18n.T("Не удалось сохранить: ") + err.Error()
 	}
 }
 
@@ -472,7 +483,7 @@ func (s *state) applyDir(dir string) {
 	}
 	s.dirErr = ""
 	if err := s.store.Update(func(c *settings.Settings) { c.SaveDir = dir }); err != nil {
-		s.dirErr = "Не удалось сохранить: " + err.Error()
+		s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 	}
 }
 
@@ -569,12 +580,12 @@ func (s *state) initTools(cur settings.Settings) {
 			continue
 		}
 		name := name
-		row := &toolRow{name: name, label: toolLabels[i]}
+		row := &toolRow{name: name, label: toolLabels[i]} // русский ключ: переводится при показе
 		row.ed.SingleLine = true
 		row.ed.SetText(cur.Tools.Of(name).Color)
 		row.sl = s.addSlider(0, settings.MaxToolWidth, 1, func(v float64) string {
 			if v == 0 {
-				return "станд."
+				return i18n.T("станд.")
 			}
 			return fmt.Sprintf("%.0f", v)
 		},
@@ -598,7 +609,7 @@ func (s *state) applyToolColor(row *toolRow) {
 	}
 	row.err = ""
 	if err := s.store.Update(func(c *settings.Settings) { c.Tools.Of(row.name).Color = value }); err != nil {
-		row.err = "Не удалось сохранить: " + err.Error()
+		row.err = i18n.T("Не удалось сохранить: ") + err.Error()
 	}
 }
 
@@ -616,7 +627,7 @@ func (s *state) toolControls() layout.Widget {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						gtx.Constraints.Min.X = gtx.Dp(84)
-						return s.label(material.Body2, row.label, fgColor)(gtx)
+						return s.label(material.Body2, i18n.T(row.label), fgColor)(gtx)
 					}),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						if c == (color.NRGBA{}) {
@@ -637,7 +648,7 @@ func (s *state) toolControls() layout.Widget {
 				)
 			}))
 			if row.err != "" {
-				children = append(children, layout.Rigid(s.label(material.Caption, row.label+": "+row.err, errorColor)))
+				children = append(children, layout.Rigid(s.label(material.Caption, i18n.T(row.label)+": "+row.err, errorColor)))
 			}
 			children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout))
 		}
@@ -668,15 +679,15 @@ func (s *state) borderControls() layout.Widget {
 			return swatchBox(gtx, c, 36)
 		}
 		children := []layout.FlexChild{
-			labeled("Толщина", s.bWidth),
-			labeled("Штрих", s.bDash),
-			labeled("Пауза", s.bGap),
+			labeled(i18n.T("Толщина"), s.bWidth),
+			labeled(i18n.T("Штрих"), s.bDash),
+			labeled(i18n.T("Пауза"), s.bGap),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						gtx.Constraints.Min.X = gtx.Dp(80)
-						return s.label(material.Body2, "Цвет", mutedColor)(gtx)
+						return s.label(material.Body2, i18n.T("Цвет"), mutedColor)(gtx)
 					}),
 					layout.Rigid(swatch),
 					layout.Rigid(layout.Spacer{Width: unit.Dp(10)}.Layout),
@@ -713,14 +724,14 @@ func (s *state) applyPalette() {
 		}
 		c, err := settings.ParseColor(txt)
 		if err != nil {
-			s.palErr = fmt.Sprintf("Цвет %d: %v", i+1, err)
+			s.palErr = fmt.Sprintf(i18n.T("Цвет %d: %v"), i+1, err)
 			return
 		}
 		pal[i] = settings.FormatColor(c)
 	}
 	s.palErr = ""
 	if err := s.store.Update(func(c *settings.Settings) { c.Palette = pal }); err != nil {
-		s.palErr = "Не удалось сохранить: " + err.Error()
+		s.palErr = i18n.T("Не удалось сохранить: ") + err.Error()
 	}
 }
 
@@ -760,7 +771,7 @@ func (s *state) paletteControls() layout.Widget {
 			children = append(children, layout.Rigid(s.label(material.Caption, s.palErr, errorColor)), layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout))
 		}
 		children = append(children, layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			b := material.Button(s.th, &s.palReset, "По умолчанию")
+			b := material.Button(s.th, &s.palReset, i18n.T("По умолчанию"))
 			b.Background = borderColor
 			return b.Layout(gtx)
 		}))
@@ -782,14 +793,14 @@ func (s *state) applyGlueLabel(i int) {
 	}
 	s.glueErr[i] = ""
 	if err := s.store.Update(func(c *settings.Settings) { *glueField(&c.Glue, i) = txt }); err != nil {
-		s.glueErr[i] = "Не удалось сохранить: " + err.Error()
+		s.glueErr[i] = i18n.T("Не удалось сохранить: ") + err.Error()
 	}
 }
 
 // glueControls — три поля со словами подписей склейки.
 func (s *state) glueControls() layout.Widget {
-	names := [3]string{"Первая из двух", "Вторая из двух", "Если больше двух"}
-	hints := [3]string{settings.DefaultGlueBefore, settings.DefaultGlueAfter, settings.DefaultGlueStep}
+	names := [3]string{i18n.T("Первая из двух"), i18n.T("Вторая из двух"), i18n.T("Если больше двух")}
+	hints := [3]string{i18n.T(settings.DefaultGlueBefore), i18n.T(settings.DefaultGlueAfter), i18n.T(settings.DefaultGlueStep)}
 	return func(gtx layout.Context) layout.Dimensions {
 		var children []layout.FlexChild
 		for i := range s.glue {
@@ -818,7 +829,7 @@ func (s *state) hotkeyControl() layout.Widget {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(s.field(&s.hotkeyEd, "Print")),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout),
-			layout.Rigid(s.taskControl(&s.hotkey, "Назначить")),
+			layout.Rigid(s.taskControl(&s.hotkey, i18n.T("Назначить"))),
 		)
 	}
 }
@@ -827,7 +838,7 @@ func (s *state) hotkeyControl() layout.Widget {
 func (s *state) toolChoiceRadios() layout.Widget {
 	items := make([]layout.Widget, len(settings.ToolNames))
 	for i, name := range settings.ToolNames {
-		items[i] = s.radio(&s.toolChoice, name, toolLabels[i])
+		items[i] = s.radio(&s.toolChoice, name, i18n.T(toolLabels[i]))
 	}
 	return radios(items...)
 }
@@ -859,9 +870,9 @@ func (s *state) items() []layout.Widget {
 				return b.Layout
 			}
 			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(btn(&s.reset, "По умолчанию")),
+				layout.Rigid(btn(&s.reset, i18n.T("По умолчанию"))),
 				layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
-				layout.Rigid(btn(&s.openDir, "Открыть папку")),
+				layout.Rigid(btn(&s.openDir, i18n.T("Открыть папку"))),
 			)
 		}))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
@@ -878,79 +889,86 @@ func (s *state) items() []layout.Widget {
 			current = s.store.Get()
 		}
 		example := current.FileName(time.Now().Format(settings.StampLayout))
-		children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout), layout.Rigid(s.label(material.Caption, "Например: "+example, mutedColor)))
+		children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout), layout.Rigid(s.label(material.Caption, i18n.T("Например: ")+example, mutedColor)))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
 
 	return []layout.Widget{
-		s.section("Действия"),
-		s.row("Двойной клик внутри выделения", "Работает с инструментом «выделение», не на рамке.",
+		s.section(i18n.T("Общие")),
+		s.row(i18n.T("Язык интерфейса"), i18n.T("Окно настроек меняется сразу, оверлей и уведомления при следующем снимке."),
 			radios(
-				s.radio(&s.choice, string(settings.DoubleClickOff), "Ничего"),
-				s.radio(&s.choice, string(settings.DoubleClickCopy), "Копировать в буфер обмена"),
-				s.radio(&s.choice, string(settings.DoubleClickCopySave), "Копировать и сохранить в файл"),
+				s.radio(&s.lang, i18n.Auto, i18n.T("Как в системе")),
+				s.radio(&s.lang, i18n.RU, "Русский"),
+				s.radio(&s.lang, i18n.EN, "English"),
 			)),
-		s.row("Клавиша Enter", "Ctrl+C, Ctrl+S и кнопки на панели от этой настройки не зависят.",
+		s.section(i18n.T("Действия")),
+		s.row(i18n.T("Двойной клик внутри выделения"), i18n.T("Работает с инструментом «выделение», не на рамке."),
 			radios(
-				s.radio(&s.enter, string(settings.EnterCopySave), "Копировать и сохранить в файл"),
-				s.radio(&s.enter, string(settings.EnterCopy), "Только копировать в буфер обмена"),
-				s.radio(&s.enter, string(settings.EnterSave), "Только сохранить в файл"),
+				s.radio(&s.choice, string(settings.DoubleClickOff), i18n.T("Ничего")),
+				s.radio(&s.choice, string(settings.DoubleClickCopy), i18n.T("Копировать в буфер обмена")),
+				s.radio(&s.choice, string(settings.DoubleClickCopySave), i18n.T("Копировать и сохранить в файл")),
 			)),
-		s.row("Курсор мыши", "Работает при обычном захвате экрана. В запасном способе через Screenshot portal курсора в снимке нет.",
-			s.checkbox(&s.cursor, "Показывать курсор на снимке")),
-		s.row("После копирования", "Enter, Ctrl+C, Ctrl+S, двойной клик и кнопки панели. Выход по Esc.",
-			s.checkbox(&s.keepOpen, "Не закрывать, а продолжать редактировать")),
-		s.row("Уведомления", "После снимка и действий с подборкой. Ошибки показываются всегда.",
-			s.checkbox(&s.notify, "Показывать уведомления")),
-		s.row("Прошлая область", "Показывается сразу при запуске и по клавише R. Без неё «было/стало» не подставит область само.",
-			s.checkbox(&s.remember, "Запоминать область снимка")),
-		s.section("Инструменты"),
-		s.row("Инструмент после выбора области", "Включается сам, когда область выделена. «Выделение»: ничего не включать.",
+		s.row(i18n.T("Клавиша Enter"), i18n.T("Ctrl+C, Ctrl+S и кнопки на панели от этой настройки не зависят."),
+			radios(
+				s.radio(&s.enter, string(settings.EnterCopySave), i18n.T("Копировать и сохранить в файл")),
+				s.radio(&s.enter, string(settings.EnterCopy), i18n.T("Только копировать в буфер обмена")),
+				s.radio(&s.enter, string(settings.EnterSave), i18n.T("Только сохранить в файл")),
+			)),
+		s.row(i18n.T("Курсор мыши"), i18n.T("Работает при обычном захвате экрана. В запасном способе через Screenshot portal курсора в снимке нет."),
+			s.checkbox(&s.cursor, i18n.T("Показывать курсор на снимке"))),
+		s.row(i18n.T("После копирования"), i18n.T("Enter, Ctrl+C, Ctrl+S, двойной клик и кнопки панели. Выход по Esc."),
+			s.checkbox(&s.keepOpen, i18n.T("Не закрывать, а продолжать редактировать"))),
+		s.row(i18n.T("Уведомления"), i18n.T("После снимка и действий с подборкой. Ошибки показываются всегда."),
+			s.checkbox(&s.notify, i18n.T("Показывать уведомления"))),
+		s.row(i18n.T("Прошлая область"), i18n.T("Показывается сразу при запуске и по клавише R. Без неё «было/стало» не подставит область само."),
+			s.checkbox(&s.remember, i18n.T("Запоминать область снимка"))),
+		s.section(i18n.T("Инструменты")),
+		s.row(i18n.T("Инструмент после выбора области"), i18n.T("Включается сам, когда область выделена. «Выделение»: ничего не включать."),
 			s.toolChoiceRadios()),
-		s.row("Цвет и толщина по умолчанию", "Цвет #RRGGBB: пусто значит не менять. Цвет работает, пока вы сами не выбрали цвет в панели. Толщина для текста это размер, для размытия сила.",
+		s.row(i18n.T("Цвет и толщина по умолчанию"), i18n.T("Цвет #RRGGBB: пусто значит не менять. Цвет работает, пока вы сами не выбрали цвет в панели. Толщина для текста это размер, для размытия сила."),
 			s.toolControls()),
-		s.row("Цвета панели", "Восемь цветов в панели инструментов, #RRGGBB. Пустое поле: цвет по умолчанию. Применяется при следующем снимке.",
+		s.row(i18n.T("Цвета панели"), i18n.T("Восемь цветов в панели инструментов, #RRGGBB. Пустое поле: цвет по умолчанию. Применяется при следующем снимке."),
 			s.paletteControls()),
-		s.row("Прозрачность маркера", "Чем больше процент, тем плотнее закраска.", s.slider(s.marker)),
-		s.row("Формат файла", "В буфер обмена снимок всегда идёт в PNG.", radios(
-			s.radio(&s.format, string(settings.FormatPNG), "PNG: без потерь"),
-			s.radio(&s.format, string(settings.FormatJPEG), "JPEG: файл меньше, есть потери"),
+		s.row(i18n.T("Прозрачность маркера"), i18n.T("Чем больше процент, тем плотнее закраска."), s.slider(s.marker)),
+		s.row(i18n.T("Формат файла"), i18n.T("В буфер обмена снимок всегда идёт в PNG."), radios(
+			s.radio(&s.format, string(settings.FormatPNG), i18n.T("PNG: без потерь")),
+			s.radio(&s.format, string(settings.FormatJPEG), i18n.T("JPEG: файл меньше, есть потери")),
 		)),
-		s.row("Качество JPEG", "Чем выше, тем лучше картинка и больше файл.", s.slider(s.quality)),
-		s.section("Захват экрана"),
-		s.row("Горячая клавиша запуска", "Создаёт или обновляет ярлык в настройках клавиатуры GNOME. Формат: Print, <Super>s, <Control><Alt>p. Чужие ярлыки не меняются.",
+		s.row(i18n.T("Качество JPEG"), i18n.T("Чем выше, тем лучше картинка и больше файл."), s.slider(s.quality)),
+		s.section(i18n.T("Захват экрана")),
+		s.row(i18n.T("Горячая клавиша запуска"), i18n.T("Создаёт или обновляет ярлык в настройках клавиатуры GNOME. Формат: Print, <Super>s, <Control><Alt>p. Чужие ярлыки не меняются."),
 			s.hotkeyControl()),
-		s.row("Мониторы", "Выбрать мониторы заново: GNOME покажет диалог на каждый монитор. Нужно после подключения или замены монитора. Раньше: scrawl -setup.",
-			s.taskControl(&s.monitors, "Выбрать мониторы заново")),
-		s.row("Разрешение на запасной снимок", "Нужно запасному способу захвата через Screenshot portal, когда PipeWire не отдал кадр. Раньше: scrawl -grant-screenshot.",
-			s.taskControl(&s.grant, "Выдать разрешение")),
-		s.section("Клавиши оверлея"),
-		s.row("Клавиши", "Нажмите кнопку и затем новую комбинацию. Esc отменяет запись. Применяются при следующем снимке.",
+		s.row(i18n.T("Мониторы"), i18n.T("Выбрать мониторы заново: GNOME покажет диалог на каждый монитор. Нужно после подключения или замены монитора. Раньше: scrawl -setup."),
+			s.taskControl(&s.monitors, i18n.T("Выбрать мониторы заново"))),
+		s.row(i18n.T("Разрешение на запасной снимок"), i18n.T("Нужно запасному способу захвата через Screenshot portal, когда PipeWire не отдал кадр. Раньше: scrawl -grant-screenshot."),
+			s.taskControl(&s.grant, i18n.T("Выдать разрешение"))),
+		s.section(i18n.T("Клавиши оверлея")),
+		s.row(i18n.T("Клавиши"), i18n.T("Нажмите кнопку и затем новую комбинацию. Esc отменяет запись. Применяются при следующем снимке."),
 			s.keyControls()),
-		s.section("Склейка «было/стало»"),
-		s.row("Расположение", "Картинки выравниваются по самой низкой (рядом) или по самой узкой (друг под другом).",
+		s.section(i18n.T("Склейка «было/стало»")),
+		s.row(i18n.T("Расположение"), i18n.T("Картинки выравниваются по самой низкой (рядом) или по самой узкой (друг под другом)."),
 			radios(
-				s.radio(&s.glueLayout, string(settings.GlueSide), "Рядом, слева направо"),
-				s.radio(&s.glueLayout, string(settings.GlueStack), "Друг под другом, сверху вниз"),
+				s.radio(&s.glueLayout, string(settings.GlueSide), i18n.T("Рядом, слева направо")),
+				s.radio(&s.glueLayout, string(settings.GlueStack), i18n.T("Друг под другом, сверху вниз")),
 			)),
-		s.row("Фон", "", radios(
-			s.radio(&s.glueBg, string(settings.GlueLight), "Белый"),
-			s.radio(&s.glueBg, string(settings.GlueDark), "Тёмный"),
+		s.row(i18n.T("Фон"), "", radios(
+			s.radio(&s.glueBg, string(settings.GlueLight), i18n.T("Белый")),
+			s.radio(&s.glueBg, string(settings.GlueDark), i18n.T("Тёмный")),
 		)),
-		s.row("Отступы", "От краёв и между картинками.", s.slider(s.gluePad)),
-		s.row("Размер подписи", "", s.slider(s.glueFont)),
-		s.row("Подписи над картинками", "Пусто: слова по умолчанию. При трёх и больше картинок к слову добавляется номер: «Шаг 1».",
+		s.row(i18n.T("Отступы"), i18n.T("От краёв и между картинками."), s.slider(s.gluePad)),
+		s.row(i18n.T("Размер подписи"), "", s.slider(s.glueFont)),
+		s.row(i18n.T("Подписи над картинками"), i18n.T("Пусто: слова по умолчанию. При трёх и больше картинок к слову добавляется номер: «Шаг 1»."),
 			s.glueControls()),
-		s.section("Вид"),
-		s.row("Рамка выделения", "Пунктир вокруг выбранной области.", s.borderControls()),
-		s.row("Размер области", "Подпись «ширина × высота» над левым верхним углом.",
-			s.checkbox(&s.showSize, "Показывать размер")),
-		s.row("Угловые ручки", "Кружки в углах рамки, за них меняют размер области. «нет» прячет их.", s.slider(s.handle)),
-		s.row("Затемнение вне области", "0% не затемняет совсем, 100% закрашивает чёрным.", s.slider(s.dim)),
-		s.section("Сохранение"),
-		s.row("Папка для скриншотов", "Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь.", dirField),
-		s.row("Имя файла", "Начало имени, дальше идут дата и время. Пусто: "+settings.DefaultFilePrefix+".", prefixField),
-		s.section("О программе"),
+		s.section(i18n.T("Вид")),
+		s.row(i18n.T("Рамка выделения"), i18n.T("Пунктир вокруг выбранной области."), s.borderControls()),
+		s.row(i18n.T("Размер области"), i18n.T("Подпись «ширина × высота» над левым верхним углом."),
+			s.checkbox(&s.showSize, i18n.T("Показывать размер"))),
+		s.row(i18n.T("Угловые ручки"), i18n.T("Кружки в углах рамки, за них меняют размер области. «нет» прячет их."), s.slider(s.handle)),
+		s.row(i18n.T("Затемнение вне области"), i18n.T("0% не затемняет совсем, 100% закрашивает чёрным."), s.slider(s.dim)),
+		s.section(i18n.T("Сохранение")),
+		s.row(i18n.T("Папка для скриншотов"), i18n.T("Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь."), dirField),
+		s.row(i18n.T("Имя файла"), i18n.T("Начало имени, дальше идут дата и время. Пусто: ")+settings.DefaultFilePrefix+".", prefixField),
+		s.section(i18n.T("О программе")),
 		s.row("Scrawl "+version.String(), version.Home, nil),
 	}
 }
@@ -962,7 +980,7 @@ func (s *state) layout(gtx layout.Context) layout.Dimensions {
 
 	return layout.UniformInset(unit.Dp(22)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(s.label(material.H6, "Настройки", fgColor)),
+			layout.Rigid(s.label(material.H6, i18n.T("Настройки"), fgColor)),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(14)}.Layout),
 			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 				list := material.List(th, &s.list)
@@ -972,10 +990,10 @@ func (s *state) layout(gtx layout.Context) layout.Dimensions {
 				})
 			}),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(10)}.Layout),
-			layout.Rigid(s.label(material.Caption, "Изменения применяются сразу. Файл: "+settings.Path(), mutedColor)),
+			layout.Rigid(s.label(material.Caption, i18n.T("Изменения применяются сразу. Файл: ")+settings.Path(), mutedColor)),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(10)}.Layout),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				b := material.Button(th, &s.close, "Закрыть")
+				b := material.Button(th, &s.close, i18n.T("Закрыть"))
 				b.Background = accentColor
 				return b.Layout(gtx)
 			}),

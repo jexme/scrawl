@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jexme/scrawl/internal/collection"
+	"github.com/jexme/scrawl/internal/i18n"
 	"github.com/jexme/scrawl/internal/settings"
 )
 
@@ -18,7 +19,7 @@ func (m *monitor) renderCurrent() ([]byte, *image.RGBA, error) {
 	}
 	img, err := render(m.frame.Img, m.sel, m.shapes, m.shaper)
 	if err != nil {
-		return nil, nil, fmt.Errorf("рендер: %w", err)
+		return nil, nil, fmt.Errorf(i18n.T("рендер: %w"), err)
 	}
 	data, err := encodePNG(img)
 	if err != nil {
@@ -31,19 +32,19 @@ func (m *monitor) renderCurrent() ([]byte, *image.RGBA, error) {
 // запуск покажет плашку подборки.
 func (m *monitor) addToCollection() {
 	if !m.hasSel {
-		notify("Подборка", "Сначала выделите область")
+		notify(i18n.T("Подборка"), i18n.T("Сначала выделите область"))
 		return
 	}
 	data, _, err := m.renderCurrent()
 	if err != nil {
-		fail("подборка", err)
+		fail(i18n.T("подборка"), err)
 		return
 	}
 	if _, err := collection.Add(data); err != nil {
-		fail("подборка", err)
+		fail(i18n.T("подборка"), err)
 		return
 	}
-	m.inform("Добавлено в подборку", fmt.Sprintf("Картинок в подборке: %d", collection.Count()))
+	m.inform(i18n.T("Добавлено в подборку"), fmt.Sprintf(i18n.T("Картинок в подборке: %d"), collection.Count()))
 	m.quit()
 }
 
@@ -74,39 +75,39 @@ func (m *monitor) collected() (paths []string, current []byte, imgs []*image.RGB
 func (m *monitor) glueCollection() {
 	_, _, imgs, err := m.collected()
 	if err != nil {
-		fail("склейка", err)
+		fail(i18n.T("склейка"), err)
 		return
 	}
 	if len(imgs) < 2 {
-		notify("Склейка", "Нужно минимум две картинки: добавьте в подборку или выделите область")
+		notify(i18n.T("Склейка"), i18n.T("Нужно минимум две картинки: добавьте в подборку или выделите область"))
 		return
 	}
 	cfg := m.store.Get()
 	out, err := compose(imgs, cfg.Glue.Labels(len(imgs)), m.shaper, cfg.Glue)
 	if err != nil {
-		fail("склейка", err)
+		fail(i18n.T("склейка"), err)
 		return
 	}
 	data, err := encodePNG(out)
 	if err != nil {
-		fail("склейка", err)
+		fail(i18n.T("склейка"), err)
 		return
 	}
 	path, err := saveFile(m.store.Get(), data)
 	if err != nil {
-		fail("склейка", err)
+		fail(i18n.T("склейка"), err)
 		return
 	}
 	msg := path
 	if err := copyPNG(data); err != nil {
-		fail("буфер обмена", err)
+		fail(i18n.T("буфер обмена"), err)
 	} else {
-		msg += " (и в буфер обмена)"
+		msg += i18n.T(" (и в буфер обмена)")
 	}
 	if err := collection.Clear(); err != nil {
-		fail("очистка подборки", err)
+		fail(i18n.T("очистка подборки"), err)
 	}
-	m.inform(fmt.Sprintf("Склеено картинок: %d", len(imgs)), msg)
+	m.inform(fmt.Sprintf(i18n.T("Склеено картинок: %d"), len(imgs)), msg)
 	m.quit()
 }
 
@@ -116,14 +117,14 @@ func (m *monitor) glueCollection() {
 func (m *monitor) sendSeparately() {
 	paths, current, _, err := m.collected()
 	if err != nil {
-		fail("отдельные файлы", err)
+		fail(i18n.T("отдельные файлы"), err)
 		return
 	}
 	var datas [][]byte
 	for _, p := range paths {
 		data, err := os.ReadFile(p)
 		if err != nil {
-			fail("отдельные файлы", err)
+			fail(i18n.T("отдельные файлы"), err)
 			return
 		}
 		datas = append(datas, data)
@@ -132,7 +133,7 @@ func (m *monitor) sendSeparately() {
 		datas = append(datas, current)
 	}
 	if len(datas) == 0 {
-		notify("Отдельные файлы", "Подборка пуста: выделите область или добавьте картинки")
+		notify(i18n.T("Отдельные файлы"), i18n.T("Подборка пуста: выделите область или добавьте картинки"))
 		return
 	}
 
@@ -142,30 +143,30 @@ func (m *monitor) sendSeparately() {
 	for i, data := range datas {
 		path, err := saveNumbered(m.store.Get(), data, stamp, i+1)
 		if err != nil {
-			fail("отдельные файлы", err)
+			fail(i18n.T("отдельные файлы"), err)
 			return
 		}
 		saved = append(saved, path)
 	}
-	msg := fmt.Sprintf("%d файла(ов) в %s", len(saved), filepath.Dir(saved[0]))
+	msg := fmt.Sprintf(i18n.T("%d файла(ов) в %s"), len(saved), filepath.Dir(saved[0]))
 	if err := copyFiles(saved); err != nil {
-		fail("буфер обмена", err)
+		fail(i18n.T("буфер обмена"), err)
 	} else {
-		msg += ", список в буфере обмена"
+		msg += i18n.T(", список в буфере обмена")
 	}
 	if err := collection.Clear(); err != nil {
-		fail("очистка подборки", err)
+		fail(i18n.T("очистка подборки"), err)
 	}
-	m.inform("Скриншоты готовы", msg)
+	m.inform(i18n.T("Скриншоты готовы"), msg)
 	m.quit()
 }
 
 // clearCollection очищает подборку и обновляет плашку.
 func (m *monitor) clearCollection() {
 	if err := collection.Clear(); err != nil {
-		fail("очистка подборки", err)
+		fail(i18n.T("очистка подборки"), err)
 		return
 	}
 	m.queued = 0
-	m.inform("Подборка очищена", "")
+	m.inform(i18n.T("Подборка очищена"), "")
 }

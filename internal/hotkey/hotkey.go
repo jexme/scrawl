@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/jexme/scrawl/internal/i18n"
 )
 
 const (
@@ -47,7 +49,7 @@ var accelRe = regexp.MustCompile(`(?i)^(<(Super|Control|Primary|Shift|Alt|Mod1|C
 // <Control><Alt>p.
 func ValidateAccel(accel string) error {
 	if !accelRe.MatchString(accel) {
-		return errors.New("комбинация в формате GNOME: Print, <Super>s, <Control><Alt>p")
+		return errors.New(i18n.T("комбинация в формате GNOME: Print, <Super>s, <Control><Alt>p"))
 	}
 	return nil
 }
@@ -62,7 +64,7 @@ type Result struct {
 type Conflict struct{ Name, Accel string }
 
 func (c *Conflict) Error() string {
-	return fmt.Sprintf("комбинация %s уже занята ярлыком «%s»: освободите её в настройках клавиатуры", c.Accel, c.Name)
+	return fmt.Sprintf(i18n.T("комбинация %s уже занята ярлыком «%s»: освободите её в настройках клавиатуры"), c.Accel, c.Name)
 }
 
 type shortcut struct{ path, name, command, binding string }
@@ -173,7 +175,7 @@ func Assign(accel, bin string) (Result, error) {
 		if out, err := gsettings("get", b[0], b[1]); err == nil {
 			for _, other := range parseStrings(out) {
 				if sameAccel(other, accel) {
-					res.Warning = fmt.Sprintf("комбинация %s есть и у встроенного ярлыка GNOME (%s)", accel, b[1])
+					res.Warning = fmt.Sprintf(i18n.T("комбинация %s есть и у встроенного ярлыка GNOME (%s)"), accel, b[1])
 				}
 			}
 		}

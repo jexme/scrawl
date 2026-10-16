@@ -10,6 +10,7 @@ import (
 	"gioui.org/f32"
 
 	"github.com/jexme/scrawl/internal/annotate"
+	"github.com/jexme/scrawl/internal/i18n"
 	"github.com/jexme/scrawl/internal/settings"
 )
 
@@ -53,7 +54,7 @@ func (m *monitor) openSettingsWindow() {
 		err = exec.Command(exe, "-settings").Start()
 	}
 	if err != nil {
-		fail("настройки", fmt.Errorf("не удалось открыть окно настроек: %w", err))
+		fail(i18n.T("настройки"), fmt.Errorf(i18n.T("не удалось открыть окно настроек: %w"), err))
 		return
 	}
 	m.quit()

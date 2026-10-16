@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/jexme/scrawl/internal/i18n"
 )
 
 // Действия оверлея, которым можно назначить клавиши.
@@ -116,12 +118,12 @@ func ParseChord(s string) (string, error) {
 		case "alt":
 			alt = true
 		default:
-			return "", fmt.Errorf("неизвестный модификатор «%s»: можно Ctrl, Shift, Alt", strings.TrimSpace(p))
+			return "", fmt.Errorf(i18n.T("неизвестный модификатор «%s»: можно Ctrl, Shift, Alt"), strings.TrimSpace(p))
 		}
 	}
 	key := strings.TrimSpace(parts[len(parts)-1])
 	if key == "" {
-		return "", errors.New("не указана клавиша")
+		return "", errors.New(i18n.T("не указана клавиша"))
 	}
 	canon := key
 	if len(key) == 1 {
@@ -137,7 +139,7 @@ func ParseChord(s string) (string, error) {
 		}
 	}
 	if !validKeyName(canon) {
-		return "", fmt.Errorf("неизвестная клавиша «%s»: буква, цифра, F1-F12, Enter, Escape, Space, Tab, Backspace, Delete, Home, End, PageUp, PageDown, стрелки (Up, Down, Left, Right)", key)
+		return "", fmt.Errorf(i18n.T("неизвестная клавиша «%s»: буква, цифра, F1-F12, Enter, Escape, Space, Tab, Backspace, Delete, Home, End, PageUp, PageDown, стрелки (Up, Down, Left, Right)"), key)
 	}
 	var out []string
 	if ctrl {

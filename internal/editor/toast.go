@@ -14,6 +14,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/jexme/scrawl/internal/annotate"
+	"github.com/jexme/scrawl/internal/i18n"
 )
 
 const (
@@ -25,13 +26,13 @@ const (
 func widthLabel(t annotate.Tool) string {
 	switch t {
 	case annotate.ToolText:
-		return "Размер текста"
+		return i18n.T("Размер текста")
 	case annotate.ToolBlur:
-		return "Сила размытия"
+		return i18n.T("Сила размытия")
 	case annotate.ToolMarker:
-		return "Толщина маркера"
+		return i18n.T("Толщина маркера")
 	default:
-		return "Толщина"
+		return i18n.T("Толщина")
 	}
 }
 

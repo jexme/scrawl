@@ -20,6 +20,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/jexme/scrawl/internal/annotate"
+	"github.com/jexme/scrawl/internal/i18n"
 	"github.com/jexme/scrawl/internal/settings"
 )
 
@@ -119,10 +120,10 @@ func composeSlots(imgs []*image.RGBA, g settings.Glue) (slots []composeSlot, siz
 // compose склеивает картинки в одну: с подписью сверху у каждой и тонкой рамкой.
 func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper, glue settings.Glue) (*image.RGBA, error) {
 	if len(imgs) < 2 {
-		return nil, fmt.Errorf("для склейки нужно минимум две картинки, есть %d", len(imgs))
+		return nil, fmt.Errorf(i18n.T("для склейки нужно минимум две картинки, есть %d"), len(imgs))
 	}
 	if len(labels) != len(imgs) {
-		return nil, fmt.Errorf("подписей %d, картинок %d", len(labels), len(imgs))
+		return nil, fmt.Errorf(i18n.T("подписей %d, картинок %d"), len(labels), len(imgs))
 	}
 
 	slots, size := composeSlots(imgs, glue)

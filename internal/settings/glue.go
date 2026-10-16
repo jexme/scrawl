@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/jexme/scrawl/internal/i18n"
 )
 
 // Glue — настройки склейки «было/стало».
@@ -60,11 +62,11 @@ const (
 // без управляющих символов.
 func ValidateGlueLabel(s string) error {
 	if utf8.RuneCountInString(s) > maxGlueLabel {
-		return fmt.Errorf("не длиннее %d знаков", maxGlueLabel)
+		return fmt.Errorf(i18n.T("не длиннее %d знаков"), maxGlueLabel)
 	}
 	for _, r := range s {
 		if unicode.IsControl(r) {
-			return errors.New("нельзя использовать управляющие символы")
+			return errors.New(i18n.T("нельзя использовать управляющие символы"))
 		}
 	}
 	return nil
@@ -101,9 +103,9 @@ func (g Glue) Labels(n int) []string {
 		return custom
 	}
 	if n == 2 {
-		return []string{pick(g.Before, DefaultGlueBefore), pick(g.After, DefaultGlueAfter)}
+		return []string{pick(g.Before, i18n.T(DefaultGlueBefore)), pick(g.After, i18n.T(DefaultGlueAfter))}
 	}
-	step := pick(g.Step, DefaultGlueStep)
+	step := pick(g.Step, i18n.T(DefaultGlueStep))
 	labels := make([]string, n)
 	for i := range labels {
 		labels[i] = fmt.Sprintf("%s %d", step, i+1)

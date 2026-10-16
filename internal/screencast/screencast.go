@@ -5,6 +5,7 @@ package screencast
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	"os"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/godbus/dbus/v5"
 
+	"github.com/jexme/scrawl/internal/i18n"
 	"github.com/jexme/scrawl/internal/pwcapture"
 )
 
@@ -200,11 +202,11 @@ func (p *Portal) request(method string, timeout time.Duration, lead []any, extra
 		code, _ := sig.Body[0].(uint32)
 		res, _ := sig.Body[1].(map[string]dbus.Variant)
 		if code != 0 {
-			return nil, fmt.Errorf("%s: портал вернул код %d (отмена или отказ)", method, code)
+			return nil, fmt.Errorf(i18n.T("%s: портал вернул код %d (отмена или отказ)"), method, code)
 		}
 		return res, nil
 	case <-time.After(timeout):
-		return nil, fmt.Errorf("%s: таймаут %v", method, timeout)
+		return nil, fmt.Errorf(i18n.T("%s: таймаут %v"), method, timeout)
 	}
 }
 
@@ -219,7 +221,7 @@ func (p *Portal) NewSession(restore string) (*Session, string, error) {
 	}
 	handle, _ := res["session_handle"].Value().(string)
 	if handle == "" {
-		return nil, "", fmt.Errorf("в ответе нет session_handle")
+		return nil, "", errors.New(i18n.T("в ответе нет session_handle"))
 	}
 	sh := dbus.ObjectPath(handle)
 
@@ -253,10 +255,10 @@ func (p *Portal) NewSession(restore string) (*Session, string, error) {
 	}
 	s := &Session{p: p, handle: handle}
 	if err := res["streams"].Store(&s.streams); err != nil {
-		return nil, "", fmt.Errorf("разбор streams: %w", err)
+		return nil, "", fmt.Errorf(i18n.T("разбор streams: %w"), err)
 	}
 	if len(s.streams) == 0 {
-		return nil, "", fmt.Errorf("портал не вернул потоков")
+		return nil, "", errors.New(i18n.T("портал не вернул потоков"))
 	}
 	newToken, _ := res["restore_token"].Value().(string)
 	return s, newToken, nil
@@ -342,7 +344,7 @@ func grab(st stream, remote *os.File, timeout time.Duration) (Frame, error) {
 	}
 	img, err := pwcapture.Capture(fd, st.ID, timeout)
 	if err != nil {
-		return f, fmt.Errorf("узел %d: %w", st.ID, err)
+		return f, fmt.Errorf(i18n.T("узел %d: %w"), st.ID, err)
 	}
 	f.Img = img
 	return f, nil
