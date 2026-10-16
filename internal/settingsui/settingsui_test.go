@@ -479,3 +479,37 @@ func TestGrantButton(t *testing.T) {
 		t.Errorf("ошибка должна показываться: %q, %v", msg, failed)
 	}
 }
+
+func TestMonitorsButtonReportsProgress(t *testing.T) {
+	s := testState(t)
+	old := setupMonitors
+	defer func() { setupMonitors = old }()
+
+	release := make(chan struct{})
+	setupMonitors = func(progress func(string)) (string, error) {
+		progress("Диалог 1 из 2: выберите монитор")
+		<-release
+		return "Мониторов настроено: 2", nil
+	}
+	s.monitors.btn.Click()
+	s.layout(frameContext(700, 650))
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		if msg, _, _ := s.monitors.status(); strings.HasPrefix(msg, "Диалог 1") {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if msg, _, running := s.monitors.status(); !running || !strings.HasPrefix(msg, "Диалог 1") {
+		t.Fatalf("пока диалоги идут, видна подсказка: %q, идёт=%v", msg, running)
+	}
+	// Повторное нажатие во время работы ничего не запускает.
+	s.monitors.btn.Click()
+	s.layout(frameContext(700, 650))
+
+	close(release)
+	waitDone(t, &s.monitors)
+	if msg, failed, _ := s.monitors.status(); failed || msg != "Мониторов настроено: 2" {
+		t.Errorf("итог: %q, ошибка %v", msg, failed)
+	}
+}

@@ -14,6 +14,7 @@ import (
 // подменяют их, чтобы не трогать настройки системы.
 var (
 	grantPermission = screencast.GrantScreenshotPermission
+	setupMonitors   = screencast.SetupMonitors
 )
 
 // task — кнопка, запускающая действие в фоне, и строка с результатом под ней.

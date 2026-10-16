@@ -84,6 +84,7 @@ type state struct {
 
 	invalidate func() // перерисовать окно из другой горутины
 	grant      task   // выдача разрешения на запасной снимок
+	monitors   task   // повторный выбор мониторов
 	dirErr     string
 	prefixErr  string
 }
@@ -208,6 +209,12 @@ func loop(s *state) {
 // apply приводит сохранённые настройки в соответствие с виджетами. Вызывается
 // на каждом кадре: ничего не пишет, пока значения не изменились.
 func (s *state) apply(gtx layout.Context) {
+	if s.monitors.btn.Clicked(gtx) {
+		s.start(&s.monitors, func(progress func(string)) (string, error) {
+			progress("Ждём диалоги GNOME…")
+			return setupMonitors(progress)
+		})
+	}
 	if s.grant.btn.Clicked(gtx) {
 		s.start(&s.grant, func(func(string)) (string, error) {
 			if err := grantPermission(); err != nil {
@@ -859,6 +866,8 @@ func (s *state) items() []layout.Widget {
 		)),
 		s.row("Качество JPEG", "Чем выше, тем лучше картинка и больше файл.", s.slider(s.quality)),
 		s.section("Захват экрана"),
+		s.row("Мониторы", "Выбрать мониторы заново: GNOME покажет диалог на каждый монитор. Нужно после подключения или замены монитора. Раньше: scrawl -setup.",
+			s.taskControl(&s.monitors, "Выбрать мониторы заново")),
 		s.row("Разрешение на запасной снимок", "Нужно запасному способу захвата через Screenshot portal, когда PipeWire не отдал кадр. Раньше: scrawl -grant-screenshot.",
 			s.taskControl(&s.grant, "Выдать разрешение")),
 		s.section("Склейка «было/стало»"),

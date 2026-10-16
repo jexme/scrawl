@@ -83,18 +83,9 @@ func main() {
 	// Старт сессий в замер не входит: в будущем их будет держать демон.
 	tSessions := time.Now()
 	sessions, newTokens, err := p.OpenAll(tokens, func(i, n int, again bool, left []screencast.MonitorInfo) {
-		msg := fmt.Sprintf("Диалог %d из %d: ", i+1, n)
-		if again {
-			msg = "Этот монитор уже выбран. " + msg
-		}
-		if len(left) == 1 {
-			msg += fmt.Sprintf("выберите монитор «%s» (%s)", left[0].Name, where(left[0], left))
-		} else {
-			msg += "выберите монитор, который ещё не выбирали"
-		}
-		msg += ", оставьте галочку «Запомнить этот выбор» и нажмите «Дать доступ»"
+		msg := screencast.SetupMessage(i, n, again, left)
 		fmt.Println(">>>", msg)
-		exec.Command("notify-send", "-a", "Scrawl", "Настройка мониторов", msg).Run()
+		screencast.SetupNotify(msg)
 	})
 	if err != nil {
 		fatal("сессии: %v", err)
@@ -145,17 +136,6 @@ func main() {
 		time.AfterFunc(*exitAfter, closeEditor)
 	}
 	app.Main()
-}
-
-// where описывает положение единственного оставшегося монитора словами.
-func where(m screencast.MonitorInfo, _ []screencast.MonitorInfo) string {
-	if m.Primary {
-		return "главный"
-	}
-	if m.X == 0 {
-		return "слева"
-	}
-	return "справа"
 }
 
 // fatal печатает ошибку и показывает уведомление: при запуске по хоткею
