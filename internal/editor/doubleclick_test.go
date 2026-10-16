@@ -1,8 +1,10 @@
 package editor
 
 import (
+	"bytes"
 	"image"
 	"image/color"
+	"image/jpeg"
 	"os"
 	"path/filepath"
 	"strings"
@@ -214,5 +216,51 @@ func TestMarkerOpacityFromSettings(t *testing.T) {
 	m.press(f32.Pt(100, 150))
 	if m.cur == nil || m.cur.Alpha != 204 {
 		t.Errorf("80%% это альфа 204: %+v", m.cur)
+	}
+}
+
+func TestSaveFileFormat(t *testing.T) {
+	sandbox(t)
+	m, _ := newTestMonitor(t)
+	// Картинка с шумом, чтобы качество JPEG влияло на размер.
+	img := image.NewRGBA(image.Rect(0, 0, 200, 150))
+	for i := range img.Pix {
+		img.Pix[i] = uint8(i * 7 % 251)
+		if i%4 == 3 {
+			img.Pix[i] = 255
+		}
+	}
+	data, err := encodePNG(img)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pngPath, err := saveFile(m.store.Get(), data)
+	if err != nil || !strings.HasSuffix(pngPath, ".png") {
+		t.Fatalf("PNG по умолчанию: %q, %v", pngPath, err)
+	}
+	if saved, _ := os.ReadFile(pngPath); !bytes.Equal(saved, data) {
+		t.Error("PNG записывается без перекодирования")
+	}
+
+	sizeAt := func(q int) int {
+		if err := m.store.Update(func(s *settings.Settings) { s.Format, s.JPEGQuality = settings.FormatJPEG, q }); err != nil {
+			t.Fatal(err)
+		}
+		path, err := saveNumbered(m.store.Get(), data, "20260101-120000", q)
+		if err != nil || !strings.HasSuffix(path, ".jpg") {
+			t.Fatalf("JPEG: %q, %v", path, err)
+		}
+		saved, err := os.ReadFile(path)
+		if err != nil || len(saved) < 3 || saved[0] != 0xFF || saved[1] != 0xD8 {
+			t.Fatalf("файл не похож на JPEG: %v", err)
+		}
+		if got, err := jpeg.Decode(bytes.NewReader(saved)); err != nil || got.Bounds().Dx() != 200 {
+			t.Fatalf("JPEG не читается: %v", err)
+		}
+		return len(saved)
+	}
+	if low, high := sizeAt(10), sizeAt(95); low >= high {
+		t.Errorf("качество 10 должно давать файл меньше, чем 95: %d и %d байт", low, high)
 	}
 }

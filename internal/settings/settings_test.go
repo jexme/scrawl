@@ -514,3 +514,26 @@ func TestGlueLook(t *testing.T) {
 		t.Errorf("неверный фон сбрасывается, отступ 0 допустим: %+v", g)
 	}
 }
+
+func TestFileFormat(t *testing.T) {
+	sandbox(t)
+	got := Load()
+	if got.Format != FormatPNG || got.JPEGQuality != 90 || got.Ext() != ".png" {
+		t.Errorf("по умолчанию PNG, качество 90: %+v", got)
+	}
+	writeConfig(t, `{"format":"jpeg","jpeg_quality":250}`)
+	got = Load()
+	if got.Format != FormatJPEG || got.JPEGQuality != 100 || got.Ext() != ".jpg" {
+		t.Errorf("JPEG, качество подрезается: %+v", got)
+	}
+	if name := got.FileName("20260101-120000"); name != "screen-editor-20260101-120000.jpg" {
+		t.Errorf("имя JPEG-файла: %q", name)
+	}
+	if name := got.NumberedFileName("20260101-120000", 2); name != "screen-editor-20260101-120000-2.jpg" {
+		t.Errorf("имя JPEG-файла набора: %q", name)
+	}
+	writeConfig(t, `{"format":"gif","jpeg_quality":0}`)
+	if got := Load(); got.Format != FormatPNG || got.JPEGQuality != 1 {
+		t.Errorf("неизвестный формат сбрасывается, качество не ниже 1: %+v", got)
+	}
+}

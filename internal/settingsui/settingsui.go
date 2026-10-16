@@ -67,6 +67,8 @@ type state struct {
 	palReset widget.Clickable
 
 	glueLayout widget.Enum      // расположение склейки: side, stack
+	format     widget.Enum      // формат файла: png, jpeg
+	quality    *slider          // качество JPEG
 	glueBg     widget.Enum      // фон склейки: light, dark
 	gluePad    *slider          // отступы склейки
 	glueFont   *slider          // размер подписи склейки
@@ -119,6 +121,11 @@ func newState(store *settings.Store) *state {
 	}
 	s.initTools(cur)
 	s.glueLayout.Value = string(cur.Glue.Layout)
+	s.format.Value = string(cur.Format)
+	s.quality = s.addSlider(1, 100, 1, func(v float64) string { return fmt.Sprintf("%.0f", v) },
+		func(c settings.Settings) float64 { return float64(c.JPEGQuality) },
+		func(c *settings.Settings, v float64) { c.JPEGQuality = int(v) })
+	s.quality.Set(float64(cur.JPEGQuality))
 	s.glueBg.Value = string(cur.Glue.Background)
 	whole := func(v float64) string { return fmt.Sprintf("%.0f px", v) }
 	s.gluePad = s.addSlider(0, settings.MaxGluePad, 1, whole,
@@ -241,6 +248,12 @@ func (s *state) apply(gtx layout.Context) {
 	s.glueLayout.Update(gtx)
 	if want := settings.GlueLayout(s.glueLayout.Value); want != s.store.Get().Glue.Layout {
 		if err := s.store.Update(func(c *settings.Settings) { c.Glue.Layout = want }); err != nil {
+			s.dirErr = "Не удалось сохранить: " + err.Error()
+		}
+	}
+	s.format.Update(gtx)
+	if want := settings.FileFormat(s.format.Value); want != s.store.Get().Format {
+		if err := s.store.Update(func(c *settings.Settings) { c.Format = want }); err != nil {
 			s.dirErr = "Не удалось сохранить: " + err.Error()
 		}
 	}
@@ -806,6 +819,11 @@ func (s *state) items() []layout.Widget {
 		s.row("Цвета панели", "Восемь цветов в панели инструментов, #RRGGBB. Пустое поле: цвет по умолчанию. Применяется при следующем снимке.",
 			s.paletteControls()),
 		s.row("Прозрачность маркера", "Чем больше процент, тем плотнее закраска.", s.slider(s.marker)),
+		s.row("Формат файла", "В буфер обмена снимок всегда идёт в PNG.", radios(
+			s.radio(&s.format, string(settings.FormatPNG), "PNG: без потерь"),
+			s.radio(&s.format, string(settings.FormatJPEG), "JPEG: файл меньше, есть потери"),
+		)),
+		s.row("Качество JPEG", "Чем выше, тем лучше картинка и больше файл.", s.slider(s.quality)),
 		s.section("Склейка «было/стало»"),
 		s.row("Расположение", "Картинки выравниваются по самой низкой (рядом) или по самой узкой (друг под другом).",
 			radios(

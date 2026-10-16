@@ -404,3 +404,17 @@ func TestGlueLookIsSavedToDisk(t *testing.T) {
 		t.Errorf("вид склейки не дошёл до файла: %+v", g)
 	}
 }
+
+func TestFormatIsSavedToDisk(t *testing.T) {
+	s := testState(t)
+	if s.format.Value != string(settings.FormatPNG) || s.quality.Value() != 90 {
+		t.Fatalf("по умолчанию PNG и 90, в окне %q и %v", s.format.Value, s.quality.Value())
+	}
+	s.format.Value = string(settings.FormatJPEG)
+	s.quality.Set(65)
+	s.layout(frameContext(700, 650))
+	got := settings.Load()
+	if got.Format != settings.FormatJPEG || got.JPEGQuality != 65 {
+		t.Errorf("формат не дошёл до файла: %+v", got)
+	}
+}

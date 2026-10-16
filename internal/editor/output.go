@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"image/jpeg"
 	"image/png"
 	"os"
 	"os/exec"
@@ -49,9 +50,30 @@ func render(src *image.RGBA, sel image.Rectangle, shapes []annotate.Shape, shape
 	return out, nil
 }
 
-// saveFile пишет PNG в каталог скриншотов и возвращает путь.
+// fileBytes готовит PNG к записи в файл: в формате из настроек.
+func fileBytes(cfg settings.Settings, pngData []byte) ([]byte, error) {
+	if cfg.Format != settings.FormatJPEG {
+		return pngData, nil
+	}
+	img, err := png.Decode(bytes.NewReader(pngData))
+	if err != nil {
+		return nil, fmt.Errorf("JPEG: %w", err)
+	}
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: cfg.JPEGQuality}); err != nil {
+		return nil, fmt.Errorf("JPEG: %w", err)
+	}
+	return buf.Bytes(), nil
+}
+
+// saveFile пишет снимок (PNG на входе) в каталог скриншотов в выбранном формате
+// и возвращает путь.
 func saveFile(cfg settings.Settings, data []byte) (string, error) {
 	dir, err := cfg.OutputDir()
+	if err != nil {
+		return "", err
+	}
+	data, err = fileBytes(cfg, data)
 	if err != nil {
 		return "", err
 	}
@@ -59,9 +81,13 @@ func saveFile(cfg settings.Settings, data []byte) (string, error) {
 	return path, os.WriteFile(path, data, 0o644)
 }
 
-// saveNumbered пишет PNG в каталог скриншотов под именем с номером в наборе.
+// saveNumbered пишет снимок (PNG на входе) в каталог скриншотов под именем с номером в наборе.
 func saveNumbered(cfg settings.Settings, data []byte, stamp string, n int) (string, error) {
 	dir, err := cfg.OutputDir()
+	if err != nil {
+		return "", err
+	}
+	data, err = fileBytes(cfg, data)
 	if err != nil {
 		return "", err
 	}

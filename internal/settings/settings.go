@@ -83,6 +83,10 @@ type Settings struct {
 	MarkerOpacity int `json:"marker_opacity"`
 	// Glue — склейка «было/стало».
 	Glue Glue `json:"glue"`
+	// Format — формат сохраняемых файлов; в буфер обмена всегда идёт PNG.
+	Format FileFormat `json:"format"`
+	// JPEGQuality — качество JPEG, 1-100.
+	JPEGQuality int `json:"jpeg_quality"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
@@ -90,7 +94,7 @@ type Settings struct {
 // Default возвращает настройки по умолчанию.
 func Default() Settings {
 	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
-		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, DefaultTool: "select", Palette: DefaultPalette, MarkerOpacity: 43, Glue: DefaultGlue()}
+		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, DefaultTool: "select", Palette: DefaultPalette, MarkerOpacity: 43, Glue: DefaultGlue(), Format: FormatPNG, JPEGQuality: 90}
 }
 
 // Path возвращает путь к файлу настроек.
@@ -128,6 +132,10 @@ func (s *Settings) normalize() {
 	s.Tools.normalize()
 	normalizePalette(&s.Palette)
 	s.Glue.normalize()
+	if s.Format != FormatPNG && s.Format != FormatJPEG {
+		s.Format = def.Format
+	}
+	s.JPEGQuality = min(max(s.JPEGQuality, 1), 100)
 	s.MarkerOpacity = min(max(s.MarkerOpacity, MinMarkerOpacity), 100)
 	s.HandleRadius = min(max(s.HandleRadius, 0), MaxHandleRadius)
 	if c, err := ParseColor(s.BorderColor); err == nil {
@@ -359,6 +367,22 @@ func (s Settings) Prefix() string {
 	return s.FilePrefix
 }
 
+// FileFormat — формат файла скриншота.
+type FileFormat string
+
+const (
+	FormatPNG  FileFormat = "png"  // без потерь (по умолчанию)
+	FormatJPEG FileFormat = "jpeg" // меньше размер, есть потери
+)
+
+// Ext возвращает расширение файла вместе с точкой.
+func (s Settings) Ext() string {
+	if s.Format == FormatJPEG {
+		return ".jpg"
+	}
+	return ".png"
+}
+
 // OutputDir возвращает каталог для скриншотов: из настроек или
 // ~/Pictures/Screenshots, если в настройках пусто. Каталог создаётся.
 func (s Settings) OutputDir() (string, error) {
@@ -377,11 +401,11 @@ func (s Settings) OutputDir() (string, error) {
 }
 
 // FileName возвращает имя файла скриншота для отметки времени stamp (StampLayout).
-func (s Settings) FileName(stamp string) string { return s.Prefix() + "-" + stamp + ".png" }
+func (s Settings) FileName(stamp string) string { return s.Prefix() + "-" + stamp + s.Ext() }
 
 // NumberedFileName возвращает имя n-го файла набора с общей отметкой времени.
 func (s Settings) NumberedFileName(stamp string, n int) string {
-	return fmt.Sprintf("%s-%s-%d.png", s.Prefix(), stamp, n)
+	return fmt.Sprintf("%s-%s-%d%s", s.Prefix(), stamp, n, s.Ext())
 }
 
 // ValidateSaveDir проверяет значение папки сохранения: пусто (значит папка по
