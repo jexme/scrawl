@@ -13,11 +13,13 @@ import (
 	"github.com/jexme/scrawl/internal/screencast"
 	"github.com/jexme/scrawl/internal/update"
 	"github.com/jexme/scrawl/internal/version"
+	"github.com/jexme/scrawl/internal/x11capture"
 )
 
 // Действия окна, которые вызывают внешние службы (portal, gsettings). Тесты
 // подменяют их, чтобы не трогать настройки системы.
 var (
+	x11Session      = x11capture.IsSession
 	grantPermission = screencast.GrantScreenshotPermission
 	setupMonitors   = screencast.SetupMonitors
 	assignHotkey    = hotkey.Assign

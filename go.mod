@@ -5,6 +5,7 @@ go 1.27.2
 require (
 	gioui.org v0.10.3
 	github.com/godbus/dbus/v5 v5.2.4
+	github.com/jezek/xgb v1.3.1
 )
 
 require (

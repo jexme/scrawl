@@ -24,6 +24,7 @@ import (
 	"github.com/jexme/scrawl/internal/tray"
 	"github.com/jexme/scrawl/internal/update"
 	"github.com/jexme/scrawl/internal/version"
+	"github.com/jexme/scrawl/internal/x11capture"
 )
 
 func main() {
@@ -48,6 +49,10 @@ func main() {
 		return
 	}
 
+	if *grant && x11capture.IsSession() {
+		fmt.Println(i18n.T("в сеансе X11 разрешение не нужно: захват идёт напрямую"))
+		return
+	}
 	if *grant {
 		if err := screencast.GrantScreenshotPermission(); err != nil {
 			fatal(i18n.T("не удалось выдать разрешение: %v"), err)
@@ -77,6 +82,49 @@ func main() {
 		fatal("%s", i18n.T("захват экрана пока есть только в Linux (GNOME, Wayland); окно настроек работает: scrawl -settings"))
 	}
 
+	var (
+		frames []screencast.Frame
+		t0     time.Time
+	)
+	if x11capture.IsSession() {
+		frames, t0 = grabX11(*setup, *verbose)
+	} else {
+		frames, t0 = grabPortal(*setup, *verbose)
+	}
+
+	finish := func() { os.Exit(0) }
+	closeEditor := editor.Run(editor.Config{
+		Frames:  frames,
+		Finish:  finish,
+		T0:      t0,
+		Verbose: *verbose,
+		Fresh:   *fresh,
+	})
+	if *exitAfter > 0 {
+		time.AfterFunc(*exitAfter, closeEditor)
+	}
+	app.Main()
+}
+
+// grabX11 снимает экран напрямую из X11: без портала, диалогов и токенов.
+func grabX11(setup, verbose bool) ([]screencast.Frame, time.Time) {
+	if setup {
+		fmt.Fprintln(os.Stderr, i18n.T("в сеансе X11 мониторы выбирать не нужно: захват идёт напрямую"))
+	}
+	t0 := time.Now() // момент «нажатия хоткея»
+	frames, err := x11capture.GrabAll()
+	if err != nil {
+		fatal(i18n.T("кадр: %v"), err)
+	}
+	if verbose {
+		fmt.Printf("кадры (%d) получены за %s: X11\n", len(frames), time.Since(t0).Round(time.Millisecond))
+	}
+	return frames, t0
+}
+
+// grabPortal снимает экран через ScreenCast portal (Wayland): сначала поднимает
+// сессии по сохранённым токенам, потом берёт по кадру с каждого монитора.
+func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	p, err := screencast.New()
 	if err != nil {
 		fatal("portal: %v", err)
@@ -88,7 +136,7 @@ func main() {
 	p.IncludeCursor = settings.Load().IncludeCursor
 
 	var tokens []string
-	if !*setup {
+	if !setup {
 		tokens = screencast.LoadTokens()
 	}
 	// Без регистрации portal не примет сохранённые токены и покажет диалоги, которых
@@ -112,13 +160,13 @@ func main() {
 			fmt.Fprintf(os.Stderr, i18n.T("restore_token не сохранены: %v\n"), err)
 		}
 	}
-	if *setup && len(newTokens) < len(sessions) {
+	if setup && len(newTokens) < len(sessions) {
 		fmt.Fprintln(os.Stderr, i18n.T("portal не выдал restore_token: в диалоге нужна галочка «Запомнить этот выбор», иначе диалоги будут при каждом запуске"))
 	}
 	if n, ok := p.MonitorCount(); ok && n > len(sessions) {
 		fmt.Fprintf(os.Stderr, i18n.T("подключено мониторов: %d, в сессиях: %d. Запустите с -setup, чтобы добавить остальные\n"), n, len(sessions))
 	}
-	if *verbose {
+	if verbose {
 		fmt.Printf("сессии (%d) готовы за %s\n", len(sessions), time.Since(tSessions).Round(time.Millisecond))
 	}
 
@@ -133,7 +181,7 @@ func main() {
 	for _, s := range sessions {
 		s.Close()
 	}
-	if *verbose {
+	if verbose {
 		how := "PipeWire"
 		if fallback {
 			how = i18n.T("запасной путь, Screenshot-portal")
@@ -141,18 +189,7 @@ func main() {
 		fmt.Printf("кадры (%d) получены за %s: %s\n", len(frames), time.Since(t0).Round(time.Millisecond), how)
 	}
 
-	finish := func() { os.Exit(0) }
-	closeEditor := editor.Run(editor.Config{
-		Frames:  frames,
-		Finish:  finish,
-		T0:      t0,
-		Verbose: *verbose,
-		Fresh:   *fresh,
-	})
-	if *exitAfter > 0 {
-		time.AfterFunc(*exitAfter, closeEditor)
-	}
-	app.Main()
+	return frames, t0
 }
 
 // fatal печатает ошибку и показывает уведомление: при запуске по хоткею

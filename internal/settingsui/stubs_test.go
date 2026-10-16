@@ -18,6 +18,7 @@ func init() {
 	checkUpdate = func() (update.Result, error) {
 		return update.Result{}, errors.New("тест не ходит в сеть")
 	}
+	x11Session = func() bool { return false }
 	grantPermission = func() error { return nil }
 	setupMonitors = func(func(string)) (string, error) { return "", nil }
 }

@@ -267,4 +267,13 @@ var en = map[string]string{
 	"Доступна новая версия":        "A new version is available",
 	"PipeWire есть только в Linux": "PipeWire is only available on Linux",
 	"захват экрана пока есть только в Linux (GNOME, Wayland); окно настроек работает: scrawl -settings": "screen capture is only available on Linux (GNOME, Wayland) for now; the settings window works: scrawl -settings",
+	"для буфера обмена в X11 нужен xclip: sudo apt install xclip":                                       "the X11 clipboard needs xclip: sudo apt install xclip",
+	"формат пикселей X11 не поддерживается (глубина %d, %d бит на пиксель)":                             "unsupported X11 pixel format (depth %d, %d bits per pixel)",
+	"необычные маски цветов X11":                                                                        "unusual X11 colour masks",
+	"не удалось подключиться к X-серверу: %w":                                                           "could not connect to the X server: %w",
+	"снимок монитора %d: %w":                                                                            "capturing monitor %d: %w",
+	"в сеансе X11 мониторы выбирать не нужно: захват идёт напрямую":                                     "in an X11 session there is no need to pick monitors: capture goes straight to X11",
+	"в сеансе X11 разрешение не нужно: захват идёт напрямую":                                            "in an X11 session no permission is needed: capture goes straight to X11",
+	"Сеанс X11": "X11 session",
+	"Экран снимается напрямую, без портала: выбирать мониторы и выдавать разрешение не нужно. Для буфера обмена нужен xclip.": "The screen is captured directly, without a portal: there is no need to pick monitors or grant a permission. The clipboard needs xclip.",
 }

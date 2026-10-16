@@ -797,3 +797,17 @@ func TestDocSettingsImages(t *testing.T) {
 		f.Close()
 	}
 }
+
+func TestCaptureRowsDependOnSession(t *testing.T) {
+	old := x11Session
+	defer func() { x11Session = old }()
+	s := testState(t)
+	x11Session = func() bool { return false }
+	wayland := len(s.captureRows())
+	x11Session = func() bool { return true }
+	x11 := len(s.captureRows())
+	if wayland != 3 || x11 != 2 {
+		t.Errorf("строк захвата: Wayland %d (ожидали 3), X11 %d (ожидали 2: без кнопок портала)", wayland, x11)
+	}
+	s.layout(frameContext(700, 3300)) // окно в сеансе X11 рисуется без ошибок
+}

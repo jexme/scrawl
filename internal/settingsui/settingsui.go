@@ -963,7 +963,7 @@ func (s *state) items() []layout.Widget {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
 
-	return []layout.Widget{
+	items := []layout.Widget{
 		s.section(i18n.T("Общие")),
 		s.row(i18n.T("Язык интерфейса"), i18n.T("Окно настроек меняется сразу, оверлей и уведомления при следующем снимке."),
 			radios(
@@ -1006,12 +1006,9 @@ func (s *state) items() []layout.Widget {
 		)),
 		s.row(i18n.T("Качество JPEG"), i18n.T("Чем выше, тем лучше картинка и больше файл."), s.slider(s.quality)),
 		s.section(i18n.T("Захват экрана")),
-		s.row(i18n.T("Горячая клавиша запуска"), i18n.T("Создаёт или обновляет ярлык в настройках клавиатуры GNOME. Формат: Print, <Super>s, <Control><Alt>p. Чужие ярлыки не меняются."),
-			s.hotkeyControl()),
-		s.row(i18n.T("Мониторы"), i18n.T("Выбрать мониторы заново: GNOME покажет диалог на каждый монитор. Нужно после подключения или замены монитора. Раньше: scrawl -setup."),
-			s.taskControl(&s.monitors, i18n.T("Выбрать мониторы заново"))),
-		s.row(i18n.T("Разрешение на запасной снимок"), i18n.T("Нужно запасному способу захвата через Screenshot portal, когда PipeWire не отдал кадр. Раньше: scrawl -grant-screenshot."),
-			s.taskControl(&s.grant, i18n.T("Выдать разрешение"))),
+	}
+	items = append(items, s.captureRows()...)
+	return append(items,
 		s.section(i18n.T("Запуск")),
 		s.row(i18n.T("Автозапуск"), i18n.T("При входе в систему запускается значок в области уведомлений (scrawl -tray): левый клик делает снимок. На GNOME нужно расширение AppIndicator."),
 			s.autostartControl()),
@@ -1045,7 +1042,25 @@ func (s *state) items() []layout.Widget {
 		s.row("Scrawl "+version.String(), version.Home, nil),
 		s.row(i18n.T("Обновления"), i18n.T("Единственное место, где программа выходит в интернет: запрос к GitHub Releases. По умолчанию выключено; кнопка работает и при выключенной проверке."),
 			s.updateControl()),
+	)
+}
+
+// captureRows — настройки захвата. В сеансе X11 портала нет: мониторы выбирать и
+// разрешение выдавать не нужно, вместо этих кнопок короткое пояснение.
+func (s *state) captureRows() []layout.Widget {
+	rows := []layout.Widget{
+		s.row(i18n.T("Горячая клавиша запуска"), i18n.T("Создаёт или обновляет ярлык в настройках клавиатуры GNOME. Формат: Print, <Super>s, <Control><Alt>p. Чужие ярлыки не меняются."),
+			s.hotkeyControl()),
 	}
+	if x11Session() {
+		return append(rows, s.row(i18n.T("Сеанс X11"), i18n.T("Экран снимается напрямую, без портала: выбирать мониторы и выдавать разрешение не нужно. Для буфера обмена нужен xclip."), nil))
+	}
+	return append(rows,
+		s.row(i18n.T("Мониторы"), i18n.T("Выбрать мониторы заново: GNOME покажет диалог на каждый монитор. Нужно после подключения или замены монитора. Раньше: scrawl -setup."),
+			s.taskControl(&s.monitors, i18n.T("Выбрать мониторы заново"))),
+		s.row(i18n.T("Разрешение на запасной снимок"), i18n.T("Нужно запасному способу захвата через Screenshot portal, когда PipeWire не отдал кадр. Раньше: scrawl -grant-screenshot."),
+			s.taskControl(&s.grant, i18n.T("Выдать разрешение"))),
+	)
 }
 
 func (s *state) layout(gtx layout.Context) layout.Dimensions {

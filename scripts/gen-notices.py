@@ -18,6 +18,7 @@ SPDX = {
     "gioui.org": "Unlicense OR MIT",
     "gioui.org/shader": "Unlicense OR MIT",
     "github.com/godbus/dbus/v5": "BSD-2-Clause",
+    "github.com/jezek/xgb": "BSD-3-Clause",
     "github.com/go-text/typesetting": "BSD-3-Clause OR Unlicense",
     "golang.org/x/exp/shiny": "BSD-3-Clause",
     "golang.org/x/image": "BSD-3-Clause",
