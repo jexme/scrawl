@@ -263,6 +263,8 @@ var en = map[string]string{
 	"Обновления": "Updates",
 	"Единственное место, где программа выходит в интернет: запрос к GitHub Releases. По умолчанию выключено; кнопка работает и при выключенной проверке.": "The only place where the program goes online: a request to GitHub Releases. Off by default; the button works even when the check is off.",
 	"Проверять при запуске окна настроек и значка": "Check when the settings window and the tray icon start",
-	"Проверить сейчас":      "Check now",
-	"Доступна новая версия": "A new version is available",
+	"Проверить сейчас":             "Check now",
+	"Доступна новая версия":        "A new version is available",
+	"PipeWire есть только в Linux": "PipeWire is only available on Linux",
+	"захват экрана пока есть только в Linux (GNOME, Wayland); окно настроек работает: scrawl -settings": "screen capture is only available on Linux (GNOME, Wayland) for now; the settings window works: scrawl -settings",
 }

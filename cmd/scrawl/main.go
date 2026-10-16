@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"time"
 
 	"gioui.org/app"
@@ -69,6 +70,11 @@ func main() {
 	// (и слать параллельные запросы в portal).
 	if ok, err := singleton.Acquire("scrawl"); err == nil && !ok {
 		return
+	}
+
+	if runtime.GOOS != "linux" {
+		// Захват экрана, буфер обмена и горячая клавиша для этой системы ещё не написаны.
+		fatal("%s", i18n.T("захват экрана пока есть только в Linux (GNOME, Wayland); окно настроек работает: scrawl -settings"))
 	}
 
 	p, err := screencast.New()

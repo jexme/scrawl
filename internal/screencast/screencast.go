@@ -13,7 +13,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	"github.com/godbus/dbus/v5"
@@ -337,8 +336,7 @@ func grab(st stream, remote *os.File, timeout time.Duration) (Frame, error) {
 	f := Frame{NodeID: st.ID}
 	f.X, f.Y, _ = pair(st.Props, "position")
 
-	fd, err := syscall.Dup(int(remote.Fd()))
-	remote.Close()
+	fd, err := dupFD(remote)
 	if err != nil {
 		return f, fmt.Errorf("dup fd: %w", err)
 	}

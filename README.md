@@ -8,7 +8,7 @@ data, and the result goes to the clipboard and to a file. No "which screen do
 you want to share?" dialog on every shot.
 
 > Status: personal project under active development, not released yet.
-> Linux (GNOME, Wayland) only for now; a Windows port is planned. The interface
+> Linux (GNOME, Wayland) only for now; a Windows port is planned (it builds, but capture is not written yet: see [docs/WINDOWS.md](docs/WINDOWS.md)). The interface
 > is available in Russian and English (settings → "Interface language").
 
 ## Features
