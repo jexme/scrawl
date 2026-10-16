@@ -389,3 +389,18 @@ func TestGlueLayoutIsSavedToDisk(t *testing.T) {
 		t.Errorf("в файле %q", got)
 	}
 }
+
+func TestGlueLookIsSavedToDisk(t *testing.T) {
+	s := testState(t)
+	if s.gluePad.Value() != 28 || s.glueFont.Value() != 28 || s.glueBg.Value != string(settings.GlueLight) {
+		t.Fatalf("по умолчанию: отступ %v, подпись %v, фон %q", s.gluePad.Value(), s.glueFont.Value(), s.glueBg.Value)
+	}
+	s.glueBg.Value = string(settings.GlueDark)
+	s.gluePad.Set(12)
+	s.glueFont.Set(40)
+	s.layout(frameContext(700, 650))
+	g := settings.Load().Glue
+	if g.Background != settings.GlueDark || g.Pad != 12 || g.LabelSize != 40 {
+		t.Errorf("вид склейки не дошёл до файла: %+v", g)
+	}
+}

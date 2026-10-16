@@ -23,19 +23,34 @@ import (
 	"github.com/jexme/screen-editor/internal/settings"
 )
 
-// Размеры склейки в пикселях результата.
-const (
-	composePad    = 28
-	composeGap    = 28
-	composeLabelH = 52
-	composeFont   = 28
+// Цвета склейки для светлого и тёмного фона.
+var (
+	composeLight = composeColors{
+		bg:     color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+		text:   color.NRGBA{R: 32, G: 33, B: 36, A: 255},
+		border: color.NRGBA{R: 205, G: 209, B: 218, A: 255},
+	}
+	composeDark = composeColors{
+		bg:     color.NRGBA{R: 32, G: 33, B: 36, A: 255},
+		text:   color.NRGBA{R: 235, G: 235, B: 235, A: 255},
+		border: color.NRGBA{R: 74, G: 75, B: 79, A: 255},
+	}
 )
 
-var (
-	composeBG     = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
-	composeText   = color.NRGBA{R: 32, G: 33, B: 36, A: 255}
-	composeBorder = color.NRGBA{R: 205, G: 209, B: 218, A: 255}
-)
+type composeColors struct{ bg, text, border color.NRGBA }
+
+func composePalette(g settings.Glue) composeColors {
+	if g.Background == settings.GlueDark {
+		return composeDark
+	}
+	return composeLight
+}
+
+// composeMetrics возвращает отступ (он же промежуток между картинками) и высоту
+// строки подписи в пикселях результата.
+func composeMetrics(g settings.Glue) (pad, labelH int) {
+	return g.Pad, g.LabelSize + 24
+}
 
 // loadPNGs читает картинки подборки с диска.
 func loadPNGs(paths []string) ([]*image.RGBA, error) {
@@ -66,9 +81,11 @@ type composeSlot struct {
 // composeSlots раскладывает картинки: рядом (одной высоты, по самой низкой) или
 // друг под другом (одной ширины, по самой узкой), без увеличения. Возвращает
 // места картинок и размер результата.
-func composeSlots(imgs []*image.RGBA, layout settings.GlueLayout) (slots []composeSlot, size image.Point) {
+func composeSlots(imgs []*image.RGBA, g settings.Glue) (slots []composeSlot, size image.Point) {
+	composePad, composeLabelH := composeMetrics(g)
+	composeGap := composePad
 	slots = make([]composeSlot, len(imgs))
-	if layout == settings.GlueStack {
+	if g.Layout == settings.GlueStack {
 		wc := imgs[0].Bounds().Dx()
 		for _, im := range imgs {
 			wc = min(wc, im.Bounds().Dx())
@@ -108,7 +125,7 @@ func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper, glue sett
 		return nil, fmt.Errorf("подписей %d, картинок %d", len(labels), len(imgs))
 	}
 
-	slots, size := composeSlots(imgs, glue.Layout)
+	slots, size := composeSlots(imgs, glue)
 	W, H := size.X, size.Y
 
 	win, err := headless.NewWindow(W, H)
@@ -118,7 +135,8 @@ func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper, glue sett
 	defer win.Release()
 
 	var ops op.Ops
-	paint.Fill(&ops, composeBG)
+	colors := composePalette(glue)
+	paint.Fill(&ops, colors.bg)
 	gtx := layout.Context{
 		Ops:         &ops,
 		Constraints: layout.Constraints{Max: image.Pt(W, H)},
@@ -127,7 +145,7 @@ func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper, glue sett
 
 	for i, im := range imgs {
 		slot := slots[i]
-		drawLabelCentered(gtx, shaper, labels[i], slot.label.Min.X, slot.label.Min.Y, slot.label.Dx())
+		drawLabelCentered(gtx, shaper, labels[i], slot.label, glue.LabelSize, colors.text)
 
 		b := im.Bounds()
 		sx := float32(slot.dst.Dx()) / float32(b.Dx())
@@ -140,7 +158,7 @@ func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper, glue sett
 		cl.Pop()
 		st.Pop()
 
-		strokeBox(&ops, slot.dst, composeBorder, 2)
+		strokeBox(&ops, slot.dst, colors.border, 2)
 	}
 
 	if err := win.Frame(&ops); err != nil {
@@ -153,19 +171,19 @@ func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper, glue sett
 	return out, nil
 }
 
-// drawLabelCentered рисует подпись по центру колонки шириной w, начиная с x.
-func drawLabelCentered(gtx layout.Context, shaper *text.Shaper, txt string, x, y, w int) {
+// drawLabelCentered рисует подпись по центру области r.
+func drawLabelCentered(gtx layout.Context, shaper *text.Shaper, txt string, r image.Rectangle, size int, col color.NRGBA) {
 	rec := op.Record(gtx.Ops)
-	paint.ColorOp{Color: composeText}.Add(gtx.Ops)
+	paint.ColorOp{Color: col}.Add(gtx.Ops)
 	mat := rec.Stop()
 
 	lgtx := gtx
-	lgtx.Constraints = layout.Constraints{Max: image.Pt(w, composeLabelH)}
+	lgtx.Constraints = layout.Constraints{Max: image.Pt(r.Dx(), r.Dy())}
 	rec = op.Record(gtx.Ops)
-	dims := widget.Label{Alignment: text.Middle, MaxLines: 1}.Layout(lgtx, shaper, annotate.Font, unit.Sp(composeFont), txt, mat)
+	dims := widget.Label{Alignment: text.Middle, MaxLines: 1}.Layout(lgtx, shaper, annotate.Font, unit.Sp(size), txt, mat)
 	label := rec.Stop()
 
-	defer op.Offset(image.Pt(x+(w-dims.Size.X)/2, y+(composeLabelH-dims.Size.Y)/2)).Push(gtx.Ops).Pop()
+	defer op.Offset(image.Pt(r.Min.X+(r.Dx()-dims.Size.X)/2, r.Min.Y+(r.Dy()-dims.Size.Y)/2)).Push(gtx.Ops).Pop()
 	label.Add(gtx.Ops)
 }
 

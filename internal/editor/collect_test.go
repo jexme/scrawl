@@ -85,7 +85,8 @@ func TestGlueCollection(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Две картинки одной высоты (160) рядом: ширина больше высоты, есть подписи сверху.
-	if cfg.Width < 2*200 || cfg.Height < 160+composeLabelH {
+	_, labelH := composeMetrics(settings.DefaultGlue())
+	if cfg.Width < 2*200 || cfg.Height < 160+labelH {
 		t.Errorf("склейка слишком мала: %dx%d", cfg.Width, cfg.Height)
 	}
 	clip, err := os.ReadFile(filepath.Join(home, "clipboard-image_png"))

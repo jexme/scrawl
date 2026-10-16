@@ -67,6 +67,9 @@ type state struct {
 	palReset widget.Clickable
 
 	glueLayout widget.Enum      // расположение склейки: side, stack
+	glueBg     widget.Enum      // фон склейки: light, dark
+	gluePad    *slider          // отступы склейки
+	glueFont   *slider          // размер подписи склейки
 	glue       [3]widget.Editor // подписи склейки: было, стало, шаг
 	glueErr    [3]string
 
@@ -116,6 +119,17 @@ func newState(store *settings.Store) *state {
 	}
 	s.initTools(cur)
 	s.glueLayout.Value = string(cur.Glue.Layout)
+	s.glueBg.Value = string(cur.Glue.Background)
+	whole := func(v float64) string { return fmt.Sprintf("%.0f px", v) }
+	s.gluePad = s.addSlider(0, settings.MaxGluePad, 1, whole,
+		func(c settings.Settings) float64 { return float64(c.Glue.Pad) },
+		func(c *settings.Settings, v float64) { c.Glue.Pad = int(v) })
+	s.glueFont = s.addSlider(settings.MinGlueLabelSize, settings.MaxGlueLabelSize, 1, whole,
+		func(c settings.Settings) float64 { return float64(c.Glue.LabelSize) },
+		func(c *settings.Settings, v float64) { c.Glue.LabelSize = int(v) })
+	for _, sl := range s.sliders[len(s.sliders)-2:] {
+		sl.Set(sl.get(cur))
+	}
 	for i, v := range []string{cur.Glue.Before, cur.Glue.After, cur.Glue.Step} {
 		s.glue[i].SingleLine = true
 		s.glue[i].SetText(v)
@@ -227,6 +241,12 @@ func (s *state) apply(gtx layout.Context) {
 	s.glueLayout.Update(gtx)
 	if want := settings.GlueLayout(s.glueLayout.Value); want != s.store.Get().Glue.Layout {
 		if err := s.store.Update(func(c *settings.Settings) { c.Glue.Layout = want }); err != nil {
+			s.dirErr = "Не удалось сохранить: " + err.Error()
+		}
+	}
+	s.glueBg.Update(gtx)
+	if want := settings.GlueBackground(s.glueBg.Value); want != s.store.Get().Glue.Background {
+		if err := s.store.Update(func(c *settings.Settings) { c.Glue.Background = want }); err != nil {
 			s.dirErr = "Не удалось сохранить: " + err.Error()
 		}
 	}
@@ -792,6 +812,12 @@ func (s *state) items() []layout.Widget {
 				s.radio(&s.glueLayout, string(settings.GlueSide), "Рядом, слева направо"),
 				s.radio(&s.glueLayout, string(settings.GlueStack), "Друг под другом, сверху вниз"),
 			)),
+		s.row("Фон", "", radios(
+			s.radio(&s.glueBg, string(settings.GlueLight), "Белый"),
+			s.radio(&s.glueBg, string(settings.GlueDark), "Тёмный"),
+		)),
+		s.row("Отступы", "От краёв и между картинками.", s.slider(s.gluePad)),
+		s.row("Размер подписи", "", s.slider(s.glueFont)),
 		s.row("Подписи над картинками", "Пусто: слова по умолчанию. При трёх и больше картинок к слову добавляется номер: «Шаг 1».",
 			s.glueControls()),
 		s.section("Вид"),

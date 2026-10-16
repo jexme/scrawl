@@ -16,7 +16,28 @@ type Glue struct {
 
 	// Layout — расположение картинок: рядом или друг под другом.
 	Layout GlueLayout `json:"layout"`
+
+	// Вид склейки: фон, отступ от краёв и между картинками, размер подписи
+	// (пиксели результата).
+	Background GlueBackground `json:"background"`
+	Pad        int            `json:"pad"`
+	LabelSize  int            `json:"label_size"`
 }
+
+// GlueBackground — цвет фона склейки.
+type GlueBackground string
+
+const (
+	GlueLight GlueBackground = "light" // белый (по умолчанию)
+	GlueDark  GlueBackground = "dark"  // тёмный
+)
+
+// Границы отступа и размера подписи склейки.
+const (
+	MaxGluePad       = 100
+	MinGlueLabelSize = 12
+	MaxGlueLabelSize = 64
+)
 
 // GlueLayout — расположение картинок в склейке.
 type GlueLayout string
@@ -50,12 +71,19 @@ func ValidateGlueLabel(s string) error {
 }
 
 // DefaultGlue возвращает настройки склейки по умолчанию.
-func DefaultGlue() Glue { return Glue{Layout: GlueSide} }
+func DefaultGlue() Glue {
+	return Glue{Layout: GlueSide, Background: GlueLight, Pad: 28, LabelSize: 28}
+}
 
 func (g *Glue) normalize() {
 	if g.Layout != GlueSide && g.Layout != GlueStack {
 		g.Layout = DefaultGlue().Layout
 	}
+	if g.Background != GlueLight && g.Background != GlueDark {
+		g.Background = DefaultGlue().Background
+	}
+	g.Pad = min(max(g.Pad, 0), MaxGluePad)
+	g.LabelSize = min(max(g.LabelSize, MinGlueLabelSize), MaxGlueLabelSize)
 	for _, p := range []*string{&g.Before, &g.After, &g.Step} {
 		if ValidateGlueLabel(*p) != nil {
 			*p = ""

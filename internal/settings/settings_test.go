@@ -497,3 +497,20 @@ func TestGlueLayout(t *testing.T) {
 		t.Errorf("неверное расположение сбрасывается, подписи остаются: %+v", got)
 	}
 }
+
+func TestGlueLook(t *testing.T) {
+	sandbox(t)
+	g := Load().Glue
+	if g.Background != GlueLight || g.Pad != 28 || g.LabelSize != 28 {
+		t.Errorf("вид склейки по умолчанию: %+v", g)
+	}
+	writeConfig(t, `{"glue":{"background":"dark","pad":500,"label_size":1}}`)
+	g = Load().Glue
+	if g.Background != GlueDark || g.Pad != MaxGluePad || g.LabelSize != MinGlueLabelSize {
+		t.Errorf("тёмный фон, числа подрезаются: %+v", g)
+	}
+	writeConfig(t, `{"glue":{"background":"red","pad":0}}`)
+	if g := Load().Glue; g.Background != GlueLight || g.Pad != 0 {
+		t.Errorf("неверный фон сбрасывается, отступ 0 допустим: %+v", g)
+	}
+}
