@@ -264,3 +264,15 @@ func TestHandleSliderIsSavedToDisk(t *testing.T) {
 		t.Errorf("подпись нуля: %q", got)
 	}
 }
+
+func TestShowSizeCheckboxIsSavedToDisk(t *testing.T) {
+	s := testState(t)
+	if !s.showSize.Value {
+		t.Fatal("по умолчанию подпись размера включена")
+	}
+	s.showSize.Value = false
+	s.layout(frameContext(700, 650))
+	if settings.Load().ShowSize {
+		t.Error("выключенная подпись не дошла до файла")
+	}
+}

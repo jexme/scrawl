@@ -15,6 +15,7 @@ import (
 
 	"github.com/jexme/screen-editor/internal/annotate"
 	"github.com/jexme/screen-editor/internal/screencast"
+	"github.com/jexme/screen-editor/internal/settings"
 )
 
 // TestToast рисует плашку «Толщина: N» для разных инструментов и проверяет, что
@@ -89,5 +90,55 @@ func TestToast(t *testing.T) {
 		}
 		data, _ := encodePNG(sheet)
 		os.WriteFile(path+".toast.png", data, 0o644)
+	}
+}
+
+// TestSizeLabelSetting: подпись «W × H» рисуется, пока её не выключили в настройках.
+func TestSizeLabelSetting(t *testing.T) {
+	sandbox(t)
+	const W, H = 400, 300
+	m, _ := newTestMonitor(t)
+	m.sel, m.hasSel = image.Rect(100, 120, 300, 220), true
+
+	win, err := headless.NewWindow(W, H)
+	if err != nil {
+		t.Skipf("headless рендер недоступен: %v", err)
+	}
+	defer win.Release()
+
+	shot := func() *image.RGBA {
+		var ops op.Ops
+		gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(W, H)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+		m.layout(gtx, image.Pt(W, H))
+		if err := win.Frame(&ops); err != nil {
+			t.Fatal(err)
+		}
+		out := image.NewRGBA(image.Rect(0, 0, W, H))
+		if err := win.Screenshot(out); err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	// Участок над левым верхним углом области, где стоит подпись.
+	labelArea := image.Rect(100, 90, 180, 118)
+	diff := func(a, b *image.RGBA) int {
+		n := 0
+		for y := labelArea.Min.Y; y < labelArea.Max.Y; y++ {
+			for x := labelArea.Min.X; x < labelArea.Max.X; x++ {
+				if a.RGBAAt(x, y) != b.RGBAAt(x, y) {
+					n++
+				}
+			}
+		}
+		return n
+	}
+
+	with := shot()
+	if err := m.store.Update(func(s *settings.Settings) { s.ShowSize = false }); err != nil {
+		t.Fatal(err)
+	}
+	without := shot()
+	if n := diff(with, without); n < 100 {
+		t.Errorf("подпись размера должна исчезнуть при выключенной настройке, различий пикселей: %d", n)
 	}
 }

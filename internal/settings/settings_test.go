@@ -346,3 +346,14 @@ func TestHandleRadius(t *testing.T) {
 		}
 	}
 }
+
+func TestShowSizeDefaultOn(t *testing.T) {
+	sandbox(t)
+	if !Load().ShowSize {
+		t.Error("подпись размера по умолчанию показывается")
+	}
+	writeConfig(t, `{"show_size":false}`)
+	if Load().ShowSize {
+		t.Error("show_size=false должен выключать подпись")
+	}
+}

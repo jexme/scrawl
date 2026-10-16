@@ -69,6 +69,8 @@ type Settings struct {
 	BorderColor string  `json:"border_color"`
 	// HandleRadius — радиус угловых ручек в пикселях экрана; 0 прячет ручки.
 	HandleRadius float64 `json:"handle_radius"`
+	// ShowSize — показывать подпись «W × H» у выделенной области.
+	ShowSize bool `json:"show_size"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
@@ -76,7 +78,7 @@ type Settings struct {
 // Default возвращает настройки по умолчанию.
 func Default() Settings {
 	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
-		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3}
+		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true}
 }
 
 // Path возвращает путь к файлу настроек.

@@ -47,6 +47,7 @@ type state struct {
 	enter    widget.Enum // Enter: copy_save, copy, save
 	notify   widget.Bool // уведомления после снимка
 	remember widget.Bool // запоминать прошлую область
+	showSize widget.Bool // подпись размера области
 	dir      widget.Editor
 	prefix   widget.Editor // начало имени файла
 	reset    widget.Clickable
@@ -104,6 +105,7 @@ func newState(store *settings.Store) *state {
 	s.enter.Value = string(cur.Enter)
 	s.notify.Value = cur.Notifications
 	s.remember.Value = cur.RememberRegion
+	s.showSize.Value = cur.ShowSize
 	s.dir.SingleLine = true
 	s.dir.SetText(cur.SaveDir)
 	s.prefix.SingleLine = true
@@ -184,6 +186,13 @@ func (s *state) apply(gtx layout.Context) {
 	}
 	if edited(gtx, &s.bColor) {
 		s.applyBorderColor(s.bColor.Text())
+	}
+
+	s.showSize.Update(gtx)
+	if want := s.showSize.Value; want != s.store.Get().ShowSize {
+		if err := s.store.Update(func(c *settings.Settings) { c.ShowSize = want }); err != nil {
+			s.dirErr = "Не удалось сохранить: " + err.Error()
+		}
 	}
 
 	s.remember.Update(gtx)
@@ -487,6 +496,8 @@ func (s *state) items() []layout.Widget {
 			s.checkbox(&s.remember, "Запоминать область снимка")),
 		s.section("Вид"),
 		s.row("Рамка выделения", "Пунктир вокруг выбранной области.", s.borderControls()),
+		s.row("Размер области", "Подпись «ширина × высота» над левым верхним углом.",
+			s.checkbox(&s.showSize, "Показывать размер")),
 		s.row("Угловые ручки", "Кружки в углах рамки, за них меняют размер области. «нет» прячет их.", s.slider(s.handle)),
 		s.row("Затемнение вне области", "0% не затемняет совсем, 100% закрашивает чёрным.", s.slider(s.dim)),
 		s.section("Сохранение"),

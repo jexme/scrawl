@@ -262,7 +262,9 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 			int(float32(m.sel.Max.X)*sx), int(float32(m.sel.Max.Y)*sy),
 		)
 		m.layoutToolbar(gtx, win, m.selWin)
-		m.layoutSizeLabel(gtx, m.selWin)
+		if m.store.Get().ShowSize {
+			m.layoutSizeLabel(gtx, m.selWin)
+		}
 		m.layoutToast(gtx, win, m.selWin)
 	}
 	m.layoutDock(gtx, win)
