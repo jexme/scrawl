@@ -69,7 +69,7 @@ Press the hotkey, drag to select. Keys:
 
 | Key | Action |
 | --- | --- |
-| `Enter` | save to file and copy |
+| `Enter` | save to file and copy (configurable in settings) |
 | `Ctrl+C` / `Ctrl+S` | only copy / only save |
 | `Ctrl+Z` | undo |
 | `Esc` | cancel |

@@ -21,7 +21,7 @@ func TestDefaultsWithoutFile(t *testing.T) {
 
 func TestSaveLoadRoundTrip(t *testing.T) {
 	sandbox(t)
-	want := Settings{DoubleClick: DoubleClickCopySave, SaveDir: "/tmp/shots"}
+	want := Settings{DoubleClick: DoubleClickCopySave, Enter: EnterSave, SaveDir: "/tmp/shots"}
 	if err := Save(want); err != nil {
 		t.Fatal(err)
 	}
@@ -155,6 +155,26 @@ func TestBrokenFileIsBackedUpBeforeSave(t *testing.T) {
 	bak, err := os.ReadFile(Path() + ".bak")
 	if err != nil || string(bak) != `{oops, "my": "edit"` {
 		t.Errorf("копия битого файла не сохранена: %q, %v", bak, err)
+	}
+}
+
+func TestEnterDefaultsAndTargets(t *testing.T) {
+	sandbox(t)
+	if got := Load().Enter; got != EnterCopySave {
+		t.Errorf("по умолчанию Enter копирует и сохраняет, а не %q", got)
+	}
+	writeConfig(t, `{"enter":"explode"}`)
+	if got := Load().Enter; got != EnterCopySave {
+		t.Errorf("неверное значение должно стать значением по умолчанию: %q", got)
+	}
+	cases := []struct {
+		e         Enter
+		clip, fil bool
+	}{{EnterCopySave, true, true}, {EnterCopy, true, false}, {EnterSave, false, true}}
+	for _, c := range cases {
+		if clip, file := c.e.Targets(); clip != c.clip || file != c.fil {
+			t.Errorf("%s: буфер=%v файл=%v, ожидали %v и %v", c.e, clip, file, c.clip, c.fil)
+		}
 	}
 }
 

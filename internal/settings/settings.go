@@ -28,15 +28,30 @@ const (
 	DoubleClickCopySave DoubleClick = "copy_save" // скопировать и сохранить в файл
 )
 
+// Enter определяет, что делает клавиша Enter в оверлее.
+type Enter string
+
+const (
+	EnterCopySave Enter = "copy_save" // скопировать и сохранить в файл (по умолчанию)
+	EnterCopy     Enter = "copy"      // только скопировать в буфер обмена
+	EnterSave     Enter = "save"      // только сохранить в файл
+)
+
+// Targets сообщает, куда отправлять снимок: в буфер обмена и/или в файл.
+func (e Enter) Targets() (clipboard, file bool) {
+	return e != EnterSave, e != EnterCopy
+}
+
 // Settings — все настройки.
 type Settings struct {
 	DoubleClick DoubleClick `json:"double_click"`
+	Enter       Enter       `json:"enter"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
 
 // Default возвращает настройки по умолчанию.
-func Default() Settings { return Settings{DoubleClick: DoubleClickOff} }
+func Default() Settings { return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave} }
 
 // Path возвращает путь к файлу настроек.
 func Path() string {
@@ -52,11 +67,16 @@ func (d DoubleClick) valid() bool {
 	return d == DoubleClickOff || d == DoubleClickCopy || d == DoubleClickCopySave
 }
 
+func (e Enter) valid() bool { return e == EnterCopySave || e == EnterCopy || e == EnterSave }
+
 // normalize заменяет неверные значения на значения по умолчанию.
 func (s *Settings) normalize() {
 	def := Default()
 	if !s.DoubleClick.valid() {
 		s.DoubleClick = def.DoubleClick
+	}
+	if !s.Enter.valid() {
+		s.Enter = def.Enter
 	}
 	if ValidateSaveDir(s.SaveDir) != nil {
 		s.SaveDir = def.SaveDir

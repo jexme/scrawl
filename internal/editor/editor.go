@@ -457,7 +457,7 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 		case e.Name == key.NameEscape:
 			m.quit()
 		case e.Name == key.NameReturn || e.Name == key.NameEnter:
-			m.export(true, true)
+			m.export(m.store.Get().Enter.Targets())
 		case !ctrl && e.Name == "R":
 			m.applyLast()
 		case !ctrl && e.Name == "A":

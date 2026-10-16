@@ -41,6 +41,7 @@ type state struct {
 	store *settings.Store
 
 	choice widget.Enum // двойной клик: off, copy, copy_save
+	enter  widget.Enum // Enter: copy_save, copy, save
 	dir    widget.Editor
 	reset  widget.Clickable
 	close  widget.Clickable
@@ -58,6 +59,7 @@ func newState(store *settings.Store) *state {
 	s.list.Axis = layout.Vertical
 	cur := store.Get()
 	s.choice.Value = string(cur.DoubleClick)
+	s.enter.Value = string(cur.Enter)
 	s.dir.SingleLine = true
 	s.dir.SetText(cur.SaveDir)
 	return s
@@ -108,6 +110,13 @@ func (s *state) apply(gtx layout.Context) {
 	s.choice.Update(gtx)
 	if want := settings.DoubleClick(s.choice.Value); want != s.store.Get().DoubleClick {
 		if err := s.store.Update(func(c *settings.Settings) { c.DoubleClick = want }); err != nil {
+			s.dirErr = "Не удалось сохранить: " + err.Error()
+		}
+	}
+
+	s.enter.Update(gtx)
+	if want := settings.Enter(s.enter.Value); want != s.store.Get().Enter {
+		if err := s.store.Update(func(c *settings.Settings) { c.Enter = want }); err != nil {
 			s.dirErr = "Не удалось сохранить: " + err.Error()
 		}
 	}
@@ -180,12 +189,12 @@ func (s *state) label(style func(*material.Theme, string) material.LabelStyle, t
 	return l.Layout
 }
 
-func (s *state) radio(key, label string) layout.Widget {
-	rb := material.RadioButton(s.th, &s.choice, key, label)
+func (s *state) radio(group *widget.Enum, key, label string) layout.Widget {
+	rb := material.RadioButton(s.th, group, key, label)
 	rb.Color = fgColor
 	// Выбранный вариант синий, остальные светло-серые: на тёмном фоне иначе не видно.
 	rb.IconColor = mutedColor
-	if s.choice.Value == key {
+	if group.Value == key {
 		rb.IconColor = accentColor
 	}
 	return rb.Layout
@@ -235,9 +244,15 @@ func (s *state) items() []layout.Widget {
 		s.section("Действия"),
 		s.row("Двойной клик внутри выделения", "Работает с инструментом «выделение», не на рамке.",
 			radios(
-				s.radio(string(settings.DoubleClickOff), "Ничего"),
-				s.radio(string(settings.DoubleClickCopy), "Копировать в буфер обмена"),
-				s.radio(string(settings.DoubleClickCopySave), "Копировать и сохранить в файл"),
+				s.radio(&s.choice, string(settings.DoubleClickOff), "Ничего"),
+				s.radio(&s.choice, string(settings.DoubleClickCopy), "Копировать в буфер обмена"),
+				s.radio(&s.choice, string(settings.DoubleClickCopySave), "Копировать и сохранить в файл"),
+			)),
+		s.row("Клавиша Enter", "Ctrl+C, Ctrl+S и кнопки на панели от этой настройки не зависят.",
+			radios(
+				s.radio(&s.enter, string(settings.EnterCopySave), "Копировать и сохранить в файл"),
+				s.radio(&s.enter, string(settings.EnterCopy), "Только копировать в буфер обмена"),
+				s.radio(&s.enter, string(settings.EnterSave), "Только сохранить в файл"),
 			)),
 		s.section("Сохранение"),
 		s.row("Папка для скриншотов", "Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь.", dirField),

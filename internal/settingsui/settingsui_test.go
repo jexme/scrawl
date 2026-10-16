@@ -116,3 +116,15 @@ func TestContentScrollsInSmallWindow(t *testing.T) {
 		t.Errorf("в высоком окне всё должно помещаться: %+v", tall.list.Position)
 	}
 }
+
+func TestEnterChoiceIsSavedToDisk(t *testing.T) {
+	s := testState(t)
+	if s.enter.Value != string(settings.EnterCopySave) {
+		t.Fatalf("по умолчанию Enter копирует и сохраняет, а в окне %q", s.enter.Value)
+	}
+	s.enter.Value = string(settings.EnterCopy)
+	s.layout(frameContext(700, 650))
+	if got := settings.Load().Enter; got != settings.EnterCopy {
+		t.Errorf("выбор Enter не дошёл до файла: %q", got)
+	}
+}
