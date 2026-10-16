@@ -1,6 +1,7 @@
 // Package i18n переводит тексты интерфейса. Исходный язык русский: в коде тексты
-// записаны по-русски и обёрнуты в T, а английский берётся из каталога en. Текст,
-// которого нет в каталоге, показывается как есть, поэтому забытая строка
+// записаны по-русски и обёрнуты в T, а остальные языки берутся из каталогов
+// (en.go, lang_zh.go и так далее). Текст, которого нет в каталоге языка, показывается
+// по-английски, а если нет и английского, то как есть, поэтому забытая строка
 // не ломает программу, а тест полноты (i18n_test.go) такие строки находит.
 package i18n
 
@@ -16,48 +17,100 @@ const (
 	Auto = "auto" // по языку системы
 	RU   = "ru"
 	EN   = "en"
+	ZH   = "zh" // китайский (упрощённый)
+	ES   = "es"
+	PT   = "pt" // португальский (Бразилия)
+	JA   = "ja"
+	DE   = "de"
+	FR   = "fr"
+	KO   = "ko"
 )
 
-var current atomic.Value // string: RU или EN
+// LanguageInfo описывает язык интерфейса: код для настройки и название на нём самом.
+type LanguageInfo struct {
+	Code string
+	Name string // как язык называется сам: его нужно узнать, даже не зная остального интерфейса
+	Hint string // латинская подпись для письменностей, которых может не быть в шрифте
+}
+
+// Languages — все языки интерфейса в порядке показа.
+var Languages = []LanguageInfo{
+	{RU, "Русский", ""}, {EN, "English", ""}, {ZH, "简体中文", "Chinese"}, {ES, "Español", ""},
+	{PT, "Português (Brasil)", ""}, {JA, "日本語", "Japanese"}, {DE, "Deutsch", ""}, {FR, "Français", ""}, {KO, "한국어", "Korean"},
+}
+
+// catalogs — переводы с русского: русский язык исходный и каталога не имеет.
+var catalogs = map[string]map[string]string{
+	EN: en, ZH: zh, ES: es, PT: pt, JA: ja, DE: de, FR: fr, KO: ko,
+}
+
+var current atomic.Value // string: код языка из Languages
 
 func init() { current.Store(RU) }
 
-// SetLanguage выбирает язык: "ru", "en" или "auto" (по LC_ALL, LC_MESSAGES,
-// LANGUAGE и LANG: русская локаль даёт русский, любая другая английский).
-// Неизвестное значение считается "auto".
-func SetLanguage(code string) {
-	switch code {
-	case RU, EN:
-		current.Store(code)
-	default:
-		current.Store(detect(os.Getenv))
+// Normalize приводит запись языка к коду из настройки: "auto", "ru", "en", "zh",
+// "es", "pt", "ja", "de", "fr", "ko". Понимает региональные записи ("zh-CN",
+// "pt_BR", "ru_RU.UTF-8"). Второе значение false, если язык неизвестен.
+func Normalize(code string) (string, bool) {
+	v := strings.ToLower(strings.TrimSpace(code))
+	if v == Auto {
+		return Auto, true
 	}
+	if i := strings.IndexAny(v, "_-.@"); i >= 0 {
+		v = v[:i]
+	}
+	for _, l := range Languages {
+		if v == l.Code {
+			return l.Code, true
+		}
+	}
+	return "", false
 }
 
-// Language возвращает действующий язык: "ru" или "en".
+// SetLanguage выбирает язык: код из Languages или "auto" (по LC_ALL, LC_MESSAGES,
+// LANGUAGE и LANG: известная локаль даёт свой язык, любая другая английский).
+// Неизвестное значение считается "auto".
+func SetLanguage(code string) {
+	if canon, ok := Normalize(code); ok && canon != Auto {
+		current.Store(canon)
+		return
+	}
+	current.Store(detect(os.Getenv))
+}
+
+// Language возвращает действующий язык: код из Languages.
 func Language() string { return current.Load().(string) }
 
 // detect определяет язык по переменным окружения.
 func detect(getenv func(string) string) string {
 	for _, name := range []string{"LC_ALL", "LC_MESSAGES", "LANGUAGE", "LANG"} {
-		v := strings.ToLower(getenv(name))
-		if v == "" || v == "c" || v == "posix" {
+		v := getenv(name)
+		if v == "" || v == "C" || v == "POSIX" || strings.EqualFold(v, "c") || strings.EqualFold(v, "posix") {
 			continue
 		}
-		if strings.HasPrefix(v, "ru") {
-			return RU
+		// В LANGUAGE языки идут списком через двоеточие: берём первый известный.
+		for _, part := range strings.Split(v, ":") {
+			if canon, ok := Normalize(part); ok && canon != Auto {
+				return canon
+			}
 		}
-		return EN
+		return EN // локаль задана, но такого перевода нет
 	}
 	return EN
 }
 
-// T возвращает перевод русского текста на действующий язык.
+// T возвращает перевод русского текста на действующий язык. Нет перевода на этот
+// язык: английский, а нет и его: сам русский текст.
 func T(ru string) string {
-	if Language() == EN {
-		if en, ok := en[ru]; ok {
-			return en
-		}
+	lang := Language()
+	if lang == RU {
+		return ru
+	}
+	if v, ok := catalogs[lang][ru]; ok {
+		return v
+	}
+	if v, ok := en[ru]; ok {
+		return v
 	}
 	return ru
 }

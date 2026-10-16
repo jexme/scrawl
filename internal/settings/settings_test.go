@@ -684,7 +684,8 @@ func TestLanguageSetting(t *testing.T) {
 		t.Errorf("по умолчанию язык как в системе: %q", got)
 	}
 	for body, want := range map[string]string{
-		`{"language":"en"}`: "en", `{"language":"ru"}`: "ru", `{"language":"de"}`: "auto", `{"language":5}`: "auto",
+		`{"language":"en"}`: "en", `{"language":"ru"}`: "ru", `{"language":"de"}`: "de", `{"language":"zh-CN"}`: "zh",
+		`{"language":"pt_BR"}`: "pt", `{"language":"KO"}`: "ko", `{"language":"sv"}`: "auto", `{"language":5}`: "auto",
 	} {
 		writeConfig(t, body)
 		if got := Load().Language; got != want {

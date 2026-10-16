@@ -829,7 +829,8 @@ func TestTabs(t *testing.T) {
 
 	// Каждая вкладка рисуется без ошибок, при любой ширине окна и на обоих языках.
 	defer i18n.SetLanguage(i18n.RU)
-	for _, lang := range []string{i18n.RU, i18n.EN} {
+	for _, l := range i18n.Languages {
+		lang := l.Code
 		i18n.SetLanguage(lang)
 		for i := range tabs {
 			s.selectTab(i)
@@ -871,7 +872,8 @@ func TestTabs(t *testing.T) {
 func TestTabBarFitsMinimumWidth(t *testing.T) {
 	defer i18n.SetLanguage(i18n.RU)
 	const minWindowDp, padding = 700, 44 // MinSize окна и отступы по 22 с каждой стороны
-	for _, lang := range []string{i18n.RU, i18n.EN} {
+	for _, l := range i18n.Languages {
+		lang := l.Code
 		i18n.SetLanguage(lang)
 		s := testState(t)
 		gtx := layout.Context{
@@ -883,5 +885,27 @@ func TestTabBarFitsMinimumWidth(t *testing.T) {
 		if dims.Size.X > minWindowDp-padding {
 			t.Errorf("%s: ряд вкладок %d dp шире доступных %d dp", lang, dims.Size.X, minWindowDp-padding)
 		}
+	}
+}
+
+func TestEveryLanguageCanBeChosen(t *testing.T) {
+	defer i18n.SetLanguage(i18n.RU)
+	s := testState(t)
+	for _, l := range i18n.Languages {
+		s.lang.Value = l.Code
+		s.layout(frameContext(820, 700))
+		if got := settings.Load().Language; got != l.Code {
+			t.Errorf("язык %s: в файле %q", l.Code, got)
+		}
+		if i18n.Language() != l.Code {
+			t.Errorf("язык %s: действует %q", l.Code, i18n.Language())
+		}
+	}
+	// «Как в системе» возвращает автоопределение.
+	t.Setenv("LC_ALL", "de_DE.UTF-8")
+	s.lang.Value = i18n.Auto
+	s.layout(frameContext(820, 700))
+	if i18n.Language() != i18n.DE || settings.Load().Language != i18n.Auto {
+		t.Errorf("auto при немецкой локали: действует %q, в файле %q", i18n.Language(), settings.Load().Language)
 	}
 }

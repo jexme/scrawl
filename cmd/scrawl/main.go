@@ -16,6 +16,7 @@ import (
 	"gioui.org/app"
 
 	"github.com/jexme/scrawl/internal/editor"
+	"github.com/jexme/scrawl/internal/fonts"
 	"github.com/jexme/scrawl/internal/i18n"
 	"github.com/jexme/scrawl/internal/screencast"
 	"github.com/jexme/scrawl/internal/settings"
@@ -29,6 +30,7 @@ import (
 
 func main() {
 	i18n.SetLanguage(settings.Load().Language) // до флагов: у них тоже есть описания
+	fonts.Preload(i18n.Language())             // шрифт для иероглифов грузится, пока идёт захват
 	setup := flag.Bool("setup", false, i18n.T("заново выбрать мониторы (покажет диалоги GNOME)"))
 	verbose := flag.Bool("v", false, i18n.T("печатать замеры времени"))
 	fresh := flag.Bool("fresh", false, i18n.T("не предлагать область предыдущего скриншота"))

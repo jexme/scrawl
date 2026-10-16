@@ -8,7 +8,7 @@
 
 *L'image est un vrai rendu de la surcouche sur un bureau imaginaire.*
 
-> L'interface du programme existe pour l'instant en anglais et en russe ; les noms de boutons ci-dessous sont ceux de l'interface en anglais.
+> L'interface est disponible en anglais, russe, chinois simplifié, espagnol, portugais, japonais, allemand, français et coréen ; les noms de boutons ci-dessous sont ceux de l'interface en anglais, avec leurs équivalents dans chaque langue.
 
 ## Pourquoi Scrawl
 
@@ -32,7 +32,7 @@ Sous GNOME avec Wayland, les applications ne peuvent pas capturer l'écran direc
 - **Collections avant/après :** mettez des captures de côté avec `A`, puis assemblez-les en une seule image avec légendes (« Before », « After », ou « Step 1… » s'il y en a plus), côte à côte ou l'une sous l'autre. Ou envoyez la collection sous forme de fichiers séparés, qui se collent dans une discussion comme pièces jointes.
 
 **À votre façon**
-- Une fenêtre de réglages pour presque tout : touches, couleurs, outils par défaut, aspect de la sélection, nom et format des fichiers, langue (anglais, russe).
+- Une fenêtre de réglages pour presque tout : touches, couleurs, outils par défaut, aspect de la sélection, nom et format des fichiers, et langue de l'interface (9 langues).
 - Une icône dans la zone de notification avec démarrage automatique, un bouton pour définir le raccourci de lancement et une vérification des mises à jour facultative (désactivée par défaut).
 
 ## État
@@ -179,7 +179,7 @@ make dist     # archive de version et somme de contrôle dans dist/
 make notices  # régénère THIRD_PARTY_NOTICES.md
 ```
 
-Les textes de l'interface sont dans `internal/i18n/en.go` (anglais ; les textes d'origine dans le code sont en russe) ; `go test ./...` vérifie que chacun a une traduction. Plan et idées : [docs/PLAN.md](../PLAN.md) (en russe).
+Les textes de l'interface sont dans `internal/i18n/` (un fichier par langue ; les textes d'origine dans le code sont en russe) ; `go test ./...` vérifie que chaque texte est traduit dans chaque langue. Plan et idées : [docs/PLAN.md](../PLAN.md) (en russe).
 
 ## Licence
 

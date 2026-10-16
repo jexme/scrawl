@@ -8,7 +8,7 @@
 
 *A imagem é uma renderização real da sobreposição sobre uma área de trabalho inventada.*
 
-> A interface do programa existe por enquanto em inglês e russo; os nomes dos botões abaixo são os da interface em inglês.
+> A interface está disponível em inglês, russo, chinês simplificado, espanhol, português, japonês, alemão, francês e coreano; os nomes dos botões abaixo são os da interface em inglês, com seus equivalentes em cada idioma.
 
 ## Por que o Scrawl
 
@@ -32,7 +32,7 @@ No GNOME com Wayland, os aplicativos não conseguem capturar a tela diretamente:
 - **Coleções antes/depois:** separe capturas com `A` e una-as em uma única imagem com legendas (“Before”, “After” ou “Step 1…” para mais), lado a lado ou uma sobre a outra. Ou envie a coleção como arquivos separados, que são colados em um chat como anexos.
 
 **Do seu jeito**
-- Uma janela de configurações para quase tudo: teclas, cores, ferramentas padrão, aparência da seleção, nome e formato dos arquivos, idioma (inglês, russo).
+- Uma janela de configurações para quase tudo: teclas, cores, ferramentas padrão, aparência da seleção, nome e formato dos arquivos e idioma da interface (9 idiomas).
 - Ícone na bandeja com início automático, um botão para definir a tecla de atalho e uma verificação de atualizações opcional (desativada por padrão).
 
 ## Status
@@ -179,7 +179,7 @@ make dist     # arquivo de versão e soma de verificação em dist/
 make notices  # regenera o THIRD_PARTY_NOTICES.md
 ```
 
-Os textos da interface ficam em `internal/i18n/en.go` (inglês; os textos originais no código estão em russo); `go test ./...` verifica se todos têm tradução. Plano e ideias: [docs/PLAN.md](../PLAN.md) (em russo).
+Os textos da interface ficam em `internal/i18n/` (um arquivo por idioma; os textos originais no código estão em russo); `go test ./...` verifica se cada texto está traduzido para cada idioma. Plano e ideias: [docs/PLAN.md](../PLAN.md) (em russo).
 
 ## Licença
 

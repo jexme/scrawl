@@ -74,7 +74,12 @@ func TestAutoDetect(t *testing.T) {
 	}{
 		{"русская локаль", map[string]string{"LANG": "ru_RU.UTF-8"}, RU},
 		{"английская", map[string]string{"LANG": "en_US.UTF-8"}, EN},
-		{"другая", map[string]string{"LANG": "de_DE.UTF-8"}, EN},
+		{"немецкая", map[string]string{"LANG": "de_DE.UTF-8"}, DE},
+		{"китайская", map[string]string{"LANG": "zh_CN.UTF-8"}, ZH},
+		{"бразильская", map[string]string{"LANG": "pt_BR.UTF-8"}, PT},
+		{"корейская", map[string]string{"LANG": "ko_KR.UTF-8"}, KO},
+		{"без перевода", map[string]string{"LANG": "sv_SE.UTF-8"}, EN},
+		{"список в LANGUAGE", map[string]string{"LANGUAGE": "sv:fr:en"}, FR},
 		{"LC_ALL главнее LANG", map[string]string{"LC_ALL": "en_GB.UTF-8", "LANG": "ru_RU.UTF-8"}, EN},
 		{"C пропускается", map[string]string{"LC_ALL": "C", "LANG": "ru_RU.UTF-8"}, RU},
 		{"LANGUAGE", map[string]string{"LANGUAGE": "ru:en"}, RU},
@@ -92,9 +97,14 @@ func TestAutoDetect(t *testing.T) {
 	if Language() != RU {
 		t.Errorf("auto при русской локали: %q", Language())
 	}
-	t.Setenv("LC_ALL", "fr_FR.UTF-8")
+	t.Setenv("LC_ALL", "sv_SE.UTF-8")
 	SetLanguage("что-то странное") // неизвестное значение считается auto
 	if Language() != EN {
+		t.Errorf("неизвестный код при шведской локали: %q", Language())
+	}
+	t.Setenv("LC_ALL", "fr_FR.UTF-8")
+	SetLanguage("что-то странное")
+	if Language() != FR {
 		t.Errorf("неизвестный код при французской локали: %q", Language())
 	}
 }
@@ -104,17 +114,71 @@ var verbRe = regexp.MustCompile(`%[-+#0-9.]*[a-zA-Z%]`)
 // Формат и перевод должны содержать одни и те же подстановки в том же порядке,
 // иначе Sprintf напечатает мусор.
 func TestVerbsMatch(t *testing.T) {
-	for ru, en := range en {
-		a, b := verbRe.FindAllString(ru, -1), verbRe.FindAllString(en, -1)
-		if strings.Join(a, " ") != strings.Join(b, " ") {
-			t.Errorf("подстановки расходятся: %q %v и %q %v", ru, a, en, b)
+	for lang, cat := range catalogs {
+		for ru, tr := range cat {
+			a, b := verbRe.FindAllString(ru, -1), verbRe.FindAllString(tr, -1)
+			if strings.Join(a, " ") != strings.Join(b, " ") {
+				t.Errorf("%s: подстановки расходятся: %q %v и %q %v", lang, ru, a, tr, b)
+			}
+			if strings.TrimSpace(tr) == "" {
+				t.Errorf("%s: пустой перевод: %q", lang, ru)
+			}
+			if strings.HasPrefix(ru, " ") != strings.HasPrefix(tr, " ") || strings.HasSuffix(ru, " ") != strings.HasSuffix(tr, " ") {
+				t.Errorf("%s: пробелы по краям расходятся: %q и %q", lang, ru, tr)
+			}
+			if strings.HasSuffix(ru, "\n") != strings.HasSuffix(tr, "\n") {
+				t.Errorf("%s: перевод строки в конце расходится: %q и %q", lang, ru, tr)
+			}
 		}
-		if strings.TrimSpace(en) == "" {
-			t.Errorf("пустой перевод: %q", ru)
+	}
+}
+
+func TestNormalize(t *testing.T) {
+	for in, want := range map[string]string{
+		"auto": Auto, "AUTO": Auto, "ru": RU, "en": EN, "zh": ZH, "zh-CN": ZH, "zh_CN": ZH, "pt-BR": PT, "pt_BR.UTF-8": PT,
+		"ja": JA, "de": DE, "FR": FR, "ko": KO, "ru_RU.UTF-8": RU, " es ": ES,
+	} {
+		if got, ok := Normalize(in); !ok || got != want {
+			t.Errorf("Normalize(%q) = %q, %v; ожидали %q", in, got, ok, want)
 		}
-		if strings.HasPrefix(ru, " ") != strings.HasPrefix(en, " ") || strings.HasSuffix(ru, " ") != strings.HasSuffix(en, " ") {
-			t.Errorf("пробелы по краям расходятся: %q и %q", ru, en)
+	}
+	for _, bad := range []string{"", "xx", "sv", "klingon", "zhh"} {
+		if got, ok := Normalize(bad); ok {
+			t.Errorf("Normalize(%q) = %q, ожидали отказ", bad, got)
 		}
+	}
+}
+
+// Каждый язык из списка имеет каталог (кроме русского: он исходный), и коды не повторяются.
+func TestLanguagesList(t *testing.T) {
+	seen := map[string]bool{}
+	for _, l := range Languages {
+		if seen[l.Code] || l.Name == "" {
+			t.Errorf("язык %+v повторён или без названия", l)
+		}
+		seen[l.Code] = true
+		if _, ok := catalogs[l.Code]; !ok && l.Code != RU {
+			t.Errorf("у языка %s нет каталога", l.Code)
+		}
+	}
+	if len(catalogs) != len(Languages)-1 {
+		t.Errorf("каталогов %d, языков без русского %d", len(catalogs), len(Languages)-1)
+	}
+}
+
+// Нет перевода на язык: показывается английский.
+func TestFallbackToEnglish(t *testing.T) {
+	defer SetLanguage(RU)
+	const key = "Закрыть"
+	saved, ok := catalogs[DE][key]
+	if !ok {
+		t.Skip("в немецком каталоге пока нет этой строки")
+	}
+	delete(catalogs[DE], key)
+	defer func() { catalogs[DE][key] = saved }()
+	SetLanguage(DE)
+	if got := T(key); got != "Close" {
+		t.Errorf("при отсутствии перевода ожидали английский, получили %q", got)
 	}
 }
 
@@ -204,6 +268,19 @@ func TestCatalogCompleteness(t *testing.T) {
 	for key := range en {
 		if !used[key] {
 			t.Errorf("лишняя запись в каталоге (текста нет в коде): %q", key)
+		}
+	}
+	// Остальные языки переведены так же полно, как английский.
+	for lang, cat := range catalogs {
+		for key := range en {
+			if _, ok := cat[key]; !ok {
+				t.Errorf("%s: нет перевода: %q", lang, key)
+			}
+		}
+		for key := range cat {
+			if _, ok := en[key]; !ok {
+				t.Errorf("%s: лишняя запись: %q", lang, key)
+			}
 		}
 	}
 	// Диагностика разработчика (-v, [debug]) намеренно не переводится.

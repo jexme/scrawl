@@ -19,6 +19,9 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
+
+	"github.com/jexme/scrawl/internal/fonts"
+	"github.com/jexme/scrawl/internal/i18n"
 )
 
 // Tool — инструмент рисования.
@@ -72,7 +75,7 @@ func TextSize(width float32) float32 { return 12 + width*3 }
 
 // NewShaper создаёт шрифтовой шейпер для текстовых аннотаций.
 func NewShaper() *text.Shaper {
-	return text.NewShaper(text.WithCollection(gofont.Collection()))
+	return text.NewShaper(text.WithCollection(fonts.Collection(i18n.Language())))
 }
 
 // Font — шрифт текстовых аннотаций.

@@ -8,7 +8,7 @@
 
 *Das Bild ist eine echte Darstellung des Overlays über einem erfundenen Desktop.*
 
-> Die Oberfläche des Programms gibt es derzeit auf Englisch und Russisch; die unten genannten Schaltflächen heißen wie in der englischen Oberfläche.
+> Die Oberfläche gibt es auf Englisch, Russisch, Chinesisch (vereinfacht), Spanisch, Portugiesisch, Japanisch, Deutsch, Französisch und Koreanisch; die unten genannten Schaltflächen heißen wie in der englischen Oberfläche, in den anderen Sprachen gibt es entsprechende Namen.
 
 ## Warum Scrawl
 
@@ -32,7 +32,7 @@ Unter GNOME mit Wayland können Programme den Bildschirm nicht direkt aufnehmen:
 - **Vorher/Nachher-Sammlungen:** Mit `A` Aufnahmen beiseitelegen und dann zu einem Bild mit Beschriftungen („Before“, „After“ oder „Step 1…“ bei mehr) zusammenfügen – nebeneinander oder untereinander. Oder die Sammlung als einzelne Dateien senden, die sich in einem Chat als Anhänge einfügen lassen.
 
 **Nach eigenem Geschmack**
-- Ein Einstellungsfenster für fast alles: Tasten, Farben, Standardwerkzeuge, Aussehen der Auswahl, Dateinamen und -format, Sprache (Englisch, Russisch).
+- Ein Einstellungsfenster für fast alles: Tasten, Farben, Standardwerkzeuge, Aussehen der Auswahl, Dateinamen und -format sowie Sprache der Oberfläche (9 Sprachen).
 - Ein Tray-Symbol mit Autostart, eine Schaltfläche zum Festlegen des Tastenkürzels und eine optionale Update-Prüfung (standardmäßig aus).
 
 ## Status
@@ -179,7 +179,7 @@ make dist     # Release-Archiv und Prüfsumme in dist/
 make notices  # THIRD_PARTY_NOTICES.md neu erzeugen
 ```
 
-Die Oberflächentexte stehen in `internal/i18n/en.go` (Englisch; die Originaltexte im Code sind russisch); `go test ./...` prüft, dass jeder Text eine Übersetzung hat. Plan und Ideen: [docs/PLAN.md](../PLAN.md) (auf Russisch).
+Die Oberflächentexte stehen in `internal/i18n/` (eine Datei pro Sprache; die Originaltexte im Code sind russisch); `go test ./...` prüft, dass jeder Text in jede Sprache übersetzt ist. Plan und Ideen: [docs/PLAN.md](../PLAN.md) (auf Russisch).
 
 ## Lizenz
 

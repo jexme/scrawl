@@ -39,7 +39,7 @@ is one key press: the frozen screen appears in about 150 ms.
   or one under another. Or send the collection as separate files that paste into a chat as attachments.
 
 **Make it yours**
-- A settings window for almost everything: keys, colours, default tools, the look of the selection, file names and format, language (English, Russian).
+- A settings window for almost everything: keys, colours, default tools, the look of the selection, file names and format, and the interface language (9 languages: English, Russian, Chinese, Spanish, Portuguese, Japanese, German, French, Korean).
 - A tray icon with autostart, a hotkey button, and an optional update check (off by default).
 
 ## Status
@@ -230,8 +230,8 @@ make dist     # release archive and checksum in dist/
 make notices  # regenerate THIRD_PARTY_NOTICES.md
 ```
 
-The interface text lives in `internal/i18n/en.go` (English, the source texts are in Russian);
-`go test ./...` checks that every text has a translation. Plan and ideas: [docs/PLAN.md](docs/PLAN.md) (in Russian).
+The interface texts live in `internal/i18n/` (one file per language; the source texts in the code are Russian);
+`go test ./...` checks that every text is translated into every language. Plan and ideas: [docs/PLAN.md](docs/PLAN.md) (in Russian).
 
 ## License
 

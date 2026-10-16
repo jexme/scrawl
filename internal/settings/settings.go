@@ -158,7 +158,9 @@ func (s *Settings) normalize() {
 	s.Tools.normalize()
 	normalizePalette(&s.Palette)
 	s.Glue.normalize()
-	if s.Language != i18n.Auto && s.Language != i18n.RU && s.Language != i18n.EN {
+	if canon, ok := i18n.Normalize(s.Language); ok {
+		s.Language = canon // «zh-CN» и «pt_BR» записываются как zh и pt
+	} else {
 		s.Language = def.Language
 	}
 	s.Keys.normalize()

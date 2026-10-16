@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"gioui.org/app"
-	"gioui.org/font/gofont"
 	"gioui.org/io/key"
 	"gioui.org/io/system"
 	"gioui.org/layout"
@@ -24,6 +23,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/jexme/scrawl/internal/fonts"
 	"github.com/jexme/scrawl/internal/hotkey"
 	"github.com/jexme/scrawl/internal/i18n"
 	"github.com/jexme/scrawl/internal/screencast"
@@ -104,9 +104,15 @@ type state struct {
 	prefixErr  string
 }
 
+// newShaper собирает шрифты для языка интерфейса: для китайского, японского и
+// корейского к встроенным добавляется системный шрифт с иероглифами.
+func newShaper() *text.Shaper {
+	return text.NewShaper(text.WithCollection(fonts.Collection(i18n.Language())))
+}
+
 func newState(store *settings.Store) *state {
 	th := material.NewTheme()
-	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
+	th.Shaper = newShaper()
 	th.Palette = material.Palette{Bg: bgColor, Fg: fgColor, ContrastBg: accentColor, ContrastFg: color.NRGBA{R: 255, G: 255, B: 255, A: 255}}
 
 	s := &state{th: th, store: store}
@@ -283,6 +289,7 @@ func (s *state) apply(gtx layout.Context) {
 			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 		i18n.SetLanguage(s.store.Get().Language) // окно перерисуется на новом языке сразу
+		s.th.Shaper = newShaper()                // и получит шрифт для его письменности
 	}
 	s.updateKeys(gtx)
 	if s.hotkey.btn.Clicked(gtx) {
@@ -925,6 +932,26 @@ func (s *state) toolChoiceRadios() layout.Widget {
 	return radios(items...)
 }
 
+// languageRadios — выбор языка двумя столбцами: «как в системе» и все языки по
+// их собственным названиям (их надо узнавать, даже не понимая остального окна).
+func (s *state) languageRadios() layout.Widget {
+	items := []layout.Widget{s.radio(&s.lang, i18n.Auto, i18n.T("Как в системе"))}
+	for _, l := range i18n.Languages {
+		name := l.Name
+		if l.Hint != "" {
+			name += "  ·  " + l.Hint // без шрифта с иероглифами подпись всё равно читается
+		}
+		items = append(items, s.radio(&s.lang, l.Code, name))
+	}
+	half := (len(items) + 1) / 2
+	return func(gtx layout.Context) layout.Dimensions {
+		return layout.Flex{}.Layout(gtx,
+			layout.Flexed(1, radios(items[:half]...)),
+			layout.Flexed(1, radios(items[half:]...)),
+		)
+	}
+}
+
 // radios складывает варианты выбора в столбик.
 func radios(items ...layout.Widget) layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
@@ -984,11 +1011,7 @@ func (s *state) tabs() []settingsTab {
 
 	general := []layout.Widget{
 		s.row(i18n.T("Язык интерфейса"), i18n.T("Окно настроек меняется сразу, оверлей и уведомления при следующем снимке."),
-			radios(
-				s.radio(&s.lang, i18n.Auto, i18n.T("Как в системе")),
-				s.radio(&s.lang, i18n.RU, "Русский"),
-				s.radio(&s.lang, i18n.EN, "English"),
-			)),
+			s.languageRadios()),
 		s.section(i18n.T("Действия")),
 		s.row(i18n.T("Двойной клик внутри выделения"), i18n.T("Работает с инструментом «выделение», не на рамке."),
 			radios(
