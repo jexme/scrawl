@@ -63,6 +63,21 @@ scripts/gnome-hotkey.sh # binds Print to scrawl
 - `scripts/gnome-hotkey.sh [KEY] [BINARY] [--dry-run]` creates a GNOME custom
   shortcut and refuses to overwrite one that is already taken.
 
+### Install from a release archive
+
+Releases (built by GitHub Actions on a `v*` tag) carry `scrawl-VERSION-linux-amd64.tar.gz`
+and `SHA256SUMS`:
+
+```bash
+sha256sum -c --ignore-missing SHA256SUMS
+tar xzf scrawl-*-linux-amd64.tar.gz && cd scrawl-*-linux-amd64
+./install.sh            # to ~/.local (PREFIX=/usr/local for system-wide)
+```
+
+The binary needs these runtime libraries (Ubuntu names):
+`sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland-cursor0 libxkbcommon-x11-0 libegl1 libx11-6 libxcursor1`.
+Then run `scrawl -setup` and `scrawl -grant-screenshot` (or use the same buttons in `scrawl -settings`).
+
 ### Upgrading from screen-editor
 
 Scrawl is the new name of screen-editor. Settings are picked up from

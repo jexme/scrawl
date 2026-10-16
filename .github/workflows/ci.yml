@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Системные библиотеки
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc pkg-config patch libwayland-dev libx11-dev libx11-xcb-dev \
+            libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev \
+            libvulkan-dev libpipewire-0.3-dev xvfb libgl1-mesa-dri
+
+      - name: gofmt
+        run: test -z "$(gofmt -l cmd internal)"
+
+      - name: Патч Gio и go vet
+        run: |
+          make gio
+          go vet ./...
+
+      # Тесты рисуют через headless Gio (EGL). Без GPU это идёт через программный Mesa
+      # под xvfb; тесты, которым рисовать нечем, сами себя пропускают.
+      - name: Тесты
+        run: xvfb-run -a make test
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+
+      - name: Сборка
+        run: |
+          make build
+          ./bin/scrawl -version

@@ -68,6 +68,21 @@ scripts/gnome-hotkey.sh # назначает Print на scrawl
 Все три действия (выбор мониторов, разрешение на снимки, горячая клавиша) есть
 кнопками в окне настроек, разделы «Действия» и «Захват экрана».
 
+### Установка из архива релиза
+
+В релизах (их собирает GitHub Actions по тегу `v*`) лежат `scrawl-ВЕРСИЯ-linux-amd64.tar.gz`
+и `SHA256SUMS`:
+
+```bash
+sha256sum -c --ignore-missing SHA256SUMS
+tar xzf scrawl-*-linux-amd64.tar.gz && cd scrawl-*-linux-amd64
+./install.sh            # в ~/.local (PREFIX=/usr/local для всей системы)
+```
+
+Бинарнику нужны библиотеки (названия пакетов Ubuntu):
+`sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland-cursor0 libxkbcommon-x11-0 libegl1 libx11-6 libxcursor1`.
+Потом выполните `scrawl -setup` и `scrawl -grant-screenshot` (или те же кнопки в `scrawl -settings`).
+
 ### Обновление с screen-editor
 
 Scrawl это новое название screen-editor. Пока нет файла

@@ -1,0 +1,42 @@
+name: Release
+
+# Релиз выпускается по тегу вида v1.2.3 (или v1.2.3-rc1: такой помечается как предварительный).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Системные библиотеки
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc pkg-config patch libwayland-dev libx11-dev libx11-xcb-dev \
+            libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev \
+            libvulkan-dev libpipewire-0.3-dev
+
+      - name: Архив и контрольные суммы
+        run: |
+          make dist VERSION="${GITHUB_REF_NAME}"
+          cd dist
+          sha256sum scrawl-*.tar.gz > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Публикация релиза
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=""
+          case "${GITHUB_REF_NAME}" in *-*) flags="--prerelease" ;; esac
+          gh release create "${GITHUB_REF_NAME}" dist/scrawl-*.tar.gz dist/SHA256SUMS \
+            --verify-tag --generate-notes --title "Scrawl ${GITHUB_REF_NAME}" $flags

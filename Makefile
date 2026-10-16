@@ -20,7 +20,7 @@ BINDIR ?= $(PREFIX)/bin
 APPDIR ?= $(PREFIX)/share/applications
 DESKTOP := io.github.jexme.Scrawl.desktop
 
-.PHONY: all gio build test notices install uninstall clean
+.PHONY: all gio build test notices install uninstall dist clean
 
 all: build
 
@@ -54,5 +54,18 @@ install: build
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/scrawl $(DESTDIR)$(APPDIR)/$(DESKTOP)
 
+# Архив релиза: бинарник, .desktop, установщик, лицензии и README, плюс SHA-256.
+# Версия берётся из git describe или из VERSION=v1.2.3.
+DIST := dist
+PKG = scrawl-$(VERSION)-linux-$(shell $(GO) env GOARCH)
+
+dist: build
+	rm -rf $(DIST)/$(PKG) $(DIST)/$(PKG).tar.gz $(DIST)/$(PKG).tar.gz.sha256
+	mkdir -p $(DIST)/$(PKG)
+	cp bin/scrawl packaging/$(DESKTOP) packaging/install.sh LICENSE THIRD_PARTY_NOTICES.md README.md README.ru.md $(DIST)/$(PKG)/
+	tar -C $(DIST) --owner=0 --group=0 -czf $(DIST)/$(PKG).tar.gz $(PKG)
+	cd $(DIST) && sha256sum $(PKG).tar.gz > $(PKG).tar.gz.sha256
+	@echo "Готово: $(DIST)/$(PKG).tar.gz"
+
 clean:
-	rm -rf bin
+	rm -rf bin $(DIST)
