@@ -34,11 +34,13 @@ jobs:
           go vet ./...
 
       # Тесты рисуют через headless Gio (EGL). Без GPU это идёт через программный Mesa
-      # под xvfb; тесты, которым рисовать нечем, сами себя пропускают.
+      # (surfaceless EGL), xvfb нужен тестам X11; тесты, которым рисовать нечем, сами себя пропускают.
       - name: Тесты
         run: xvfb-run -a make test
         env:
           LIBGL_ALWAYS_SOFTWARE: "1"
+          # Headless-рендер идёт без окна: surfaceless не зависит от того, умеет ли Xvfb DRI.
+          EGL_PLATFORM: surfaceless
 
       - name: Сборка
         run: |
