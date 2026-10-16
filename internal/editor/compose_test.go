@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/jexme/screen-editor/internal/annotate"
+	"github.com/jexme/screen-editor/internal/settings"
 )
 
 func solid(w, h int, c color.RGBA) *image.RGBA {
@@ -17,20 +18,11 @@ func solid(w, h int, c color.RGBA) *image.RGBA {
 	return img
 }
 
-func TestComposeLabels(t *testing.T) {
-	if got := composeLabels(2); got[0] != "Было" || got[1] != "Стало" {
-		t.Errorf("для двух: %v", got)
-	}
-	if got := composeLabels(3); got[0] != "Шаг 1" || got[2] != "Шаг 3" {
-		t.Errorf("для трёх: %v", got)
-	}
-}
-
 func TestComposeSideBySide(t *testing.T) {
 	// Разная высота: результат берёт самую низкую, без увеличения.
 	a := solid(300, 200, color.RGBA{R: 220, G: 60, B: 60, A: 255})
 	b := solid(240, 160, color.RGBA{R: 60, G: 170, B: 80, A: 255})
-	out, err := compose([]*image.RGBA{a, b}, composeLabels(2), annotate.NewShaper())
+	out, err := compose([]*image.RGBA{a, b}, settings.Default().Glue.Labels(2), annotate.NewShaper())
 	if err != nil {
 		t.Skipf("headless рендер недоступен: %v", err)
 	}

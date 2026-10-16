@@ -81,7 +81,7 @@ func (m *monitor) glueCollection() {
 		notify("Склейка", "Нужно минимум две картинки: добавьте в подборку или выделите область")
 		return
 	}
-	out, err := compose(imgs, composeLabels(len(imgs)), m.shaper)
+	out, err := compose(imgs, m.store.Get().Glue.Labels(len(imgs)), m.shaper)
 	if err != nil {
 		fail("склейка", err)
 		return

@@ -449,3 +449,36 @@ func TestMarkerOpacity(t *testing.T) {
 		t.Errorf("100%% это альфа 255, а не %d", a)
 	}
 }
+
+func TestGlueLabels(t *testing.T) {
+	sandbox(t)
+	g := Load().Glue
+	if got := g.Labels(2); got[0] != "Было" || got[1] != "Стало" {
+		t.Errorf("для двух по умолчанию: %v", got)
+	}
+	if got := g.Labels(3); got[0] != "Шаг 1" || got[2] != "Шаг 3" {
+		t.Errorf("для трёх по умолчанию: %v", got)
+	}
+
+	writeConfig(t, `{"glue":{"before":"До","after":"После","step":"Этап"}}`)
+	g = Load().Glue
+	if got := g.Labels(2); got[0] != "До" || got[1] != "После" {
+		t.Errorf("свои слова для двух: %v", got)
+	}
+	if got := g.Labels(4); got[0] != "Этап 1" || got[3] != "Этап 4" {
+		t.Errorf("своё слово для четырёх: %v", got)
+	}
+
+	// Неверное значение одной подписи сбрасывает только её.
+	writeConfig(t, `{"glue":{"before":"a\nb","after":"После","step":5}}`)
+	g = Load().Glue
+	if got := g.Labels(2); got[0] != "Было" || got[1] != "После" {
+		t.Errorf("неверная подпись сбрасывается, соседняя остаётся: %v", got)
+	}
+	if got := g.Labels(3); got[0] != "Шаг 1" {
+		t.Errorf("шаг неверного типа: %v", got)
+	}
+	if ValidateGlueLabel(strings.Repeat("я", 31)) == nil {
+		t.Error("31 знак — слишком длинная подпись")
+	}
+}

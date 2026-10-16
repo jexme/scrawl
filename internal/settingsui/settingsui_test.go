@@ -6,6 +6,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gioui.org/gpu/headless"
@@ -358,5 +359,21 @@ func TestMarkerOpacitySliderIsSavedToDisk(t *testing.T) {
 	s.layout(frameContext(700, 650))
 	if got := settings.Load().MarkerOpacity; got != 70 {
 		t.Errorf("в файле %d, ожидали 70", got)
+	}
+}
+
+func TestGlueLabelsAreSavedToDisk(t *testing.T) {
+	s := testState(t)
+	s.glue[0].SetText("До")
+	s.glue[2].SetText("Этап")
+	s.layout(frameContext(700, 650))
+	g := settings.Load().Glue
+	if g.Before != "До" || g.After != "" || g.Step != "Этап" {
+		t.Errorf("подписи не дошли до файла: %+v", g)
+	}
+	s.glue[1].SetText(strings.Repeat("я", 31))
+	s.layout(frameContext(700, 650))
+	if s.glueErr[1] == "" || settings.Load().Glue.After != "" {
+		t.Errorf("слишком длинная подпись должна отклоняться: ошибка=%q", s.glueErr[1])
 	}
 }

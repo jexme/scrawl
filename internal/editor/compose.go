@@ -36,18 +36,6 @@ var (
 	composeBorder = color.NRGBA{R: 205, G: 209, B: 218, A: 255}
 )
 
-// composeLabels подписывает картинки: «Было» и «Стало» для двух, «Шаг N» для большего числа.
-func composeLabels(n int) []string {
-	if n == 2 {
-		return []string{"Было", "Стало"}
-	}
-	labels := make([]string, n)
-	for i := range labels {
-		labels[i] = fmt.Sprintf("Шаг %d", i+1)
-	}
-	return labels
-}
-
 // loadPNGs читает картинки подборки с диска.
 func loadPNGs(paths []string) ([]*image.RGBA, error) {
 	out := make([]*image.RGBA, 0, len(paths))

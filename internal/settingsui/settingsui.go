@@ -66,6 +66,9 @@ type state struct {
 	palErr   string
 	palReset widget.Clickable
 
+	glue    [3]widget.Editor // подписи склейки: было, стало, шаг
+	glueErr [3]string
+
 	toolChoice widget.Enum // инструмент после выбора области
 	toolRows   []*toolRow
 	bColor     widget.Editor
@@ -111,6 +114,10 @@ func newState(store *settings.Store) *state {
 		sl.Set(sl.get(cur))
 	}
 	s.initTools(cur)
+	for i, v := range []string{cur.Glue.Before, cur.Glue.After, cur.Glue.Step} {
+		s.glue[i].SingleLine = true
+		s.glue[i].SetText(v)
+	}
 	for i := range s.palEd {
 		s.palEd[i].SingleLine = true
 		s.palEd[i].SetText(cur.Palette[i])
@@ -213,6 +220,12 @@ func (s *state) apply(gtx layout.Context) {
 	}
 	if palChanged {
 		s.applyPalette()
+	}
+
+	for i := range s.glue {
+		if edited(gtx, &s.glue[i]) {
+			s.applyGlueLabel(i)
+		}
 	}
 
 	s.toolChoice.Update(gtx)
@@ -636,6 +649,50 @@ func (s *state) paletteControls() layout.Widget {
 	}
 }
 
+// glueField возвращает указатель на подпись склейки в настройках по номеру поля.
+func glueField(g *settings.Glue, i int) *string {
+	return [...]*string{&g.Before, &g.After, &g.Step}[i]
+}
+
+// applyGlueLabel проверяет и сохраняет подпись склейки; при ошибке настройка не меняется.
+func (s *state) applyGlueLabel(i int) {
+	txt := strings.TrimSpace(s.glue[i].Text())
+	if err := settings.ValidateGlueLabel(txt); err != nil {
+		s.glueErr[i] = err.Error()
+		return
+	}
+	s.glueErr[i] = ""
+	if err := s.store.Update(func(c *settings.Settings) { *glueField(&c.Glue, i) = txt }); err != nil {
+		s.glueErr[i] = "Не удалось сохранить: " + err.Error()
+	}
+}
+
+// glueControls — три поля со словами подписей склейки.
+func (s *state) glueControls() layout.Widget {
+	names := [3]string{"Первая из двух", "Вторая из двух", "Если больше двух"}
+	hints := [3]string{settings.DefaultGlueBefore, settings.DefaultGlueAfter, settings.DefaultGlueStep}
+	return func(gtx layout.Context) layout.Dimensions {
+		var children []layout.FlexChild
+		for i := range s.glue {
+			i := i
+			children = append(children, layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						gtx.Constraints.Min.X = gtx.Dp(130)
+						return s.label(material.Body2, names[i], mutedColor)(gtx)
+					}),
+					layout.Flexed(1, s.field(&s.glue[i], hints[i])),
+				)
+			}))
+			if s.glueErr[i] != "" {
+				children = append(children, layout.Rigid(s.label(material.Caption, names[i]+": "+s.glueErr[i], errorColor)))
+			}
+			children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout))
+		}
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	}
+}
+
 // toolChoiceRadios — выбор инструмента по умолчанию.
 func (s *state) toolChoiceRadios() layout.Widget {
 	items := make([]layout.Widget, len(settings.ToolNames))
@@ -721,6 +778,9 @@ func (s *state) items() []layout.Widget {
 		s.row("Цвета панели", "Восемь цветов в панели инструментов, #RRGGBB. Пустое поле: цвет по умолчанию. Применяется при следующем снимке.",
 			s.paletteControls()),
 		s.row("Прозрачность маркера", "Чем больше процент, тем плотнее закраска.", s.slider(s.marker)),
+		s.section("Склейка «было/стало»"),
+		s.row("Подписи над картинками", "Пусто: слова по умолчанию. При трёх и больше картинок к слову добавляется номер: «Шаг 1».",
+			s.glueControls()),
 		s.section("Вид"),
 		s.row("Рамка выделения", "Пунктир вокруг выбранной области.", s.borderControls()),
 		s.row("Размер области", "Подпись «ширина × высота» над левым верхним углом.",

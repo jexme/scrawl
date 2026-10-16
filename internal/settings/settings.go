@@ -81,6 +81,8 @@ type Settings struct {
 	Palette [PaletteSize]string `json:"palette"`
 	// MarkerOpacity — непрозрачность маркера, 5-100 %.
 	MarkerOpacity int `json:"marker_opacity"`
+	// Glue — склейка «было/стало».
+	Glue Glue `json:"glue"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
@@ -125,6 +127,7 @@ func (s *Settings) normalize() {
 	}
 	s.Tools.normalize()
 	normalizePalette(&s.Palette)
+	s.Glue.normalize()
 	s.MarkerOpacity = min(max(s.MarkerOpacity, MinMarkerOpacity), 100)
 	s.HandleRadius = min(max(s.HandleRadius, 0), MaxHandleRadius)
 	if c, err := ParseColor(s.BorderColor); err == nil {
