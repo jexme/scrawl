@@ -7,6 +7,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/jexme/scrawl/internal/hotkey"
 	"github.com/jexme/scrawl/internal/screencast"
 )
 
@@ -15,6 +16,9 @@ import (
 var (
 	grantPermission = screencast.GrantScreenshotPermission
 	setupMonitors   = screencast.SetupMonitors
+	assignHotkey    = hotkey.Assign
+	currentHotkey   = hotkey.Current
+	hotkeyBinary    = hotkey.PreferredBinary
 )
 
 // task — кнопка, запускающая действие в фоне, и строка с результатом под ней.

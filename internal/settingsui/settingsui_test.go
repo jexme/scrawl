@@ -16,6 +16,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
+	"github.com/jexme/scrawl/internal/hotkey"
 	"github.com/jexme/scrawl/internal/settings"
 )
 
@@ -511,5 +512,50 @@ func TestMonitorsButtonReportsProgress(t *testing.T) {
 	waitDone(t, &s.monitors)
 	if msg, failed, _ := s.monitors.status(); failed || msg != "Мониторов настроено: 2" {
 		t.Errorf("итог: %q, ошибка %v", msg, failed)
+	}
+}
+
+func TestHotkeyButton(t *testing.T) {
+	s := testState(t)
+	if got := s.hotkeyEd.Text(); got != "Print" {
+		t.Fatalf("по умолчанию Print, в поле %q", got)
+	}
+	old := assignHotkey
+	defer func() { assignHotkey = old }()
+
+	var gotAccel, gotBin string
+	assignHotkey = func(accel, bin string) (hotkey.Result, error) {
+		gotAccel, gotBin = accel, bin
+		return hotkey.Result{Warning: "совпало со встроенным"}, nil
+	}
+	s.hotkeyEd.SetText("  <Super>s ")
+	s.hotkey.btn.Click()
+	s.layout(frameContext(700, 650))
+	waitDone(t, &s.hotkey)
+	msg, failed, _ := s.hotkey.status()
+	if gotAccel != "<Super>s" || gotBin != "/test/bin/scrawl" || failed || !strings.Contains(msg, "Внимание: совпало") {
+		t.Errorf("комбинация %q, бинарник %q, сообщение %q (ошибка %v)", gotAccel, gotBin, msg, failed)
+	}
+
+	// Неверная запись отклоняется до обращения к gsettings.
+	gotAccel = ""
+	s.hotkeyEd.SetText("Ctrl+S")
+	s.hotkey.btn.Click()
+	s.layout(frameContext(700, 650))
+	waitDone(t, &s.hotkey)
+	if msg, failed, _ := s.hotkey.status(); !failed || gotAccel != "" {
+		t.Errorf("неверная комбинация: %q (ошибка %v, вызов %q)", msg, failed, gotAccel)
+	}
+
+	// Конфликт с чужим ярлыком показывается в окне.
+	assignHotkey = func(string, string) (hotkey.Result, error) {
+		return hotkey.Result{}, &hotkey.Conflict{Name: "Handy", Accel: "Print"}
+	}
+	s.hotkeyEd.SetText("Print")
+	s.hotkey.btn.Click()
+	s.layout(frameContext(700, 650))
+	waitDone(t, &s.hotkey)
+	if msg, failed, _ := s.hotkey.status(); !failed || !strings.Contains(msg, "Handy") {
+		t.Errorf("конфликт: %q (ошибка %v)", msg, failed)
 	}
 }

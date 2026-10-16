@@ -24,6 +24,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/jexme/scrawl/internal/hotkey"
 	"github.com/jexme/scrawl/internal/screencast"
 	"github.com/jexme/scrawl/internal/settings"
 	"github.com/jexme/scrawl/internal/version"
@@ -85,6 +86,8 @@ type state struct {
 	invalidate func() // перерисовать окно из другой горутины
 	grant      task   // выдача разрешения на запасной снимок
 	monitors   task   // повторный выбор мониторов
+	hotkey     task   // назначение горячей клавиши
+	hotkeyEd   widget.Editor
 	dirErr     string
 	prefixErr  string
 }
@@ -123,6 +126,11 @@ func newState(store *settings.Store) *state {
 	cur := store.Get()
 	for _, sl := range s.sliders {
 		sl.Set(sl.get(cur))
+	}
+	s.hotkeyEd.SingleLine = true
+	s.hotkeyEd.SetText("Print")
+	if cur := currentHotkey(); cur != "" {
+		s.hotkeyEd.SetText(cur)
 	}
 	s.initTools(cur)
 	s.glueLayout.Value = string(cur.Glue.Layout)
@@ -209,6 +217,30 @@ func loop(s *state) {
 // apply приводит сохранённые настройки в соответствие с виджетами. Вызывается
 // на каждом кадре: ничего не пишет, пока значения не изменились.
 func (s *state) apply(gtx layout.Context) {
+	if s.hotkey.btn.Clicked(gtx) {
+		accel := strings.TrimSpace(s.hotkeyEd.Text())
+		s.start(&s.hotkey, func(func(string)) (string, error) {
+			if err := hotkey.ValidateAccel(accel); err != nil {
+				return "", err
+			}
+			bin, err := hotkeyBinary()
+			if err != nil {
+				return "", fmt.Errorf("не найден путь к программе: %w", err)
+			}
+			res, err := assignHotkey(accel, bin)
+			if err != nil {
+				return "", err
+			}
+			msg := "Горячая клавиша " + accel + " назначена на " + bin
+			if res.Updated {
+				msg = "Ярлык обновлён: " + accel + " запускает " + bin
+			}
+			if res.Warning != "" {
+				msg += ". Внимание: " + res.Warning
+			}
+			return msg, nil
+		})
+	}
 	if s.monitors.btn.Clicked(gtx) {
 		s.start(&s.monitors, func(progress func(string)) (string, error) {
 			progress("Ждём диалоги GNOME…")
@@ -771,6 +803,17 @@ func (s *state) glueControls() layout.Widget {
 	}
 }
 
+// hotkeyControl — поле комбинации и кнопка назначения.
+func (s *state) hotkeyControl() layout.Widget {
+	return func(gtx layout.Context) layout.Dimensions {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(s.field(&s.hotkeyEd, "Print")),
+			layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout),
+			layout.Rigid(s.taskControl(&s.hotkey, "Назначить")),
+		)
+	}
+}
+
 // toolChoiceRadios — выбор инструмента по умолчанию.
 func (s *state) toolChoiceRadios() layout.Widget {
 	items := make([]layout.Widget, len(settings.ToolNames))
@@ -866,6 +909,8 @@ func (s *state) items() []layout.Widget {
 		)),
 		s.row("Качество JPEG", "Чем выше, тем лучше картинка и больше файл.", s.slider(s.quality)),
 		s.section("Захват экрана"),
+		s.row("Горячая клавиша запуска", "Создаёт или обновляет ярлык в настройках клавиатуры GNOME. Формат: Print, <Super>s, <Control><Alt>p. Чужие ярлыки не меняются.",
+			s.hotkeyControl()),
 		s.row("Мониторы", "Выбрать мониторы заново: GNOME покажет диалог на каждый монитор. Нужно после подключения или замены монитора. Раньше: scrawl -setup.",
 			s.taskControl(&s.monitors, "Выбрать мониторы заново")),
 		s.row("Разрешение на запасной снимок", "Нужно запасному способу захвата через Screenshot portal, когда PipeWire не отдал кадр. Раньше: scrawl -grant-screenshot.",

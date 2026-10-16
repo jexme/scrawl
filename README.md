@@ -59,7 +59,6 @@ scripts/gnome-hotkey.sh # binds Print to scrawl
   time and keep "Remember this choice" ticked. After that no dialogs appear.
 - `-grant-screenshot` gives the app the permission it needs for the fallback
   capture path (see below). It writes one entry to the portal permission store.
-The same two actions are buttons in the settings window ("Capture" section).
 - `-version` prints the build version and exits (also shown in the settings window).
 - `scripts/gnome-hotkey.sh [KEY] [BINARY] [--dry-run]` creates a GNOME custom
   shortcut and refuses to overwrite one that is already taken.
