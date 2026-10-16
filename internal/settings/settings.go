@@ -255,6 +255,23 @@ func (s Settings) Prefix() string {
 	return s.FilePrefix
 }
 
+// OutputDir возвращает каталог для скриншотов: из настроек или
+// ~/Pictures/Screenshots, если в настройках пусто. Каталог создаётся.
+func (s Settings) OutputDir() (string, error) {
+	dir, err := ExpandDir(s.SaveDir)
+	if err != nil {
+		return "", err
+	}
+	if dir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		dir = filepath.Join(home, "Pictures", "Screenshots")
+	}
+	return dir, os.MkdirAll(dir, 0o755)
+}
+
 // FileName возвращает имя файла скриншота для отметки времени stamp (StampLayout).
 func (s Settings) FileName(stamp string) string { return s.Prefix() + "-" + stamp + ".png" }
 

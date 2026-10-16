@@ -1,9 +1,11 @@
 package settingsui
 
 import (
+	"errors"
 	"image"
 	"image/png"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"gioui.org/gpu/headless"
@@ -167,5 +169,33 @@ func TestFilePrefixIsValidatedAndSaved(t *testing.T) {
 	s.layout(frameContext(700, 650)) // изменение текста в поле замечается на кадре
 	if got := settings.Load().FilePrefix; got != "typed" {
 		t.Errorf("текст из поля не дошёл до файла: %q", got)
+	}
+}
+
+func TestOpenOutputDirCreatesAndOpensFolder(t *testing.T) {
+	s := testState(t)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	var opened string
+	old := openFolder
+	openFolder = func(dir string) error { opened = dir; return nil }
+	defer func() { openFolder = old }()
+
+	s.openOutputDir()
+	want := filepath.Join(home, "Pictures", "Screenshots")
+	if opened != want || s.dirErr != "" {
+		t.Errorf("открыто %q (ошибка %q), ожидали %q", opened, s.dirErr, want)
+	}
+	if st, err := os.Stat(want); err != nil || !st.IsDir() {
+		t.Errorf("папка должна быть создана: %v", err)
+	}
+
+	// Папка из настроек, ошибка запуска показывается в окне.
+	custom := filepath.Join(home, "мои снимки")
+	s.store.Update(func(c *settings.Settings) { c.SaveDir = custom })
+	openFolder = func(dir string) error { opened = dir; return errors.New("нет xdg-open") }
+	s.openOutputDir()
+	if opened != custom || s.dirErr == "" {
+		t.Errorf("открыто %q, ошибка %q: ожидали свою папку и сообщение об ошибке", opened, s.dirErr)
 	}
 }

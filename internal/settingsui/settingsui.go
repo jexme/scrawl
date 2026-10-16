@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -48,6 +49,7 @@ type state struct {
 	dir      widget.Editor
 	prefix   widget.Editor // начало имени файла
 	reset    widget.Clickable
+	openDir  widget.Clickable
 	close    widget.Clickable
 	list     widget.List // прокрутка содержимого
 
@@ -144,6 +146,10 @@ func (s *state) apply(gtx layout.Context) {
 		}
 	}
 
+	if s.openDir.Clicked(gtx) {
+		s.openOutputDir()
+	}
+
 	changed := edited(gtx, &s.dir)
 	if s.reset.Clicked(gtx) {
 		s.dir.SetText("")
@@ -155,6 +161,30 @@ func (s *state) apply(gtx layout.Context) {
 	if edited(gtx, &s.prefix) {
 		s.applyPrefix(s.prefix.Text())
 	}
+}
+
+// openOutputDir открывает папку скриншотов в файловом менеджере. Пока команда
+// запускается, окно не ждёт её завершения.
+func (s *state) openOutputDir() {
+	dir, err := s.store.Get().OutputDir()
+	if err == nil {
+		err = openFolder(dir)
+	}
+	if err != nil {
+		s.dirErr = "Не удалось открыть папку: " + err.Error()
+		return
+	}
+	s.dirErr = ""
+}
+
+// openFolder запускает xdg-open для папки и не дожидается его завершения.
+var openFolder = func(dir string) error {
+	cmd := exec.Command("xdg-open", dir)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go cmd.Wait() // чтобы не оставлять зомби-процесс
+	return nil
 }
 
 // edited сообщает, менялся ли текст в поле с прошлого кадра.
@@ -289,9 +319,16 @@ func (s *state) items() []layout.Widget {
 			children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout), layout.Rigid(s.label(material.Caption, s.dirErr, errorColor)))
 		}
 		children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout), layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			b := material.Button(th, &s.reset, "По умолчанию")
-			b.Background = borderColor
-			return b.Layout(gtx)
+			btn := func(c *widget.Clickable, txt string) layout.Widget {
+				b := material.Button(th, c, txt)
+				b.Background = borderColor
+				return b.Layout
+			}
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(btn(&s.reset, "По умолчанию")),
+				layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
+				layout.Rigid(btn(&s.openDir, "Открыть папку")),
+			)
 		}))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}

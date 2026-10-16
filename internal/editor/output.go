@@ -49,26 +49,9 @@ func render(src *image.RGBA, sel image.Rectangle, shapes []annotate.Shape, shape
 	return out, nil
 }
 
-// outputDir возвращает каталог для скриншотов: из настроек или
-// ~/Pictures/Screenshots, если в настройках пусто. Каталог создаётся.
-func outputDir(configured string) (string, error) {
-	dir, err := settings.ExpandDir(configured)
-	if err != nil {
-		return "", err
-	}
-	if dir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		dir = filepath.Join(home, "Pictures", "Screenshots")
-	}
-	return dir, os.MkdirAll(dir, 0o755)
-}
-
 // saveFile пишет PNG в каталог скриншотов и возвращает путь.
 func saveFile(cfg settings.Settings, data []byte) (string, error) {
-	dir, err := outputDir(cfg.SaveDir)
+	dir, err := cfg.OutputDir()
 	if err != nil {
 		return "", err
 	}
@@ -78,7 +61,7 @@ func saveFile(cfg settings.Settings, data []byte) (string, error) {
 
 // saveNumbered пишет PNG в каталог скриншотов под именем с номером в наборе.
 func saveNumbered(cfg settings.Settings, data []byte, stamp string, n int) (string, error) {
-	dir, err := outputDir(cfg.SaveDir)
+	dir, err := cfg.OutputDir()
 	if err != nil {
 		return "", err
 	}
