@@ -7,6 +7,7 @@ import (
 	"gioui.org/f32"
 
 	"github.com/jexme/screen-editor/internal/screencast"
+	"github.com/jexme/screen-editor/internal/settings"
 )
 
 var bounds = image.Rect(0, 0, 1000, 800)
@@ -89,5 +90,33 @@ func TestLastRegionRoundTrip(t *testing.T) {
 	resized := &screencast.Frame{X: 1920, Y: 0, Img: image.NewRGBA(image.Rect(0, 0, 1920, 1080))}
 	if _, ok := loadLastRegion(resized); ok {
 		t.Error("область при другом размере кадра не должна загружаться")
+	}
+}
+
+// TestRememberRegionSetting: с выключенной настройкой область не запоминается,
+// не подхватывается, а старая запись стирается.
+func TestRememberRegionSetting(t *testing.T) {
+	sandbox(t)
+	m, _ := newTestMonitor(t)
+	m.sel, m.hasSel = image.Rect(20, 20, 200, 150), true
+
+	m.rememberRegion()
+	if _, ok := loadLastRegion(m.frame); !ok {
+		t.Fatal("по умолчанию область должна запоминаться")
+	}
+
+	if err := m.store.Update(func(s *settings.Settings) { s.RememberRegion = false }); err != nil {
+		t.Fatal(err)
+	}
+	m.rememberRegion()
+	if _, ok := loadLastRegion(m.frame); ok {
+		t.Error("при выключенной настройке старая область должна стираться")
+	}
+
+	// Запись, оставшаяся от прошлых запусков, при новом старте не подхватывается.
+	saveLastRegion(m.frame, m.sel)
+	again := newMonitor(Config{}, m.frame, func() {})
+	if again.hasLast {
+		t.Error("при выключенной настройке прошлая область не должна подхватываться")
 	}
 }

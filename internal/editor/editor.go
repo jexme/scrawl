@@ -179,7 +179,7 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 	m.env = annotate.Env{Shaper: m.shaper, Blur: annotate.NewBlurrer(f.Img)}
 	m.queued = collection.Count()
 	m.store = settings.NewStore()
-	if !cfg.Fresh {
+	if !cfg.Fresh && m.store.Get().RememberRegion {
 		m.last, m.hasLast = loadLastRegion(f)
 		// Если собирают подборку («было/стало»), снимать «стало» нужно в том же
 		// месте: прошлая область выставляется сразу.
@@ -200,9 +200,7 @@ func (m *monitor) loop() {
 		case app.DestroyEvent:
 			// Окно закрыто (нами или композитором): запоминаем область, закрываем
 			// остальные окна и завершаем работу, когда закрыты все.
-			if m.hasSel {
-				saveLastRegion(m.frame, m.sel)
-			}
+			m.rememberRegion()
 			if m.alive.Add(-1) <= 0 {
 				m.finish()
 			} else {
@@ -738,9 +736,7 @@ func (m *monitor) export(toClipboard, toFile bool) {
 // quit запоминает область (если она есть) и завершает работу. Область
 // запоминается при любом закрытии, а не только после успешного скриншота.
 func (m *monitor) quit() {
-	if m.hasSel {
-		saveLastRegion(m.frame, m.sel)
-	}
+	m.rememberRegion()
 	m.closeWindows()
 }
 

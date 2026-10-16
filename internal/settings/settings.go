@@ -49,13 +49,15 @@ type Settings struct {
 	// Notifications — показывать уведомления после снимка и действий с подборкой.
 	// Ошибки и подсказки, почему действие не вышло, показываются всегда.
 	Notifications bool `json:"notifications"`
+	// RememberRegion — запоминать область снимка и предлагать её при следующем запуске.
+	RememberRegion bool `json:"remember_region"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
 
 // Default возвращает настройки по умолчанию.
 func Default() Settings {
-	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true}
+	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true}
 }
 
 // Path возвращает путь к файлу настроек.

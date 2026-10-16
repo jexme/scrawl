@@ -40,13 +40,14 @@ type state struct {
 	th    *material.Theme
 	store *settings.Store
 
-	choice widget.Enum // двойной клик: off, copy, copy_save
-	enter  widget.Enum // Enter: copy_save, copy, save
-	notify widget.Bool // уведомления после снимка
-	dir    widget.Editor
-	reset  widget.Clickable
-	close  widget.Clickable
-	list   widget.List // прокрутка содержимого
+	choice   widget.Enum // двойной клик: off, copy, copy_save
+	enter    widget.Enum // Enter: copy_save, copy, save
+	notify   widget.Bool // уведомления после снимка
+	remember widget.Bool // запоминать прошлую область
+	dir      widget.Editor
+	reset    widget.Clickable
+	close    widget.Clickable
+	list     widget.List // прокрутка содержимого
 
 	dirErr string
 }
@@ -62,6 +63,7 @@ func newState(store *settings.Store) *state {
 	s.choice.Value = string(cur.DoubleClick)
 	s.enter.Value = string(cur.Enter)
 	s.notify.Value = cur.Notifications
+	s.remember.Value = cur.RememberRegion
 	s.dir.SingleLine = true
 	s.dir.SetText(cur.SaveDir)
 	return s
@@ -126,6 +128,13 @@ func (s *state) apply(gtx layout.Context) {
 	s.notify.Update(gtx)
 	if want := s.notify.Value; want != s.store.Get().Notifications {
 		if err := s.store.Update(func(c *settings.Settings) { c.Notifications = want }); err != nil {
+			s.dirErr = "Не удалось сохранить: " + err.Error()
+		}
+	}
+
+	s.remember.Update(gtx)
+	if want := s.remember.Value; want != s.store.Get().RememberRegion {
+		if err := s.store.Update(func(c *settings.Settings) { c.RememberRegion = want }); err != nil {
 			s.dirErr = "Не удалось сохранить: " + err.Error()
 		}
 	}
@@ -275,6 +284,8 @@ func (s *state) items() []layout.Widget {
 			)),
 		s.row("Уведомления", "После снимка и действий с подборкой. Ошибки показываются всегда.",
 			s.checkbox(&s.notify, "Показывать уведомления")),
+		s.row("Прошлая область", "Показывается сразу при запуске и по клавише R. Без неё «было/стало» не подставит область само.",
+			s.checkbox(&s.remember, "Запоминать область снимка")),
 		s.section("Сохранение"),
 		s.row("Папка для скриншотов", "Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь.", dirField),
 		s.section("О программе"),

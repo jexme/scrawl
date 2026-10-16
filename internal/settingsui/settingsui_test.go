@@ -111,7 +111,7 @@ func TestContentScrollsInSmallWindow(t *testing.T) {
 	}
 
 	tall := testState(t)
-	tall.layout(frameContext(600, 1200))
+	tall.layout(frameContext(600, 4000))
 	if tall.list.Position.BeforeEnd || tall.list.Position.First != 0 {
 		t.Errorf("в высоком окне всё должно помещаться: %+v", tall.list.Position)
 	}
@@ -138,5 +138,17 @@ func TestNotificationsCheckboxIsSavedToDisk(t *testing.T) {
 	s.layout(frameContext(700, 650))
 	if settings.Load().Notifications {
 		t.Error("выключенные уведомления не дошли до файла")
+	}
+}
+
+func TestRememberRegionCheckboxIsSavedToDisk(t *testing.T) {
+	s := testState(t)
+	if !s.remember.Value {
+		t.Fatal("по умолчанию область запоминается")
+	}
+	s.remember.Value = false
+	s.layout(frameContext(700, 650))
+	if settings.Load().RememberRegion {
+		t.Error("выключенная настройка не дошла до файла")
 	}
 }

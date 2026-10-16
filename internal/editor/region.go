@@ -165,6 +165,22 @@ func saveLastRegion(f *screencast.Frame, sel image.Rectangle) {
 	os.WriteFile(path, data, 0o600)
 }
 
+// forgetLastRegion стирает запомненную область.
+func forgetLastRegion() { os.Remove(lastRegionPath()) }
+
+// rememberRegion запоминает текущую область, если это не отключено в настройках;
+// при отключённой настройке старая запись стирается, чтобы не осталась лежать.
+func (m *monitor) rememberRegion() {
+	if !m.hasSel {
+		return
+	}
+	if m.store.Get().RememberRegion {
+		saveLastRegion(m.frame, m.sel)
+	} else {
+		forgetLastRegion()
+	}
+}
+
 // loadLastRegion возвращает запомненную область, если она относилась к этому
 // монитору с тем же размером кадра и по-прежнему допустима.
 func loadLastRegion(f *screencast.Frame) (image.Rectangle, bool) {
