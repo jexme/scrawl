@@ -117,7 +117,9 @@ func newState(store *settings.Store) *state {
 
 	s := &state{th: th, store: store}
 	s.list.Axis = layout.Vertical
-	s.tabBtns = make([]widget.Clickable, len(s.tabs()))
+	tabs := s.tabs()
+	s.tabBtns = make([]widget.Clickable, len(tabs))
+	s.tab = rememberedTab(tabs) // окно открывается на той вкладке, где закрыли
 	px := func(v float64) string { return fmt.Sprintf("%.1f px", v) }
 	s.dim = s.addSlider(0, 100, 1, func(v float64) string { return fmt.Sprintf("%.0f%%", v) },
 		func(c settings.Settings) float64 { return float64(c.DimPercent) },
@@ -929,11 +931,13 @@ func (s *state) toolChoiceRadios() layout.Widget {
 	for i, name := range settings.ToolNames {
 		items[i] = s.radio(&s.toolChoice, name, i18n.T(toolLabels[i]))
 	}
-	return radios(items...)
+	return radioColumns(2, items...)
 }
 
 // languageRadios — выбор языка двумя столбцами: «как в системе» и все языки по
 // их собственным названиям (их надо узнавать, даже не понимая остального окна).
+// Если выбран язык с иероглифами, а системного шрифта для них нет, под списком
+// подсказка, что поставить.
 func (s *state) languageRadios() layout.Widget {
 	items := []layout.Widget{s.radio(&s.lang, i18n.Auto, i18n.T("Как в системе"))}
 	for _, l := range i18n.Languages {
@@ -943,12 +947,26 @@ func (s *state) languageRadios() layout.Widget {
 		}
 		items = append(items, s.radio(&s.lang, l.Code, name))
 	}
-	half := (len(items) + 1) / 2
+	columns := radioColumns(2, items...)
 	return func(gtx layout.Context) layout.Dimensions {
-		return layout.Flex{}.Layout(gtx,
-			layout.Flexed(1, radios(items[:half]...)),
-			layout.Flexed(1, radios(items[half:]...)),
-		)
+		children := []layout.FlexChild{layout.Rigid(columns)}
+		if lang := i18n.Language(); !fontAvailable(lang) {
+			children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout),
+				layout.Rigid(s.label(material.Caption, i18n.T("Для этого языка нужен шрифт с иероглифами. Установите его: sudo apt install fonts-noto-cjk"), errorColor)))
+		}
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	}
+}
+
+// radioColumns раскладывает варианты по столбцам поровну, слева направо.
+func radioColumns(n int, items ...layout.Widget) layout.Widget {
+	per := (len(items) + n - 1) / n
+	return func(gtx layout.Context) layout.Dimensions {
+		var cols []layout.FlexChild
+		for i := 0; i < len(items); i += per {
+			cols = append(cols, layout.Flexed(1, radios(items[i:min(i+per, len(items))]...)))
+		}
+		return layout.Flex{}.Layout(gtx, cols...)
 	}
 }
 
@@ -965,6 +983,7 @@ func radios(items ...layout.Widget) layout.Widget {
 
 // settingsTab — вкладка окна: название и строки настроек в ней.
 type settingsTab struct {
+	id    string // постоянное имя вкладки: по нему запоминается выбор
 	label string
 	rows  []layout.Widget
 }
@@ -1091,14 +1110,14 @@ func (s *state) tabs() []settingsTab {
 	}
 
 	return []settingsTab{
-		{label: i18n.T("Общие"), rows: general},
-		{label: i18n.T("Инструменты"), rows: tools},
-		{label: i18n.T("Вид"), rows: look},
-		{label: i18n.T("Склейка"), rows: glue},
-		{label: i18n.T("Файлы"), rows: files},
-		{label: i18n.T("Клавиши"), rows: keys},
-		{label: i18n.T("Система"), rows: system},
-		{label: i18n.T("О программе"), rows: about},
+		{id: "general", label: i18n.T("Общие"), rows: general},
+		{id: "tools", label: i18n.T("Инструменты"), rows: tools},
+		{id: "look", label: i18n.T("Вид"), rows: look},
+		{id: "glue", label: i18n.T("Склейка"), rows: glue},
+		{id: "files", label: i18n.T("Файлы"), rows: files},
+		{id: "keys", label: i18n.T("Клавиши"), rows: keys},
+		{id: "system", label: i18n.T("Система"), rows: system},
+		{id: "about", label: i18n.T("О программе"), rows: about},
 	}
 }
 
@@ -1131,6 +1150,9 @@ func (s *state) selectTab(i int) {
 	if i != s.tab {
 		s.tab = i
 		s.list.Position = layout.Position{}
+		if tabs := s.tabs(); i >= 0 && i < len(tabs) {
+			saveTab(tabs[i].id)
+		}
 	}
 }
 

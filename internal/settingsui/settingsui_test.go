@@ -25,6 +25,7 @@ import (
 func testState(t *testing.T) *state {
 	t.Helper()
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("XDG_CACHE_HOME", t.TempDir()) // запомненная вкладка не должна браться из кэша пользователя
 	return newState(settings.NewStore())
 }
 
@@ -773,6 +774,7 @@ func TestDocSettingsImages(t *testing.T) {
 	for lang, name := range map[string]string{i18n.RU: "settings-ru.png", i18n.EN: "settings-en.png"} {
 		i18n.SetLanguage(lang)
 		t.Setenv("XDG_CONFIG_HOME", "/home/you/.config") // красивый путь в подписи; файл не создаётся
+		t.Setenv("XDG_CACHE_HOME", t.TempDir())
 		s := newState(settings.NewStore())
 		s.selectTab(1) // «Инструменты»: на ней больше всего видно
 		win, err := headless.NewWindow(W, H)
@@ -907,5 +909,42 @@ func TestEveryLanguageCanBeChosen(t *testing.T) {
 	s.layout(frameContext(820, 700))
 	if i18n.Language() != i18n.DE || settings.Load().Language != i18n.Auto {
 		t.Errorf("auto при немецкой локали: действует %q, в файле %q", i18n.Language(), settings.Load().Language)
+	}
+}
+
+func TestLastTabIsRemembered(t *testing.T) {
+	s := testState(t)
+	if s.tab != 0 {
+		t.Fatalf("в чистом кэше окно открывается на первой вкладке: %d", s.tab)
+	}
+	s.selectTab(6) // «Система»
+	again := newState(settings.NewStore())
+	if again.tab != 6 || again.tabs()[again.tab].id != "system" {
+		t.Errorf("после перезапуска ожидали вкладку «system», открыта %d", again.tab)
+	}
+	// Неизвестное имя в файле не ломает окно.
+	saveTab("такой вкладки нет")
+	if got := newState(settings.NewStore()).tab; got != 0 {
+		t.Errorf("неизвестная вкладка: %d", got)
+	}
+}
+
+func TestFontHintShownOnlyWhenFontIsMissing(t *testing.T) {
+	defer i18n.SetLanguage(i18n.RU)
+	old := fontAvailable
+	defer func() { fontAvailable = old }()
+	s := testState(t)
+	i18n.SetLanguage(i18n.ZH)
+
+	measure := func() int {
+		gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Constraints{Max: image.Pt(800, 2000)}, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+		return s.languageRadios()(gtx).Size.Y
+	}
+	fontAvailable = func(string) bool { return true }
+	without := measure()
+	fontAvailable = func(string) bool { return false }
+	with := measure()
+	if with <= without {
+		t.Errorf("без шрифта под списком должна быть подсказка: высота %d и %d", with, without)
 	}
 }

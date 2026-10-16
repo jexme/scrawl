@@ -9,6 +9,7 @@ import (
 	"gioui.org/widget/material"
 
 	"github.com/jexme/scrawl/internal/autostart"
+	"github.com/jexme/scrawl/internal/fonts"
 	"github.com/jexme/scrawl/internal/hotkey"
 	"github.com/jexme/scrawl/internal/screencast"
 	"github.com/jexme/scrawl/internal/update"
@@ -20,6 +21,7 @@ import (
 // подменяют их, чтобы не трогать настройки системы.
 var (
 	x11Session      = x11capture.IsSession
+	fontAvailable   = fonts.Available
 	grantPermission = screencast.GrantScreenshotPermission
 	setupMonitors   = screencast.SetupMonitors
 	assignHotkey    = hotkey.Assign

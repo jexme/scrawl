@@ -1,0 +1,40 @@
+name: Bug report
+description: Something does not work or works wrongly
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `scrawl -version`
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: session
+    attributes:
+      label: Session type
+      description: Output of `echo $XDG_SESSION_TYPE`
+      options: [Wayland, X11, Other / not sure]
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Distribution and desktop
+      placeholder: Ubuntu 24.04, GNOME 46
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: Steps help most. A screenshot of the problem is welcome, but check it for private data first.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Output of `scrawl -v`
+      description: Run it from a terminal and paste what it prints.
+      render: text

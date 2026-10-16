@@ -16,5 +16,26 @@ install -d "$APPDIR"
 sed "s|^Exec=scrawl|Exec=$BINDIR/scrawl|" "$here/$desktop" > "$APPDIR/$desktop"
 chmod 644 "$APPDIR/$desktop"
 
-echo "Установлено в $BINDIR. Дальше: scrawl -setup, затем scrawl -grant-screenshot"
-echo "(или те же кнопки в окне настроек: scrawl -settings)"
+# Сообщение по языку системы и типу сеанса: в X11 портала нет, мониторы выбирать не нужно.
+x11=0
+[ -z "${WAYLAND_DISPLAY:-}" ] && [ -n "${DISPLAY:-}" ] && x11=1
+case "${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}" in
+ru*)
+	echo "Установлено в $BINDIR."
+	if [ "$x11" = 1 ]; then
+		echo "Сеанс X11: портал не нужен. Поставьте xclip (буфер обмена) и назначьте клавишу: scrawl -settings, вкладка «Система»."
+	else
+		echo "Дальше: scrawl -settings, вкладка «Система»: выбрать мониторы, выдать разрешение, назначить клавишу."
+		echo "(то же командами: scrawl -setup, затем scrawl -grant-screenshot)"
+	fi
+	;;
+*)
+	echo "Installed to $BINDIR."
+	if [ "$x11" = 1 ]; then
+		echo "X11 session: no portal setup needed. Install xclip (clipboard) and set a hotkey: scrawl -settings, tab \"System\"."
+	else
+		echo "Next: scrawl -settings, tab \"System\": pick the monitors, grant the permission, set a hotkey."
+		echo "(the same with commands: scrawl -setup, then scrawl -grant-screenshot)"
+	fi
+	;;
+esac

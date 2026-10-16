@@ -275,4 +275,5 @@ var en = map[string]string{
 	"Экран снимается напрямую, без портала: выбирать мониторы и выдавать разрешение не нужно. Для буфера обмена нужен xclip.": "The screen is captured directly, without a portal: there is no need to pick monitors or grant a permission. The clipboard needs xclip.",
 	"Файлы":   "Files",
 	"Система": "System",
+	"Для этого языка нужен шрифт с иероглифами. Установите его: sudo apt install fonts-noto-cjk": "This language needs a font with ideographs. Install it: sudo apt install fonts-noto-cjk",
 }

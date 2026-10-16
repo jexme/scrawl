@@ -231,7 +231,7 @@ make notices  # regenerate THIRD_PARTY_NOTICES.md
 ```
 
 The interface texts live in `internal/i18n/` (one file per language; the source texts in the code are Russian);
-`go test ./...` checks that every text is translated into every language. Plan and ideas: [docs/PLAN.md](docs/PLAN.md) (in Russian).
+`go test ./...` checks that every text is translated into every language. How to report a bug and send a change: [CONTRIBUTING.md](CONTRIBUTING.md). Plan and ideas: [docs/PLAN.md](docs/PLAN.md) (in Russian).
 
 ## License
 
