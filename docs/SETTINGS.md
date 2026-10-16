@@ -43,7 +43,7 @@ Example:
 | `notifications` | `true`, `false` | notifications after a shot; errors are always shown |
 | `remember_region` | `true`, `false` | remember the last area, show it at launch, `R` restores it |
 | `include_cursor` | `false`, `true` | draw the mouse cursor into the shot (normal PipeWire capture only: not the Screenshot-portal fallback and not X11) |
-| `default_tool` | `select`, `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text` | tool switched on as soon as an area is selected |
+| `default_tool` | `arrow`, `select`, `pen`, `line`, `rect`, `marker`, `blur`, `text` | tool switched on as soon as an area is selected; `select` means switch no tool on (then you can move the area by dragging inside it) |
 | `keys` | object | overlay keys, see below |
 | `language` | `auto`, `ru`, `en`, `zh`, `es`, `pt`, `ja`, `de`, `fr`, `ko` | interface language (Russian, English, Chinese, Spanish, Portuguese, Japanese, German, French, Korean); `auto` follows the system locale. Regional forms such as `zh-CN` or `pt_BR` are accepted |
 | `check_updates` | `false`, `true` | ask GitHub Releases for a new version when the settings window and the tray icon start. This is the only network access of the program; the "Check now" button works either way |
