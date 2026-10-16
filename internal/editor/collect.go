@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/jexme/screen-editor/internal/collection"
-	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/scrawl/internal/collection"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 // renderCurrent рендерит выделение с аннотациями в PNG.

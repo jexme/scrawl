@@ -19,8 +19,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/jexme/screen-editor/internal/annotate"
-	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/scrawl/internal/annotate"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 // Цвета склейки для светлого и тёмного фона.

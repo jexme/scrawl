@@ -4,7 +4,7 @@ Name=Screen Editor
 Name[ru]=Скриншоты
 Comment=Fast screenshot capture and annotation
 Comment[ru]=Быстрый скриншот с выделением области и аннотациями
-Exec=screen-editor
+Exec=scrawl
 Icon=applets-screenshooter
 Terminal=false
 Categories=Graphics;2DGraphics;
@@ -14,4 +14,4 @@ Keywords=screenshot;screen capture;annotate;blur;скриншот;снимок �
 [Desktop Action Settings]
 Name=Settings
 Name[ru]=Настройки
-Exec=screen-editor -settings
+Exec=scrawl -settings

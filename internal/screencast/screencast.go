@@ -17,7 +17,7 @@ import (
 
 	"github.com/godbus/dbus/v5"
 
-	"github.com/jexme/screen-editor/internal/pwcapture"
+	"github.com/jexme/scrawl/internal/pwcapture"
 )
 
 const (

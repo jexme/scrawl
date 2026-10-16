@@ -9,8 +9,8 @@ import (
 
 	"gioui.org/f32"
 
-	"github.com/jexme/screen-editor/internal/annotate"
-	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/scrawl/internal/annotate"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 // doubleClickWindow — максимальное время между двумя нажатиями для двойного клика.

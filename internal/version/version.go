@@ -8,7 +8,7 @@ import "runtime/debug"
 var Version = ""
 
 // Home — страница проекта для раздела «О программе».
-const Home = "https://github.com/jexme/screen-editor"
+const Home = "https://github.com/jexme/scrawl"
 
 // String возвращает версию сборки: заданную явно, иначе по ревизии git, иначе "dev".
 func String() string {

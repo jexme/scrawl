@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Собирает THIRD_PARTY_NOTICES.md: лицензии всего стороннего, что попадает в бинарник.
 
-Берёт модули, реально участвующие в сборке ./cmd/screen-editor, читает их LICENSE
+Берёт модули, реально участвующие в сборке ./cmd/scrawl, читает их LICENSE
 из модульного кэша (Gio из third_party/gio), добавляет лицензии Go, шрифтов Go и
 иконок Tabler. Запуск: make notices.
 """
@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-MODULE = "github.com/jexme/screen-editor"
+MODULE = "github.com/jexme/scrawl"
 
 # SPDX-идентификаторы известных модулей (для таблицы в начале файла).
 SPDX = {
@@ -66,7 +66,7 @@ def modules():
     """Модули, участвующие в сборке, без самого проекта: путь, версия, каталог."""
     out = run("go", "list", "-deps", "-f",
               "{{with .Module}}{{.Path}}|{{.Version}}|{{.Dir}}|{{with .Replace}}{{.Dir}}{{end}}{{end}}",
-              "./cmd/screen-editor")
+              "./cmd/scrawl")
     found = {}
     for line in out.splitlines():
         parts = line.split("|")

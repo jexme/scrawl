@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jexme/screen-editor/internal/collection"
-	"github.com/jexme/screen-editor/internal/screencast"
-	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/scrawl/internal/collection"
+	"github.com/jexme/scrawl/internal/screencast"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 // sandbox подменяет HOME, кэш и внешние команды, чтобы тест не трогал буфер

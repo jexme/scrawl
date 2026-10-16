@@ -24,9 +24,9 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/jexme/screen-editor/internal/screencast"
-	"github.com/jexme/screen-editor/internal/settings"
-	"github.com/jexme/screen-editor/internal/version"
+	"github.com/jexme/scrawl/internal/screencast"
+	"github.com/jexme/scrawl/internal/settings"
+	"github.com/jexme/scrawl/internal/version"
 )
 
 var (

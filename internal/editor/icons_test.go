@@ -14,7 +14,7 @@ import (
 )
 
 // TestIcons рисует все иконки панели на тёмном фоне и проверяет, что каждая
-// что-то нарисовала. С SCREEN_EDITOR_TEST_OUT=путь картинка сохраняется.
+// что-то нарисовала. С SCRAWL_TEST_OUT=путь картинка сохраняется.
 func TestIcons(t *testing.T) {
 	icons := []struct {
 		name string
@@ -69,7 +69,7 @@ func TestIcons(t *testing.T) {
 			t.Errorf("иконка %s почти ничего не нарисовала (%d пикселей)", ic.name, painted)
 		}
 	}
-	if path := os.Getenv("SCREEN_EDITOR_TEST_OUT"); path != "" {
+	if path := os.Getenv("SCRAWL_TEST_OUT"); path != "" {
 		data, _ := encodePNG(out)
 		os.WriteFile(path+".icons.png", data, 0o644)
 	}

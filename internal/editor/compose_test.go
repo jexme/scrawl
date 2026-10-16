@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jexme/screen-editor/internal/annotate"
-	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/scrawl/internal/annotate"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 func solid(w, h int, c color.RGBA) *image.RGBA {
@@ -45,7 +45,7 @@ func TestComposeSideBySide(t *testing.T) {
 	if _, err := compose([]*image.RGBA{a}, []string{"x"}, annotate.NewShaper(), settings.DefaultGlue()); err == nil {
 		t.Error("одна картинка должна давать ошибку")
 	}
-	if path := os.Getenv("SCREEN_EDITOR_TEST_OUT"); path != "" {
+	if path := os.Getenv("SCRAWL_TEST_OUT"); path != "" {
 		data, _ := encodePNG(out)
 		os.WriteFile(path+".compose.png", data, 0o644)
 	}
@@ -75,7 +75,7 @@ func TestComposeStacked(t *testing.T) {
 	if c := out.RGBAAt(pad+120, pad+labelH+160+pad+labelH+80); c.G < 130 || c.R > 100 {
 		t.Errorf("нижняя картинка не зелёная: %v", c)
 	}
-	if path := os.Getenv("SCREEN_EDITOR_TEST_OUT"); path != "" {
+	if path := os.Getenv("SCRAWL_TEST_OUT"); path != "" {
 		data, _ := encodePNG(out)
 		os.WriteFile(path+".compose-stack.png", data, 0o644)
 	}
@@ -116,7 +116,7 @@ func TestComposeLook(t *testing.T) {
 	if got, want := flat.Bounds().Size(), image.Pt(600, labelH+200); got != want {
 		t.Errorf("без отступов %v, ожидали %v", got, want)
 	}
-	if path := os.Getenv("SCREEN_EDITOR_TEST_OUT"); path != "" {
+	if path := os.Getenv("SCRAWL_TEST_OUT"); path != "" {
 		data, _ := encodePNG(out)
 		os.WriteFile(path+".compose-dark.png", data, 0o644)
 	}

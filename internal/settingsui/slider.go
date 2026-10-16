@@ -8,7 +8,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 // slider — ползунок с настоящими границами и шагом: widget.Float хранит только 0..1.

@@ -13,13 +13,13 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
-	"github.com/jexme/screen-editor/internal/annotate"
-	"github.com/jexme/screen-editor/internal/screencast"
-	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/scrawl/internal/annotate"
+	"github.com/jexme/scrawl/internal/screencast"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 // TestToast рисует плашку «Толщина: N» для разных инструментов и проверяет, что
-// она нарисована, а после срока жизни исчезает. С SCREEN_EDITOR_TEST_OUT=путь
+// она нарисована, а после срока жизни исчезает. С SCRAWL_TEST_OUT=путь
 // картинка сохраняется для просмотра.
 func TestToast(t *testing.T) {
 	const W, H = 560, 420
@@ -74,7 +74,7 @@ func TestToast(t *testing.T) {
 		t.Error("плашка должна исчезнуть после срока жизни")
 	}
 
-	if path := os.Getenv("SCREEN_EDITOR_TEST_OUT"); path != "" {
+	if path := os.Getenv("SCRAWL_TEST_OUT"); path != "" {
 		// Несколько плашек подряд на одном кадре для просмотра.
 		sheet := image.NewRGBA(image.Rect(0, 0, W, 4*70))
 		for i, c := range []struct {

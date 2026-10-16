@@ -16,7 +16,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/jexme/screen-editor/internal/annotate"
+	"github.com/jexme/scrawl/internal/annotate"
 )
 
 var (

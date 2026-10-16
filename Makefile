@@ -1,4 +1,4 @@
-# Сборка screen-editor. Gio берётся из модульного кэша и патчится скриптом
+# Сборка scrawl. Gio берётся из модульного кэша и патчится скриптом
 # scripts/setup-gio.sh, копия Gio в репозиторий не входит.
 #
 # Для захвата экрана нужны заголовки PipeWire: либо системные
@@ -24,16 +24,16 @@ DESKTOP := io.github.jexme.ScreenEditor.desktop
 
 all: build
 
-gio: third_party/gio/.screen-editor-patched
+gio: third_party/gio/.scrawl-patched
 
-third_party/gio/.screen-editor-patched: third_party/gio.patch scripts/setup-gio.sh go.mod
+third_party/gio/.scrawl-patched: third_party/gio.patch scripts/setup-gio.sh go.mod
 	./scripts/setup-gio.sh -f
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null)
-LDFLAGS := $(if $(VERSION),-ldflags "-X github.com/jexme/screen-editor/internal/version.Version=$(VERSION)")
+LDFLAGS := $(if $(VERSION),-ldflags "-X github.com/jexme/scrawl/internal/version.Version=$(VERSION)")
 
 build: gio
-	$(GO) build $(LDFLAGS) -o bin/screen-editor ./cmd/screen-editor
+	$(GO) build $(LDFLAGS) -o bin/scrawl ./cmd/scrawl
 
 test: gio
 	$(GO) test ./...
@@ -45,14 +45,14 @@ notices:
 # Ставит бинарник и .desktop. В Exec подставляется абсолютный путь: portal
 # сопоставляет приложение с .desktop-файлом только если Exec существует.
 install: build
-	install -Dm755 bin/screen-editor $(DESTDIR)$(BINDIR)/screen-editor
+	install -Dm755 bin/scrawl $(DESTDIR)$(BINDIR)/scrawl
 	install -d $(DESTDIR)$(APPDIR)
-	sed 's|^Exec=screen-editor|Exec=$(BINDIR)/screen-editor|' packaging/$(DESKTOP) > $(DESTDIR)$(APPDIR)/$(DESKTOP)
+	sed 's|^Exec=scrawl|Exec=$(BINDIR)/scrawl|' packaging/$(DESKTOP) > $(DESTDIR)$(APPDIR)/$(DESKTOP)
 	chmod 644 $(DESTDIR)$(APPDIR)/$(DESKTOP)
-	@echo "Установлено в $(BINDIR). Дальше: screen-editor -setup, затем screen-editor -grant-screenshot"
+	@echo "Установлено в $(BINDIR). Дальше: scrawl -setup, затем scrawl -grant-screenshot"
 
 uninstall:
-	rm -f $(DESTDIR)$(BINDIR)/screen-editor $(DESTDIR)$(APPDIR)/$(DESKTOP)
+	rm -f $(DESTDIR)$(BINDIR)/scrawl $(DESTDIR)$(APPDIR)/$(DESKTOP)
 
 clean:
 	rm -rf bin

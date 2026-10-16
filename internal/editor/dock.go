@@ -14,7 +14,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/jexme/screen-editor/internal/annotate"
+	"github.com/jexme/scrawl/internal/annotate"
 )
 
 const restoreText = "Восстановить прошлую область  ·  R"

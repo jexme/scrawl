@@ -7,7 +7,7 @@ set -eu
 root=$(cd "$(dirname "$0")/.." && pwd)
 dst="$root/third_party/gio"
 patchfile="$root/third_party/gio.patch"
-marker="$dst/.screen-editor-patched"
+marker="$dst/.scrawl-patched"
 
 ver=$(grep -E '^[[:space:]]*gioui\.org v' "$root/go.mod" | awk '{print $2}' | head -n 1)
 [ -n "$ver" ] || { echo "не нашёл версию gioui.org в go.mod" >&2; exit 1; }

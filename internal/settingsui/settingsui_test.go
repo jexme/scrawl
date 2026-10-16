@@ -15,7 +15,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
-	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 func testState(t *testing.T) *state {
@@ -70,7 +70,7 @@ func TestInitialStateReflectsFile(t *testing.T) {
 	}
 }
 
-// TestRenderWindow рисует окно для просмотра глазами (SCREEN_EDITOR_TEST_OUT).
+// TestRenderWindow рисует окно для просмотра глазами (SCRAWL_TEST_OUT).
 func TestRenderWindow(t *testing.T) {
 	const W, H = 700, 3300
 	s := testState(t)
@@ -92,7 +92,7 @@ func TestRenderWindow(t *testing.T) {
 	if err := win.Screenshot(out); err != nil {
 		t.Fatal(err)
 	}
-	if path := os.Getenv("SCREEN_EDITOR_TEST_OUT"); path != "" {
+	if path := os.Getenv("SCRAWL_TEST_OUT"); path != "" {
 		f, _ := os.Create(path + ".window.png")
 		defer f.Close()
 		png.Encode(f, out)

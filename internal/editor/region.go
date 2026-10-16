@@ -10,7 +10,7 @@ import (
 	"gioui.org/f32"
 	"gioui.org/io/pointer"
 
-	"github.com/jexme/screen-editor/internal/screencast"
+	"github.com/jexme/scrawl/internal/screencast"
 )
 
 // minSelection — минимальный размер выделения в пикселях кадра.

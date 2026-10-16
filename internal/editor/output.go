@@ -20,8 +20,8 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/text"
 
-	"github.com/jexme/screen-editor/internal/annotate"
-	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/scrawl/internal/annotate"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 // render рисует выделенную область кадра вместе с аннотациями тем же кодом

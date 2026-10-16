@@ -188,7 +188,7 @@ int sec_capture(int fd, uint32_t node, int timeout_ms, uint8_t **pixels,
 		return SEC_SETUP;
 	}
 
-	c.stream = pw_stream_new(core, "screen-editor",
+	c.stream = pw_stream_new(core, "scrawl",
 		pw_properties_new(PW_KEY_MEDIA_TYPE, "Video",
 		                  PW_KEY_MEDIA_CATEGORY, "Capture",
 		                  PW_KEY_MEDIA_ROLE, "Screen", NULL));

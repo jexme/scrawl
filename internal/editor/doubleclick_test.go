@@ -13,8 +13,8 @@ import (
 
 	"gioui.org/f32"
 
-	"github.com/jexme/screen-editor/internal/annotate"
-	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/scrawl/internal/annotate"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 // dcMonitor готовит монитор с выделением посередине кадра и заданным режимом

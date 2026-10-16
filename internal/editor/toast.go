@@ -13,7 +13,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
-	"github.com/jexme/screen-editor/internal/annotate"
+	"github.com/jexme/scrawl/internal/annotate"
 )
 
 const (

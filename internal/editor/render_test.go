@@ -8,11 +8,11 @@ import (
 
 	"gioui.org/f32"
 
-	"github.com/jexme/screen-editor/internal/annotate"
+	"github.com/jexme/scrawl/internal/annotate"
 )
 
 // TestRenderAnnotations рендерит аннотации поверх однотонного кадра и проверяет
-// ключевые пиксели. С SCREEN_EDITOR_TEST_OUT=путь.png результат сохраняется для просмотра.
+// ключевые пиксели. С SCRAWL_TEST_OUT=путь.png результат сохраняется для просмотра.
 func TestRenderAnnotations(t *testing.T) {
 	src := image.NewRGBA(image.Rect(0, 0, 600, 400))
 	bg := color.RGBA{R: 40, G: 60, B: 90, A: 255}
@@ -53,7 +53,7 @@ func TestRenderAnnotations(t *testing.T) {
 		t.Errorf("рамка не жёлтая: %v", c)
 	}
 
-	if path := os.Getenv("SCREEN_EDITOR_TEST_OUT"); path != "" {
+	if path := os.Getenv("SCRAWL_TEST_OUT"); path != "" {
 		data, err := encodePNG(out)
 		if err != nil {
 			t.Fatal(err)
@@ -105,7 +105,7 @@ func TestRenderBlur(t *testing.T) {
 		t.Errorf("центр размытой области должен быть серым: %d", mid)
 	}
 
-	if path := os.Getenv("SCREEN_EDITOR_TEST_OUT"); path != "" {
+	if path := os.Getenv("SCRAWL_TEST_OUT"); path != "" {
 		data, _ := encodePNG(out)
 		os.WriteFile(path+".blur.png", data, 0o644)
 	}

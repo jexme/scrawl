@@ -1,4 +1,4 @@
-module github.com/jexme/screen-editor
+module github.com/jexme/scrawl
 
 go 1.27.2
 

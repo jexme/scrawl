@@ -52,7 +52,7 @@ func TestDashedRect(t *testing.T) {
 	if transitions < 10 {
 		t.Errorf("слишком мало штрихов на стороне: %d переходов", transitions)
 	}
-	if path := os.Getenv("SCREEN_EDITOR_TEST_OUT"); path != "" {
+	if path := os.Getenv("SCRAWL_TEST_OUT"); path != "" {
 		data, _ := encodePNG(out)
 		os.WriteFile(path+".dash.png", data, 0o644)
 	}

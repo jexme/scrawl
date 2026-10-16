@@ -1,5 +1,5 @@
-#ifndef SCREEN_EDITOR_CAPTURE_H
-#define SCREEN_EDITOR_CAPTURE_H
+#ifndef SCRAWL_CAPTURE_H
+#define SCRAWL_CAPTURE_H
 
 #include <stdint.h>
 

@@ -28,10 +28,10 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/jexme/screen-editor/internal/annotate"
-	"github.com/jexme/screen-editor/internal/collection"
-	"github.com/jexme/screen-editor/internal/screencast"
-	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/scrawl/internal/annotate"
+	"github.com/jexme/scrawl/internal/collection"
+	"github.com/jexme/scrawl/internal/screencast"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 // Config — параметры запуска редактора.

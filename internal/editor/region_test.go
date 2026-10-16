@@ -6,8 +6,8 @@ import (
 
 	"gioui.org/f32"
 
-	"github.com/jexme/screen-editor/internal/screencast"
-	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/scrawl/internal/screencast"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 var bounds = image.Rect(0, 0, 1000, 800)

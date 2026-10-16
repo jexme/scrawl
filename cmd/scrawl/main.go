@@ -1,4 +1,4 @@
-// screen-editor делает скриншот области экрана с аннотациями.
+// scrawl делает скриншот области экрана с аннотациями.
 //
 // Первый запуск (или с -setup) показывает диалоги GNOME по одному на монитор,
 // дальше сохранённые restore_token позволяют обойтись без вопросов.
@@ -13,12 +13,12 @@ import (
 
 	"gioui.org/app"
 
-	"github.com/jexme/screen-editor/internal/editor"
-	"github.com/jexme/screen-editor/internal/screencast"
-	"github.com/jexme/screen-editor/internal/settings"
-	"github.com/jexme/screen-editor/internal/settingsui"
-	"github.com/jexme/screen-editor/internal/singleton"
-	"github.com/jexme/screen-editor/internal/version"
+	"github.com/jexme/scrawl/internal/editor"
+	"github.com/jexme/scrawl/internal/screencast"
+	"github.com/jexme/scrawl/internal/settings"
+	"github.com/jexme/scrawl/internal/settingsui"
+	"github.com/jexme/scrawl/internal/singleton"
+	"github.com/jexme/scrawl/internal/version"
 )
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Println("screen-editor", version.String())
+		fmt.Println("scrawl", version.String())
 		return
 	}
 

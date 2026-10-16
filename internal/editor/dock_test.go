@@ -79,7 +79,7 @@ func TestDockPlacement(t *testing.T) {
 	}
 }
 
-// TestDockRender рисует док для просмотра глазами (с SCREEN_EDITOR_TEST_OUT).
+// TestDockRender рисует док для просмотра глазами (с SCRAWL_TEST_OUT).
 func TestDockRender(t *testing.T) {
 	sandbox(t)
 	const W, H = 900, 300
@@ -105,7 +105,7 @@ func TestDockRender(t *testing.T) {
 	if err := win.Screenshot(out); err != nil {
 		t.Fatal(err)
 	}
-	if path := os.Getenv("SCREEN_EDITOR_TEST_OUT"); path != "" {
+	if path := os.Getenv("SCRAWL_TEST_OUT"); path != "" {
 		data, _ := encodePNG(out)
 		os.WriteFile(path+".dock.png", data, 0o644)
 	}
