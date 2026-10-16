@@ -2,13 +2,16 @@ package editor
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"gioui.org/gpu/headless"
@@ -66,6 +69,31 @@ func fileBytes(cfg settings.Settings, pngData []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// writeUnique записывает файл, не затирая существующий: при совпадении имени
+// (два снимка в одну секунду) к имени добавляется -2, -3 и так далее.
+func writeUnique(path string, data []byte) (string, error) {
+	ext := filepath.Ext(path)
+	base := strings.TrimSuffix(path, ext)
+	for n := 1; ; n++ {
+		p := path
+		if n > 1 {
+			p = fmt.Sprintf("%s-%d%s", base, n, ext)
+		}
+		f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if errors.Is(err, fs.ErrExist) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		_, err = f.Write(data)
+		if cerr := f.Close(); err == nil {
+			err = cerr
+		}
+		return p, err
+	}
+}
+
 // saveFile пишет снимок (PNG на входе) в каталог скриншотов в выбранном формате
 // и возвращает путь.
 func saveFile(cfg settings.Settings, data []byte) (string, error) {
@@ -77,8 +105,7 @@ func saveFile(cfg settings.Settings, data []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	path := filepath.Join(dir, cfg.FileName(time.Now().Format(settings.StampLayout)))
-	return path, os.WriteFile(path, data, 0o644)
+	return writeUnique(filepath.Join(dir, cfg.FileName(time.Now().Format(settings.StampLayout))), data)
 }
 
 // saveNumbered пишет снимок (PNG на входе) в каталог скриншотов под именем с номером в наборе.
@@ -91,8 +118,7 @@ func saveNumbered(cfg settings.Settings, data []byte, stamp string, n int) (stri
 	if err != nil {
 		return "", err
 	}
-	path := filepath.Join(dir, cfg.NumberedFileName(stamp, n))
-	return path, os.WriteFile(path, data, 0o644)
+	return writeUnique(filepath.Join(dir, cfg.NumberedFileName(stamp, n)), data)
 }
 
 func encodePNG(img image.Image) ([]byte, error) {

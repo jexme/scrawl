@@ -418,3 +418,15 @@ func TestFormatIsSavedToDisk(t *testing.T) {
 		t.Errorf("формат не дошёл до файла: %+v", got)
 	}
 }
+
+func TestKeepOpenCheckboxIsSavedToDisk(t *testing.T) {
+	s := testState(t)
+	if s.keepOpen.Value {
+		t.Fatal("по умолчанию оверлей закрывается")
+	}
+	s.keepOpen.Value = true
+	s.layout(frameContext(700, 650))
+	if !settings.Load().KeepOpen {
+		t.Error("включённая настройка не дошла до файла")
+	}
+}

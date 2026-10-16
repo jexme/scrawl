@@ -264,3 +264,72 @@ func TestSaveFileFormat(t *testing.T) {
 		t.Errorf("качество 10 должно давать файл меньше, чем 95: %d и %d байт", low, high)
 	}
 }
+
+func TestKeepOpenAfterExport(t *testing.T) {
+	home := sandbox(t)
+	shots := func() int {
+		files, _ := filepath.Glob(filepath.Join(home, "Pictures", "Screenshots", "*.png"))
+		return len(files)
+	}
+
+	m, finished := newTestMonitor(t)
+	m.sel, m.hasSel = image.Rect(10, 10, 200, 150), true
+	m.export(true, true)
+	if !*finished {
+		t.Fatal("по умолчанию после копирования программа закрывается")
+	}
+
+	if err := m.store.Update(func(s *settings.Settings) { s.KeepOpen = true }); err != nil {
+		t.Fatal(err)
+	}
+	m, finished = newTestMonitor(t)
+	m.sel, m.hasSel = image.Rect(10, 10, 200, 150), true
+	m.export(true, false)
+	if *finished {
+		t.Fatal("с включённой настройкой оверлей остаётся открытым")
+	}
+	if m.toastMsg != "Скопировано в буфер обмена" || time.Until(m.toastUntil) <= 0 {
+		t.Errorf("должна быть плашка о копировании: %q", m.toastMsg)
+	}
+	if !m.hasSel {
+		t.Error("область должна остаться для дальнейшей правки")
+	}
+
+	before := shots()
+	m.export(false, true)
+	m.export(true, true)
+	if *finished || shots() != before+2 {
+		t.Errorf("повторные сохранения должны работать: файлов было %d, стало %d", before, shots())
+	}
+	if !strings.HasPrefix(m.toastMsg, "Сохранено: ") || !strings.HasSuffix(m.toastMsg, ", скопировано") {
+		t.Errorf("плашка после сохранения и копирования: %q", m.toastMsg)
+	}
+	// Ширина обычной плашки возвращается после смены толщины.
+	m.setTool(annotate.ToolPen)
+	m.bumpWidth(1)
+	if m.toastMsg != "" {
+		t.Error("плашка толщины должна заменить сообщение")
+	}
+}
+
+func TestSaveFileDoesNotOverwrite(t *testing.T) {
+	sandbox(t)
+	m, _ := newTestMonitor(t)
+	var paths []string
+	for i := 0; i < 3; i++ {
+		p, err := saveNumbered(m.store.Get(), []byte{byte(i)}, "20260101-120000", 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		paths = append(paths, p)
+	}
+	for i, p := range paths {
+		data, err := os.ReadFile(p)
+		if err != nil || len(data) != 1 || data[0] != byte(i) {
+			t.Errorf("файл %d (%s): %v %v", i, p, data, err)
+		}
+	}
+	if paths[0] == paths[1] || paths[1] == paths[2] || !strings.HasSuffix(paths[1], "-1-2.png") || !strings.HasSuffix(paths[2], "-1-3.png") {
+		t.Errorf("имена должны различаться: %v", paths)
+	}
+}

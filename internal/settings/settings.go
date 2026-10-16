@@ -87,6 +87,9 @@ type Settings struct {
 	Format FileFormat `json:"format"`
 	// JPEGQuality — качество JPEG, 1-100.
 	JPEGQuality int `json:"jpeg_quality"`
+	// KeepOpen — после копирования или сохранения не закрывать оверлей, а дать
+	// продолжить правку. Выход по Esc.
+	KeepOpen bool `json:"keep_open"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }

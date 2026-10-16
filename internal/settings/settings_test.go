@@ -537,3 +537,14 @@ func TestFileFormat(t *testing.T) {
 		t.Errorf("неизвестный формат сбрасывается, качество не ниже 1: %+v", got)
 	}
 }
+
+func TestKeepOpenDefaultOff(t *testing.T) {
+	sandbox(t)
+	if Load().KeepOpen {
+		t.Error("по умолчанию оверлей закрывается после копирования")
+	}
+	writeConfig(t, `{"keep_open":true}`)
+	if !Load().KeepOpen {
+		t.Error("keep_open=true должен читаться")
+	}
+}

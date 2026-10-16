@@ -37,9 +37,17 @@ func widthLabel(t annotate.Tool) string {
 
 // showToast показывает на секунду плашку с новым значением силы инструмента.
 func (m *monitor) showToast() {
+	m.toastMsg = ""
 	m.toastTool = m.tool
 	m.toastValue = int(m.curWidth())
 	m.toastUntil = time.Now().Add(toastLife)
+}
+
+// showMessage показывает на пару секунд плашку с готовым текстом, например
+// «Скопировано в буфер обмена».
+func (m *monitor) showMessage(txt string) {
+	m.toastMsg = txt
+	m.toastUntil = time.Now().Add(toastLife + 700*time.Millisecond)
 }
 
 // layoutToast рисует плашку «Толщина: N» с образцом линии и плавно гасит её.
@@ -62,6 +70,9 @@ func (m *monitor) layoutToast(gtx layout.Context, win image.Point, selWin image.
 	}
 
 	txt := fmt.Sprintf("%s: %d", widthLabel(m.toastTool), m.toastValue)
+	if m.toastMsg != "" {
+		txt = m.toastMsg
+	}
 	rec := op.Record(gtx.Ops)
 	paint.ColorOp{Color: scale(iconColor)}.Add(gtx.Ops)
 	mat := rec.Stop()
@@ -72,7 +83,7 @@ func (m *monitor) layoutToast(gtx layout.Context, win image.Point, selWin image.
 	label := rec.Stop()
 
 	// Образец: отрезок нужной толщины тем же цветом. Для текста и размытия образца нет.
-	sample := m.toastTool != annotate.ToolText && m.toastTool != annotate.ToolBlur
+	sample := m.toastMsg == "" && m.toastTool != annotate.ToolText && m.toastTool != annotate.ToolBlur
 	sampleW := 0
 	lineW := float32(m.toastValue)
 	if m.toastTool == annotate.ToolMarker {

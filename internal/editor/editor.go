@@ -8,6 +8,7 @@ import (
 	"image/color"
 	"math"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -136,6 +137,7 @@ type monitor struct {
 	toastUntil time.Time
 	toastTool  annotate.Tool
 	toastValue int
+	toastMsg   string // готовый текст плашки вместо «Толщина: N»
 
 	// Область предыдущего скриншота: не подставляется сама, возвращается по кнопке или клавише R.
 	last    image.Rectangle
@@ -734,7 +736,8 @@ func (m *monitor) cancelText() {
 }
 
 // export рендерит выделение с аннотациями, при необходимости сохраняет в файл
-// и копирует в буфер обмена, затем завершает работу.
+// и копирует в буфер обмена, затем завершает работу (или остаётся в редакторе,
+// если в настройках включено «не закрывать после копирования»).
 func (m *monitor) export(toClipboard, toFile bool) {
 	if m.editing {
 		m.commitText()
@@ -753,25 +756,30 @@ func (m *monitor) export(toClipboard, toFile bool) {
 		return
 	}
 
-	msg := ""
+	msg, done := "", ""
 	if toFile {
 		path, err := saveFile(m.store.Get(), data)
 		if err != nil {
 			fail("сохранение", err)
 			return
 		}
-		msg = path
+		msg, done = path, "Сохранено: "+filepath.Base(path)
 	}
 	if toClipboard {
 		if err := copyPNG(data); err != nil {
 			fail("буфер обмена", err)
 		} else if msg == "" {
-			msg = "скопирован в буфер обмена"
+			msg, done = "скопирован в буфер обмена", "Скопировано в буфер обмена"
 		} else {
 			msg += " (и в буфер обмена)"
+			done += ", скопировано"
 		}
 	}
 	m.inform("Скриншот готов", msg)
+	if m.store.Get().KeepOpen {
+		m.showMessage(done) // остаёмся в редакторе: подтверждаем действие на экране
+		return
+	}
 	m.quit()
 }
 

@@ -48,6 +48,7 @@ type state struct {
 	notify   widget.Bool // уведомления после снимка
 	remember widget.Bool // запоминать прошлую область
 	showSize widget.Bool // подпись размера области
+	keepOpen widget.Bool // не закрывать оверлей после копирования
 	dir      widget.Editor
 	prefix   widget.Editor // начало имени файла
 	reset    widget.Clickable
@@ -152,6 +153,7 @@ func newState(store *settings.Store) *state {
 	s.notify.Value = cur.Notifications
 	s.remember.Value = cur.RememberRegion
 	s.showSize.Value = cur.ShowSize
+	s.keepOpen.Value = cur.KeepOpen
 	s.dir.SingleLine = true
 	s.dir.SetText(cur.SaveDir)
 	s.prefix.SingleLine = true
@@ -282,6 +284,13 @@ func (s *state) apply(gtx layout.Context) {
 	}
 	if edited(gtx, &s.bColor) {
 		s.applyBorderColor(s.bColor.Text())
+	}
+
+	s.keepOpen.Update(gtx)
+	if want := s.keepOpen.Value; want != s.store.Get().KeepOpen {
+		if err := s.store.Update(func(c *settings.Settings) { c.KeepOpen = want }); err != nil {
+			s.dirErr = "Не удалось сохранить: " + err.Error()
+		}
 	}
 
 	s.showSize.Update(gtx)
@@ -807,6 +816,8 @@ func (s *state) items() []layout.Widget {
 				s.radio(&s.enter, string(settings.EnterCopy), "Только копировать в буфер обмена"),
 				s.radio(&s.enter, string(settings.EnterSave), "Только сохранить в файл"),
 			)),
+		s.row("После копирования", "Enter, Ctrl+C, Ctrl+S, двойной клик и кнопки панели. Выход по Esc.",
+			s.checkbox(&s.keepOpen, "Не закрывать, а продолжать редактировать")),
 		s.row("Уведомления", "После снимка и действий с подборкой. Ошибки показываются всегда.",
 			s.checkbox(&s.notify, "Показывать уведомления")),
 		s.row("Прошлая область", "Показывается сразу при запуске и по клавише R. Без неё «было/стало» не подставит область само.",
