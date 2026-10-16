@@ -71,6 +71,11 @@ type Settings struct {
 	HandleRadius float64 `json:"handle_radius"`
 	// ShowSize — показывать подпись «W × H» у выделенной области.
 	ShowSize bool `json:"show_size"`
+	// DefaultTool — инструмент, который включается сразу после выбора области
+	// (одно из ToolNames).
+	DefaultTool string `json:"default_tool"`
+	// Tools — цвет и толщина по умолчанию для каждого инструмента.
+	Tools ToolStyles `json:"tools"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
@@ -78,7 +83,7 @@ type Settings struct {
 // Default возвращает настройки по умолчанию.
 func Default() Settings {
 	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
-		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true}
+		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, DefaultTool: "select"}
 }
 
 // Path возвращает путь к файлу настроек.
@@ -110,6 +115,10 @@ func (s *Settings) normalize() {
 	s.BorderWidth = min(max(s.BorderWidth, MinBorderWidth), MaxBorderWidth)
 	s.BorderDash = min(max(s.BorderDash, MinBorderDash), MaxBorderDash)
 	s.BorderGap = min(max(s.BorderGap, 0), MaxBorderGap)
+	if !validTool(s.DefaultTool) {
+		s.DefaultTool = def.DefaultTool
+	}
+	s.Tools.normalize()
 	s.HandleRadius = min(max(s.HandleRadius, 0), MaxHandleRadius)
 	if c, err := ParseColor(s.BorderColor); err == nil {
 		s.BorderColor = FormatColor(c)
@@ -146,6 +155,31 @@ func readRaw(path string) (raw map[string]json.RawMessage, exists, ok bool) {
 	return raw, true, true
 }
 
+// decodeStruct разбирает каждое поле структуры по его ключу отдельно: поле с
+// неверным значением остаётся как было. Вложенные структуры разбираются так же,
+// поэтому одна ошибка не портит соседние значения.
+func decodeStruct(v reflect.Value, raw map[string]json.RawMessage) {
+	for i := 0; i < v.NumField(); i++ {
+		key := keyOf(v.Type().Field(i))
+		r, found := raw[key]
+		if key == "" || !found {
+			continue
+		}
+		field := v.Field(i)
+		if field.Kind() == reflect.Struct {
+			var inner map[string]json.RawMessage
+			if json.Unmarshal(r, &inner) == nil && inner != nil {
+				decodeStruct(field, inner)
+			}
+			continue
+		}
+		nv := reflect.New(field.Type())
+		if json.Unmarshal(r, nv.Interface()) == nil {
+			field.Set(nv.Elem())
+		}
+	}
+}
+
 // Load читает настройки из файла. Каждый ключ разбирается отдельно: отсутствующий
 // или неверный по типу ключ получает значение по умолчанию и не портит остальные.
 // Нет файла или он повреждён: настройки по умолчанию.
@@ -155,18 +189,7 @@ func Load() Settings {
 	if !ok {
 		return s
 	}
-	v := reflect.ValueOf(&s).Elem()
-	for i := 0; i < v.NumField(); i++ {
-		key := keyOf(v.Type().Field(i))
-		r, found := raw[key]
-		if key == "" || !found {
-			continue
-		}
-		nv := reflect.New(v.Field(i).Type())
-		if json.Unmarshal(r, nv.Interface()) == nil {
-			v.Field(i).Set(nv.Elem())
-		}
-	}
+	decodeStruct(reflect.ValueOf(&s).Elem(), raw)
 	s.normalize()
 	return s
 }

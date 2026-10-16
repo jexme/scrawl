@@ -35,6 +35,7 @@ func (m *monitor) applyLast() {
 	m.claim()
 	m.sel, m.hasSel = m.last, true
 	m.tool = annotate.ToolSelect
+	m.useDefaultTool()
 }
 
 // label рендерит текст и возвращает макрос с его размером.

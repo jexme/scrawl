@@ -357,3 +357,54 @@ func TestShowSizeDefaultOn(t *testing.T) {
 		t.Error("show_size=false должен выключать подпись")
 	}
 }
+
+func TestToolDefaults(t *testing.T) {
+	sandbox(t)
+	got := Load()
+	if got.DefaultTool != "select" || got.Tools != (ToolStyles{}) {
+		t.Errorf("по умолчанию выбор области и пустые стили: %+v", got)
+	}
+
+	// Неверное значение одного поля не портит соседние, в том числе вложенные.
+	writeConfig(t, `{"default_tool":"pen","tools":{
+		"pen":{"color":"e53935","width":"толстая"},
+		"arrow":{"color":"red","width":99},
+		"text":{"width":6},
+		"marker":5}}`)
+	got = Load()
+	if got.DefaultTool != "pen" {
+		t.Errorf("default_tool: %q", got.DefaultTool)
+	}
+	if got.Tools.Pen != (ToolStyle{Color: "#E53935"}) {
+		t.Errorf("перо: цвет должен остаться, неверная толщина пропасть: %+v", got.Tools.Pen)
+	}
+	if got.Tools.Arrow != (ToolStyle{Width: MaxToolWidth}) {
+		t.Errorf("стрелка: неверный цвет сбрасывается, толщина подрезается: %+v", got.Tools.Arrow)
+	}
+	if got.Tools.Text.Width != 6 || got.Tools.Marker != (ToolStyle{}) {
+		t.Errorf("текст и маркер: %+v / %+v", got.Tools.Text, got.Tools.Marker)
+	}
+
+	writeConfig(t, `{"default_tool":"laser"}`)
+	if got := Load().DefaultTool; got != "select" {
+		t.Errorf("неизвестный инструмент должен стать select: %q", got)
+	}
+}
+
+func TestToolStylesSaveOnlyWhatIsSet(t *testing.T) {
+	sandbox(t)
+	st := NewStore()
+	if err := st.Update(func(s *Settings) { s.Tools.Rect = ToolStyle{Color: "#43A047", Width: 3} }); err != nil {
+		t.Fatal(err)
+	}
+	var tools map[string]ToolStyle
+	if err := json.Unmarshal(readKeys(t)["tools"], &tools); err != nil {
+		t.Fatal(err)
+	}
+	if len(tools) != 1 || tools["rect"] != (ToolStyle{Color: "#43A047", Width: 3}) {
+		t.Errorf("в файл должен попасть только заданный инструмент: %v", tools)
+	}
+	if got := NewStore().Get().Tools.Rect; got.Color != "#43A047" || got.Width != 3 {
+		t.Errorf("после перезагрузки: %+v", got)
+	}
+}

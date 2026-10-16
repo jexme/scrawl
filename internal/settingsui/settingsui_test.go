@@ -71,7 +71,7 @@ func TestInitialStateReflectsFile(t *testing.T) {
 
 // TestRenderWindow рисует окно для просмотра глазами (SCREEN_EDITOR_TEST_OUT).
 func TestRenderWindow(t *testing.T) {
-	const W, H = 700, 1500
+	const W, H = 700, 2400
 	s := testState(t)
 	s.choice.Value = string(settings.DoubleClickCopy)
 
@@ -274,5 +274,46 @@ func TestShowSizeCheckboxIsSavedToDisk(t *testing.T) {
 	s.layout(frameContext(700, 650))
 	if settings.Load().ShowSize {
 		t.Error("выключенная подпись не дошла до файла")
+	}
+}
+
+func TestToolDefaultsAreSavedToDisk(t *testing.T) {
+	s := testState(t)
+	if s.toolChoice.Value != "select" || len(s.toolRows) != len(settings.ToolNames)-1 {
+		t.Fatalf("выбор инструмента %q, строк инструментов %d", s.toolChoice.Value, len(s.toolRows))
+	}
+	s.toolChoice.Value = "marker"
+	var arrow, blur *toolRow
+	for _, r := range s.toolRows {
+		switch r.name {
+		case "arrow":
+			arrow = r
+		case "blur":
+			blur = r
+		}
+	}
+	arrow.ed.SetText("1e88e5")
+	arrow.sl.Set(8)
+	blur.sl.Set(12)
+	s.layout(frameContext(700, 650))
+
+	got := settings.Load()
+	if got.DefaultTool != "marker" {
+		t.Errorf("инструмент по умолчанию: %q", got.DefaultTool)
+	}
+	if got.Tools.Arrow != (settings.ToolStyle{Color: "#1E88E5", Width: 8}) || got.Tools.Blur.Width != 12 {
+		t.Errorf("стили инструментов не дошли до файла: %+v", got.Tools)
+	}
+
+	// Пустой цвет очищает настройку, неверный отклоняется и оставляет прошлое значение.
+	arrow.ed.SetText("zzz")
+	s.layout(frameContext(700, 650))
+	if arrow.err == "" || settings.Load().Tools.Arrow.Color != "#1E88E5" {
+		t.Errorf("неверный цвет: ошибка=%q, в файле %q", arrow.err, settings.Load().Tools.Arrow.Color)
+	}
+	arrow.ed.SetText("")
+	s.layout(frameContext(700, 650))
+	if arrow.err != "" || settings.Load().Tools.Arrow.Color != "" {
+		t.Errorf("пустой цвет должен очищать: ошибка=%q, в файле %q", arrow.err, settings.Load().Tools.Arrow.Color)
 	}
 }

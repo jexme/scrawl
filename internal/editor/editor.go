@@ -143,11 +143,13 @@ type monitor struct {
 	lastBtn widget.Clickable
 	tol     float32 // допуск попадания в ручку, пиксели кадра
 
-	tool   annotate.Tool
-	color  color.NRGBA
-	widths map[annotate.Tool]float32 // толщина или сила для каждого инструмента отдельно
-	shapes []annotate.Shape
-	cur    *annotate.Shape
+	tool  annotate.Tool
+	color color.NRGBA
+	// colorPicked: цвет выбран в панели вручную, цвета инструментов из настроек больше не применяются.
+	colorPicked bool
+	widths      map[annotate.Tool]float32 // толщина или сила для каждого инструмента отдельно
+	shapes      []annotate.Shape
+	cur         *annotate.Shape
 
 	editing bool
 	editAt  f32.Point
@@ -180,6 +182,7 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 		// месте: прошлая область выставляется сразу.
 		if m.hasLast && m.queued > 0 {
 			m.sel, m.hasSel = m.last, true
+			m.useDefaultTool()
 		}
 	}
 	return m
@@ -537,6 +540,38 @@ func (m *monitor) setTool(t annotate.Tool) {
 		m.commitText()
 	}
 	m.tool = t
+	// Цвет инструмента из настроек действует, пока цвет не выбрали в панели вручную.
+	if st := m.toolStyle(t); st != nil && !m.colorPicked {
+		if c, err := settings.ParseColor(st.Color); err == nil {
+			m.color = c
+		}
+	}
+}
+
+// toolName возвращает имя инструмента в настройках.
+func toolName(t annotate.Tool) string {
+	if int(t) < len(settings.ToolNames) {
+		return settings.ToolNames[t]
+	}
+	return ""
+}
+
+// toolStyle возвращает вид инструмента по умолчанию из настроек (nil для «выделения»).
+func (m *monitor) toolStyle(t annotate.Tool) *settings.ToolStyle {
+	tools := m.store.Get().Tools
+	return tools.Of(toolName(t))
+}
+
+// useDefaultTool включает инструмент по умолчанию из настроек: вызывается,
+// когда область выбрана и можно рисовать.
+func (m *monitor) useDefaultTool() {
+	want := m.store.Get().DefaultTool
+	for t, name := range settings.ToolNames {
+		if name == want {
+			m.setTool(annotate.Tool(t))
+			return
+		}
+	}
 }
 
 func (m *monitor) press(p f32.Point) {
@@ -614,6 +649,8 @@ func (m *monitor) release(p f32.Point) {
 		m.hasSel = m.sel.Dx() >= 4 && m.sel.Dy() >= 4
 		if !m.hasSel {
 			m.sel = image.Rectangle{}
+		} else {
+			m.useDefaultTool()
 		}
 	case m.cur != nil:
 		if !m.cur.Degenerate() {
@@ -639,6 +676,9 @@ func (m *monitor) curWidth() float32 { return m.widthOf(m.tool) }
 func (m *monitor) widthOf(t annotate.Tool) float32 {
 	if w, ok := m.widths[t]; ok {
 		return w
+	}
+	if st := m.toolStyle(t); st != nil && st.Width > 0 {
+		return float32(st.Width)
 	}
 	return annotate.DefaultWidth
 }

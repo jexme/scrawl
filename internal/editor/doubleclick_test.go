@@ -2,6 +2,7 @@ package editor
 
 import (
 	"image"
+	"image/color"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,5 +108,63 @@ func TestFilePrefixUsedInSavedName(t *testing.T) {
 	}
 	if !strings.HasPrefix(filepath.Base(path), "мой-") || !strings.HasSuffix(path, ".png") || !strings.HasPrefix(path, home) {
 		t.Errorf("имя файла не по настройке: %q", path)
+	}
+}
+
+func TestToolDefaultsFromSettings(t *testing.T) {
+	sandbox(t)
+	m, _ := newTestMonitor(t)
+	if err := m.store.Update(func(s *settings.Settings) {
+		s.DefaultTool = "arrow"
+		s.Tools.Arrow = settings.ToolStyle{Color: "#1E88E5", Width: 9}
+		s.Tools.Text = settings.ToolStyle{Color: "#FB8C00", Width: 7}
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Область готова: включается инструмент по умолчанию, его цвет и толщина.
+	m.press(f32.Pt(50, 50))
+	m.release(f32.Pt(250, 200))
+	if m.tool != annotate.ToolArrow {
+		t.Fatalf("после выбора области ожидали стрелку, получили %v", m.tool)
+	}
+	if m.color != (color.NRGBA{R: 30, G: 136, B: 229, A: 255}) || m.curWidth() != 9 {
+		t.Errorf("стрелка: цвет %+v толщина %v", m.color, m.curWidth())
+	}
+	// Остальные инструменты без настроек: стандартная толщина и тот же цвет.
+	if got := m.widthOf(annotate.ToolPen); got != annotate.DefaultWidth {
+		t.Errorf("перо без настроек: толщина %v", got)
+	}
+	// Колесо мыши меняет толщину поверх настройки.
+	m.bumpWidth(1)
+	if m.curWidth() != 10 {
+		t.Errorf("после колеса ожидали 10, получили %v", m.curWidth())
+	}
+	// У текста свой цвет по умолчанию.
+	m.setTool(annotate.ToolText)
+	if m.color != (color.NRGBA{R: 251, G: 140, B: 0, A: 255}) || m.curWidth() != 7 {
+		t.Errorf("текст: цвет %+v толщина %v", m.color, m.curWidth())
+	}
+	// Выбрав цвет вручную, пользователь отключает автоцвета на этот запуск.
+	m.color, m.colorPicked = annotate.Palette[3], true
+	m.setTool(annotate.ToolArrow)
+	if m.color != annotate.Palette[3] {
+		t.Errorf("цвет, выбранный вручную, не должен сбиваться: %+v", m.color)
+	}
+}
+
+func TestToolNamesMatchEditorTools(t *testing.T) {
+	order := []annotate.Tool{annotate.ToolSelect, annotate.ToolPen, annotate.ToolLine, annotate.ToolArrow,
+		annotate.ToolRect, annotate.ToolMarker, annotate.ToolBlur, annotate.ToolText}
+	if len(order) != len(settings.ToolNames) {
+		t.Fatalf("инструментов %d, имён в настройках %d", len(order), len(settings.ToolNames))
+	}
+	for i, tool := range order {
+		if int(tool) != i {
+			t.Errorf("инструмент %q: номер %d, ожидали %d", settings.ToolNames[i], tool, i)
+		}
+	}
+	if settings.MinToolWidth != annotate.MinWidth || settings.MaxToolWidth != annotate.MaxWidth {
+		t.Error("границы толщины в настройках и редакторе разошлись")
 	}
 }

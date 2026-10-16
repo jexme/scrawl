@@ -60,8 +60,11 @@ type state struct {
 	bDash    *slider     // рамка: штрих
 	bGap     *slider     // рамка: пауза
 	handle   *slider     // радиус угловых ручек
-	bColor   widget.Editor
-	colorErr string
+
+	toolChoice widget.Enum // инструмент после выбора области
+	toolRows   []*toolRow
+	bColor     widget.Editor
+	colorErr   string
 
 	dirErr    string
 	prefixErr string
@@ -99,6 +102,7 @@ func newState(store *settings.Store) *state {
 	for _, sl := range s.sliders {
 		sl.Set(sl.get(cur))
 	}
+	s.initTools(cur)
 	s.bColor.SingleLine = true
 	s.bColor.SetText(cur.BorderColor)
 	s.choice.Value = string(cur.DoubleClick)
@@ -182,6 +186,17 @@ func (s *state) apply(gtx layout.Context) {
 			if err := s.store.Update(func(c *settings.Settings) { sl.set(c, want) }); err != nil {
 				s.dirErr = "Не удалось сохранить: " + err.Error()
 			}
+		}
+	}
+	s.toolChoice.Update(gtx)
+	if want := s.toolChoice.Value; want != s.store.Get().DefaultTool {
+		if err := s.store.Update(func(c *settings.Settings) { c.DefaultTool = want }); err != nil {
+			s.dirErr = "Не удалось сохранить: " + err.Error()
+		}
+	}
+	for _, row := range s.toolRows {
+		if edited(gtx, &row.ed) {
+			s.applyToolColor(row)
 		}
 	}
 	if edited(gtx, &s.bColor) {
@@ -365,6 +380,112 @@ func (s *state) field(ed *widget.Editor, hint string) layout.Widget {
 	}
 }
 
+// swatchBox рисует квадратный образец цвета в рамке.
+func swatchBox(gtx layout.Context, c color.NRGBA, dp int) layout.Dimensions {
+	sz := gtx.Dp(unit.Dp(dp))
+	rr := clip.UniformRRect(image.Rect(0, 0, sz, sz), gtx.Dp(6))
+	paint.FillShape(gtx.Ops, borderColor, rr.Op(gtx.Ops))
+	inner := clip.UniformRRect(image.Rect(gtx.Dp(2), gtx.Dp(2), sz-gtx.Dp(2), sz-gtx.Dp(2)), gtx.Dp(4))
+	paint.FillShape(gtx.Ops, c, inner.Op(gtx.Ops))
+	return layout.Dimensions{Size: image.Pt(sz, sz)}
+}
+
+// toolRow — строка настроек одного инструмента: цвет и толщина по умолчанию.
+type toolRow struct {
+	name  string // имя в настройках
+	label string
+	ed    widget.Editor
+	sl    *slider
+	err   string
+}
+
+// toolLabels — названия инструментов в окне, в порядке settings.ToolNames.
+var toolLabels = []string{"Выделение", "Перо", "Линия", "Стрелка", "Рамка", "Маркер", "Размытие", "Текст"}
+
+// initTools создаёт строки инструментов и выбор инструмента по умолчанию.
+func (s *state) initTools(cur settings.Settings) {
+	s.toolChoice.Value = cur.DefaultTool
+	for i, name := range settings.ToolNames {
+		if name == "select" {
+			continue
+		}
+		name := name
+		row := &toolRow{name: name, label: toolLabels[i]}
+		row.ed.SingleLine = true
+		row.ed.SetText(cur.Tools.Of(name).Color)
+		row.sl = s.addSlider(0, settings.MaxToolWidth, 1, func(v float64) string {
+			if v == 0 {
+				return "станд."
+			}
+			return fmt.Sprintf("%.0f", v)
+		},
+			func(c settings.Settings) float64 { return c.Tools.Of(name).Width },
+			func(c *settings.Settings, v float64) { c.Tools.Of(name).Width = v })
+		s.toolRows = append(s.toolRows, row)
+	}
+}
+
+// applyToolColor проверяет и сохраняет цвет инструмента; пусто значит «не менять».
+func (s *state) applyToolColor(row *toolRow) {
+	txt := strings.TrimSpace(row.ed.Text())
+	value := ""
+	if txt != "" {
+		c, err := settings.ParseColor(txt)
+		if err != nil {
+			row.err = err.Error()
+			return
+		}
+		value = settings.FormatColor(c)
+	}
+	row.err = ""
+	if err := s.store.Update(func(c *settings.Settings) { c.Tools.Of(row.name).Color = value }); err != nil {
+		row.err = "Не удалось сохранить: " + err.Error()
+	}
+}
+
+// toolControls — выбор инструмента после выделения области и вид каждого инструмента.
+func (s *state) toolControls() layout.Widget {
+	return func(gtx layout.Context) layout.Dimensions {
+		children := make([]layout.FlexChild, 0, len(s.toolRows)*2)
+		for _, row := range s.toolRows {
+			row := row
+			c := color.NRGBA{}
+			if parsed, err := settings.ParseColor(row.ed.Text()); err == nil {
+				c = parsed
+			}
+			children = append(children, layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						gtx.Constraints.Min.X = gtx.Dp(84)
+						return s.label(material.Body2, row.label, fgColor)(gtx)
+					}),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						if c == (color.NRGBA{}) {
+							// Цвет не задан: пустая рамка вместо образца.
+							sz := gtx.Dp(28)
+							return layout.Dimensions{Size: image.Pt(sz, sz)}
+						}
+						return swatchBox(gtx, c, 28)
+					}),
+					layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						gtx.Constraints.Max.X = gtx.Dp(120)
+						gtx.Constraints.Min.X = gtx.Dp(120)
+						return s.field(&row.ed, "#RRGGBB")(gtx)
+					}),
+					layout.Rigid(layout.Spacer{Width: unit.Dp(12)}.Layout),
+					layout.Flexed(1, s.slider(row.sl)),
+				)
+			}))
+			if row.err != "" {
+				children = append(children, layout.Rigid(s.label(material.Caption, row.label+": "+row.err, errorColor)))
+			}
+			children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout))
+		}
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	}
+}
+
 // borderControls — ползунки рамки и поле цвета с образцом.
 func (s *state) borderControls() layout.Widget {
 	labeled := func(name string, sl *slider) layout.FlexChild {
@@ -381,16 +502,11 @@ func (s *state) borderControls() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		cfg := s.store.Get()
 		swatch := func(gtx layout.Context) layout.Dimensions {
-			sz := gtx.Dp(36)
 			c := cfg.BorderNRGBA()
 			if parsed, err := settings.ParseColor(s.bColor.Text()); err == nil {
 				c = parsed
 			}
-			rr := clip.UniformRRect(image.Rect(0, 0, sz, sz), gtx.Dp(6))
-			paint.FillShape(gtx.Ops, borderColor, rr.Op(gtx.Ops))
-			inner := clip.UniformRRect(image.Rect(gtx.Dp(2), gtx.Dp(2), sz-gtx.Dp(2), sz-gtx.Dp(2)), gtx.Dp(4))
-			paint.FillShape(gtx.Ops, c, inner.Op(gtx.Ops))
-			return layout.Dimensions{Size: image.Pt(sz, sz)}
+			return swatchBox(gtx, c, 36)
 		}
 		children := []layout.FlexChild{
 			labeled("Толщина", s.bWidth),
@@ -424,6 +540,15 @@ func (s *state) checkbox(b *widget.Bool, label string) layout.Widget {
 		cb.IconColor = accentColor
 	}
 	return cb.Layout
+}
+
+// toolChoiceRadios — выбор инструмента по умолчанию.
+func (s *state) toolChoiceRadios() layout.Widget {
+	items := make([]layout.Widget, len(settings.ToolNames))
+	for i, name := range settings.ToolNames {
+		items[i] = s.radio(&s.toolChoice, name, toolLabels[i])
+	}
+	return radios(items...)
 }
 
 // radios складывает варианты выбора в столбик.
@@ -494,6 +619,11 @@ func (s *state) items() []layout.Widget {
 			s.checkbox(&s.notify, "Показывать уведомления")),
 		s.row("Прошлая область", "Показывается сразу при запуске и по клавише R. Без неё «было/стало» не подставит область само.",
 			s.checkbox(&s.remember, "Запоминать область снимка")),
+		s.section("Инструменты"),
+		s.row("Инструмент после выбора области", "Включается сам, когда область выделена. «Выделение»: ничего не включать.",
+			s.toolChoiceRadios()),
+		s.row("Цвет и толщина по умолчанию", "Цвет #RRGGBB: пусто значит не менять. Цвет работает, пока вы сами не выбрали цвет в панели. Толщина для текста это размер, для размытия сила.",
+			s.toolControls()),
 		s.section("Вид"),
 		s.row("Рамка выделения", "Пунктир вокруг выбранной области.", s.borderControls()),
 		s.row("Размер области", "Подпись «ширина × высота» над левым верхним углом.",
