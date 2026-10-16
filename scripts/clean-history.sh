@@ -1,10 +1,11 @@
 #!/bin/sh
 # Готовит чистую историю для публикации в локальной ветке clean/main: убирает из
-# всех коммитов копию Gio (third_party/gio/) и заменяет личный email автора.
+# всех коммитов копию Gio (third_party/gio/), заменяет личный email автора и
+# стирает его же из текста файлов (заменой на old@example.com).
 # Исходные ветки и origin не меняются, ничего не пушится. Нужен git-filter-repo.
 #
 # Использование: scripts/clean-history.sh ИМЯ НОВЫЙ_EMAIL СТАРЫЙ_EMAIL [ВЕТКА]
-#   scripts/clean-history.sh jexme 22722008+jexme@users.noreply.github.com old@example.com
+#   scripts/clean-history.sh jexme 12345+jexme@users.noreply.github.com old@example.com
 # Ветка по умолчанию текущая. Результат: git push НОВЫЙ_РЕПОЗИТОРИЙ clean/main:main
 set -eu
 
@@ -17,12 +18,14 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 git clone -q --no-local --branch "$branch" --single-branch . "$tmp/clean"
 echo "$name <$new> <$old>" > "$tmp/mailmap"
-(cd "$tmp/clean" && git filter-repo --force --path third_party/gio/ --invert-paths --mailmap "$tmp/mailmap" 2>&1 | tail -1)
+echo "$old==>old@example.com" > "$tmp/replace"
+(cd "$tmp/clean" && git filter-repo --force --path third_party/gio/ --invert-paths --mailmap "$tmp/mailmap" --replace-text "$tmp/replace" 2>&1 | tail -1)
 
 # Проверки: копии Gio и старого адреса быть не должно.
 cd "$tmp/clean"
 if git log --name-only --format= | grep -q '^third_party/gio/'; then echo "в истории осталась копия Gio" >&2; exit 1; fi
 if git log --format='%ae %ce' | grep -q "$old"; then echo "в истории остался старый email" >&2; exit 1; fi
+if [ -n "$(git log --all -S"$old" --format=%h | head -n 1)" ]; then echo "старый email остался в тексте файлов" >&2; exit 1; fi
 cd - >/dev/null
 
 git fetch -q "$tmp/clean" "$branch"
