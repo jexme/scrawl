@@ -20,6 +20,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/jexme/screen-editor/internal/annotate"
+	"github.com/jexme/screen-editor/internal/settings"
 )
 
 // Размеры склейки в пикселях результата.
@@ -56,9 +57,50 @@ func loadPNGs(paths []string) ([]*image.RGBA, error) {
 	return out, nil
 }
 
-// compose склеивает картинки в ряд: одной высоты (по самой низкой, без
-// увеличения), с подписью сверху и тонкой рамкой.
-func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper) (*image.RGBA, error) {
+// composeSlot — место одной картинки в склейке: подпись и сама картинка.
+type composeSlot struct {
+	label image.Rectangle // область подписи
+	dst   image.Rectangle // область картинки
+}
+
+// composeSlots раскладывает картинки: рядом (одной высоты, по самой низкой) или
+// друг под другом (одной ширины, по самой узкой), без увеличения. Возвращает
+// места картинок и размер результата.
+func composeSlots(imgs []*image.RGBA, layout settings.GlueLayout) (slots []composeSlot, size image.Point) {
+	slots = make([]composeSlot, len(imgs))
+	if layout == settings.GlueStack {
+		wc := imgs[0].Bounds().Dx()
+		for _, im := range imgs {
+			wc = min(wc, im.Bounds().Dx())
+		}
+		y := composePad
+		for i, im := range imgs {
+			b := im.Bounds()
+			h := int(math.Round(float64(b.Dy()) * float64(wc) / float64(b.Dx())))
+			slots[i].label = image.Rect(composePad, y, composePad+wc, y+composeLabelH)
+			slots[i].dst = image.Rect(composePad, y+composeLabelH, composePad+wc, y+composeLabelH+h)
+			y += composeLabelH + h + composeGap
+		}
+		return slots, image.Pt(composePad*2+wc, y-composeGap+composePad)
+	}
+
+	hc := imgs[0].Bounds().Dy()
+	for _, im := range imgs {
+		hc = min(hc, im.Bounds().Dy())
+	}
+	x := composePad
+	for i, im := range imgs {
+		b := im.Bounds()
+		w := int(math.Round(float64(b.Dx()) * float64(hc) / float64(b.Dy())))
+		slots[i].label = image.Rect(x, composePad, x+w, composePad+composeLabelH)
+		slots[i].dst = image.Rect(x, composePad+composeLabelH, x+w, composePad+composeLabelH+hc)
+		x += w + composeGap
+	}
+	return slots, image.Pt(x-composeGap+composePad, composePad*2+composeLabelH+hc)
+}
+
+// compose склеивает картинки в одну: с подписью сверху у каждой и тонкой рамкой.
+func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper, glue settings.Glue) (*image.RGBA, error) {
 	if len(imgs) < 2 {
 		return nil, fmt.Errorf("для склейки нужно минимум две картинки, есть %d", len(imgs))
 	}
@@ -66,18 +108,8 @@ func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper) (*image.R
 		return nil, fmt.Errorf("подписей %d, картинок %d", len(labels), len(imgs))
 	}
 
-	hc := imgs[0].Bounds().Dy()
-	for _, im := range imgs {
-		hc = min(hc, im.Bounds().Dy())
-	}
-	widths := make([]int, len(imgs))
-	total := composePad*2 + composeGap*(len(imgs)-1)
-	for i, im := range imgs {
-		b := im.Bounds()
-		widths[i] = int(math.Round(float64(b.Dx()) * float64(hc) / float64(b.Dy())))
-		total += widths[i]
-	}
-	W, H := total, composePad*2+composeLabelH+hc
+	slots, size := composeSlots(imgs, glue.Layout)
+	W, H := size.X, size.Y
 
 	win, err := headless.NewWindow(W, H)
 	if err != nil {
@@ -93,15 +125,14 @@ func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper) (*image.R
 		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
 	}
 
-	x := composePad
 	for i, im := range imgs {
-		drawLabelCentered(gtx, shaper, labels[i], x, composePad, widths[i])
+		slot := slots[i]
+		drawLabelCentered(gtx, shaper, labels[i], slot.label.Min.X, slot.label.Min.Y, slot.label.Dx())
 
-		dst := image.Rect(x, composePad+composeLabelH, x+widths[i], composePad+composeLabelH+hc)
 		b := im.Bounds()
-		sx := float32(widths[i]) / float32(b.Dx())
-		sy := float32(hc) / float32(b.Dy())
-		aff := f32.Affine2D{}.Scale(f32.Pt(0, 0), f32.Pt(sx, sy)).Offset(f32.Pt(float32(dst.Min.X), float32(dst.Min.Y)))
+		sx := float32(slot.dst.Dx()) / float32(b.Dx())
+		sy := float32(slot.dst.Dy()) / float32(b.Dy())
+		aff := f32.Affine2D{}.Scale(f32.Pt(0, 0), f32.Pt(sx, sy)).Offset(f32.Pt(float32(slot.dst.Min.X), float32(slot.dst.Min.Y)))
 		st := op.Affine(aff).Push(&ops)
 		cl := clip.Rect(b).Push(&ops)
 		paint.NewImageOp(im).Add(&ops)
@@ -109,8 +140,7 @@ func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper) (*image.R
 		cl.Pop()
 		st.Pop()
 
-		strokeBox(&ops, dst, composeBorder, 2)
-		x += widths[i] + composeGap
+		strokeBox(&ops, slot.dst, composeBorder, 2)
 	}
 
 	if err := win.Frame(&ops); err != nil {

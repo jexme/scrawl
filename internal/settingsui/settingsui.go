@@ -66,8 +66,9 @@ type state struct {
 	palErr   string
 	palReset widget.Clickable
 
-	glue    [3]widget.Editor // подписи склейки: было, стало, шаг
-	glueErr [3]string
+	glueLayout widget.Enum      // расположение склейки: side, stack
+	glue       [3]widget.Editor // подписи склейки: было, стало, шаг
+	glueErr    [3]string
 
 	toolChoice widget.Enum // инструмент после выбора области
 	toolRows   []*toolRow
@@ -114,6 +115,7 @@ func newState(store *settings.Store) *state {
 		sl.Set(sl.get(cur))
 	}
 	s.initTools(cur)
+	s.glueLayout.Value = string(cur.Glue.Layout)
 	for i, v := range []string{cur.Glue.Before, cur.Glue.After, cur.Glue.Step} {
 		s.glue[i].SingleLine = true
 		s.glue[i].SetText(v)
@@ -222,6 +224,12 @@ func (s *state) apply(gtx layout.Context) {
 		s.applyPalette()
 	}
 
+	s.glueLayout.Update(gtx)
+	if want := settings.GlueLayout(s.glueLayout.Value); want != s.store.Get().Glue.Layout {
+		if err := s.store.Update(func(c *settings.Settings) { c.Glue.Layout = want }); err != nil {
+			s.dirErr = "Не удалось сохранить: " + err.Error()
+		}
+	}
 	for i := range s.glue {
 		if edited(gtx, &s.glue[i]) {
 			s.applyGlueLabel(i)
@@ -779,6 +787,11 @@ func (s *state) items() []layout.Widget {
 			s.paletteControls()),
 		s.row("Прозрачность маркера", "Чем больше процент, тем плотнее закраска.", s.slider(s.marker)),
 		s.section("Склейка «было/стало»"),
+		s.row("Расположение", "Картинки выравниваются по самой низкой (рядом) или по самой узкой (друг под другом).",
+			radios(
+				s.radio(&s.glueLayout, string(settings.GlueSide), "Рядом, слева направо"),
+				s.radio(&s.glueLayout, string(settings.GlueStack), "Друг под другом, сверху вниз"),
+			)),
 		s.row("Подписи над картинками", "Пусто: слова по умолчанию. При трёх и больше картинок к слову добавляется номер: «Шаг 1».",
 			s.glueControls()),
 		s.section("Вид"),

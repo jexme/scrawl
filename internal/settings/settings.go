@@ -90,7 +90,7 @@ type Settings struct {
 // Default возвращает настройки по умолчанию.
 func Default() Settings {
 	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
-		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, DefaultTool: "select", Palette: DefaultPalette, MarkerOpacity: 43}
+		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, DefaultTool: "select", Palette: DefaultPalette, MarkerOpacity: 43, Glue: DefaultGlue()}
 }
 
 // Path возвращает путь к файлу настроек.

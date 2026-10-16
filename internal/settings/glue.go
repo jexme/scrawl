@@ -13,7 +13,18 @@ type Glue struct {
 	Before string `json:"before,omitempty"` // первая из двух картинок
 	After  string `json:"after,omitempty"`  // вторая из двух картинок
 	Step   string `json:"step,omitempty"`   // слово перед номером, если картинок больше двух
+
+	// Layout — расположение картинок: рядом или друг под другом.
+	Layout GlueLayout `json:"layout"`
 }
+
+// GlueLayout — расположение картинок в склейке.
+type GlueLayout string
+
+const (
+	GlueSide  GlueLayout = "side"  // в ряд, слева направо (по умолчанию)
+	GlueStack GlueLayout = "stack" // в столбик, сверху вниз
+)
 
 const maxGlueLabel = 30
 
@@ -38,7 +49,13 @@ func ValidateGlueLabel(s string) error {
 	return nil
 }
 
+// DefaultGlue возвращает настройки склейки по умолчанию.
+func DefaultGlue() Glue { return Glue{Layout: GlueSide} }
+
 func (g *Glue) normalize() {
+	if g.Layout != GlueSide && g.Layout != GlueStack {
+		g.Layout = DefaultGlue().Layout
+	}
 	for _, p := range []*string{&g.Before, &g.After, &g.Step} {
 		if ValidateGlueLabel(*p) != nil {
 			*p = ""

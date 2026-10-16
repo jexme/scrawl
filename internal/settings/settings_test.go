@@ -482,3 +482,18 @@ func TestGlueLabels(t *testing.T) {
 		t.Error("31 знак — слишком длинная подпись")
 	}
 }
+
+func TestGlueLayout(t *testing.T) {
+	sandbox(t)
+	if got := Load().Glue.Layout; got != GlueSide {
+		t.Errorf("по умолчанию картинки рядом: %q", got)
+	}
+	writeConfig(t, `{"glue":{"layout":"stack"}}`)
+	if got := Load().Glue.Layout; got != GlueStack {
+		t.Errorf("stack должен читаться: %q", got)
+	}
+	writeConfig(t, `{"glue":{"layout":"diagonal","before":"До"}}`)
+	if got := Load().Glue; got.Layout != GlueSide || got.Before != "До" {
+		t.Errorf("неверное расположение сбрасывается, подписи остаются: %+v", got)
+	}
+}

@@ -72,7 +72,7 @@ func TestInitialStateReflectsFile(t *testing.T) {
 
 // TestRenderWindow рисует окно для просмотра глазами (SCREEN_EDITOR_TEST_OUT).
 func TestRenderWindow(t *testing.T) {
-	const W, H = 700, 2400
+	const W, H = 700, 3300
 	s := testState(t)
 	s.choice.Value = string(settings.DoubleClickCopy)
 
@@ -114,7 +114,7 @@ func TestContentScrollsInSmallWindow(t *testing.T) {
 	}
 
 	tall := testState(t)
-	tall.layout(frameContext(600, 4000))
+	tall.layout(frameContext(600, 12000))
 	if tall.list.Position.BeforeEnd || tall.list.Position.First != 0 {
 		t.Errorf("в высоком окне всё должно помещаться: %+v", tall.list.Position)
 	}
@@ -375,5 +375,17 @@ func TestGlueLabelsAreSavedToDisk(t *testing.T) {
 	s.layout(frameContext(700, 650))
 	if s.glueErr[1] == "" || settings.Load().Glue.After != "" {
 		t.Errorf("слишком длинная подпись должна отклоняться: ошибка=%q", s.glueErr[1])
+	}
+}
+
+func TestGlueLayoutIsSavedToDisk(t *testing.T) {
+	s := testState(t)
+	if s.glueLayout.Value != string(settings.GlueSide) {
+		t.Fatalf("по умолчанию рядом, в окне %q", s.glueLayout.Value)
+	}
+	s.glueLayout.Value = string(settings.GlueStack)
+	s.layout(frameContext(700, 650))
+	if got := settings.Load().Glue.Layout; got != settings.GlueStack {
+		t.Errorf("в файле %q", got)
 	}
 }
