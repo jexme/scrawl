@@ -14,14 +14,13 @@ func TestClipboardToolBySession(t *testing.T) {
 	sandbox(t) // подставляет поддельный wl-copy
 
 	// Wayland: wl-copy.
-	t.Setenv("WAYLAND_DISPLAY", "wayland-0")
-	t.Setenv("DISPLAY", ":0")
+	isX11 = func() bool { return false }
 	if name, args, err := clipboardTool("image/png"); err != nil || name != "wl-copy" || args[1] != "image/png" {
 		t.Errorf("Wayland: %q %v %v", name, args, err)
 	}
 
 	// X11 без xclip: понятная ошибка, а не молчание.
-	t.Setenv("WAYLAND_DISPLAY", "")
+	isX11 = func() bool { return true }
 	t.Setenv("PATH", t.TempDir())
 	if _, _, err := clipboardTool("image/png"); err == nil || !strings.Contains(err.Error(), "xclip") {
 		t.Errorf("без xclip нужна ошибка с подсказкой: %v", err)
@@ -64,7 +63,7 @@ func TestClipboardOnX11(t *testing.T) {
 	}
 	display := startXvfb(t)
 	t.Setenv("DISPLAY", display)
-	t.Setenv("WAYLAND_DISPLAY", "")
+	isX11 = func() bool { return true }
 
 	read := func(mime string) string {
 		out, err := exec.Command("xclip", "-display", display, "-selection", "clipboard", "-o", "-t", mime).Output()

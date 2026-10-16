@@ -25,7 +25,10 @@ func sandbox(t *testing.T) (home string) {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	// Тесты идут с поддельным wl-copy, поэтому сеанс считается Wayland, даже если
 	// их запустили под xvfb-run (там WAYLAND_DISPLAY пуст, и буфер пошёл бы через xclip).
-	t.Setenv("WAYLAND_DISPLAY", "wayland-0")
+	// Окружение не трогаем: от него зависит и выбор платформы EGL.
+	oldX11 := isX11
+	isX11 = func() bool { return false }
+	t.Cleanup(func() { isX11 = oldX11 })
 
 	bin := t.TempDir()
 	script := func(name, body string) {
