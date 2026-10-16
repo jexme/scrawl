@@ -1,0 +1,14 @@
+#!/bin/sh
+# Не даёт сделать коммит с личной почтой: в публичной истории должен быть только
+# адрес вида ...@users.noreply.github.com. Включается командой `make hooks`.
+allowed='(@users\.noreply\.github\.com|^noreply@github\.com)$'
+
+author=${GIT_AUTHOR_EMAIL:-$(git config user.email)}
+committer=${GIT_COMMITTER_EMAIL:-$(git config user.email)}
+for mail in "$author" "$committer"; do
+	if ! printf '%s\n' "$mail" | grep -Eq "$allowed"; then
+		echo "Коммит остановлен: адрес «$mail» не noreply. / Commit stopped: '$mail' is not a noreply address." >&2
+		echo "Исправить / Fix:  git config user.email 22722008+jexme@users.noreply.github.com" >&2
+		exit 1
+	fi
+done

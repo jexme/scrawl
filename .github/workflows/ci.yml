@@ -13,6 +13,16 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # для проверки адресов авторов по всей истории
+
+      # В публичной истории только noreply-адреса. Проверяем при пуше в main (чужие
+      # pull request приходят со своими адресами, их это не касается).
+      - name: Адреса авторов
+        if: github.event_name == 'push'
+        run: |
+          bad=$(git log --format='%h %ae %ce' | ALLOWED='(@users\.noreply\.github\.com|^noreply@github\.com)$' awk '$2 !~ ENVIRON["ALLOWED"] || $3 !~ ENVIRON["ALLOWED"]')
+          if [ -n "$bad" ]; then echo "Коммиты с личным адресом:"; echo "$bad"; exit 1; fi
 
       - uses: actions/setup-go@v6
         with:

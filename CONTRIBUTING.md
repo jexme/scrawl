@@ -28,6 +28,11 @@ GOOS=windows CGO_ENABLED=0 go vet ./...    # the Windows build must keep compili
 CI (`.github/workflows/ci.yml`) runs the same checks plus `gofmt`. Please run `gofmt -w` and `go vet ./...` before
 sending a change.
 
+## Maintainer: keep personal e-mail out of the history
+
+`make hooks` turns on `.githooks/`: a pre-commit check and a pre-push check that refuse any author or committer
+address that is not a `...@users.noreply.github.com` one. CI repeats the check on every push to `main`.
+
 ## Where things are
 
 | Path | What it does |

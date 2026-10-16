@@ -20,7 +20,7 @@ BINDIR ?= $(PREFIX)/bin
 APPDIR ?= $(PREFIX)/share/applications
 DESKTOP := io.github.jexme.Scrawl.desktop
 
-.PHONY: all gio build test notices install uninstall dist clean
+.PHONY: all gio build test notices install uninstall dist hooks clean
 
 all: build
 
@@ -66,6 +66,11 @@ dist: build
 	tar -C $(DIST) --owner=0 --group=0 -czf $(DIST)/$(PKG).tar.gz $(PKG)
 	cd $(DIST) && sha256sum $(PKG).tar.gz > $(PKG).tar.gz.sha256
 	@echo "Готово: $(DIST)/$(PKG).tar.gz"
+
+# Включает проверки перед коммитом и отправкой: в историю не должна попасть личная почта.
+hooks:
+	git config core.hooksPath .githooks
+	@echo "Хуки включены: адрес автора проверяется перед коммитом и перед push."
 
 clean:
 	rm -rf bin $(DIST)

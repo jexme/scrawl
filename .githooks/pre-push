@@ -1,0 +1,23 @@
+#!/bin/sh
+# Перед отправкой проверяет адреса авторов и коммитеров в коммитах, которых ещё нет
+# на сервере. Так личная почта не попадёт в историю, даже если коммит сделан в обход
+# pre-commit (например, --no-verify или другим клиентом).
+allowed='(@users\.noreply\.github\.com|^noreply@github\.com)$'
+zero=0000000000000000000000000000000000000000
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+	[ "$local_sha" = "$zero" ] && continue # удаление ветки
+	if [ "$remote_sha" = "$zero" ]; then
+		range="$local_sha --not --remotes=$1"
+	else
+		range="$remote_sha..$local_sha"
+	fi
+	# shellcheck disable=SC2086
+	bad=$(git log --format='%h %ae %ce' $range | ALLOWED="$allowed" awk '$2 !~ ENVIRON["ALLOWED"] || $3 !~ ENVIRON["ALLOWED"]')
+	if [ -n "$bad" ]; then
+		echo "Отправка остановлена: в коммитах не noreply-адрес. / Push stopped: commits with a non-noreply address:" >&2
+		echo "$bad" >&2
+		echo "Переписать автора / Rewrite the author: scripts/clean-history.sh (see CONTRIBUTING.md)" >&2
+		exit 1
+	fi
+done
