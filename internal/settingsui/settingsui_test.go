@@ -348,3 +348,15 @@ func TestPaletteIsSavedToDisk(t *testing.T) {
 		t.Errorf("кнопка должна вернуть палитру по умолчанию: %v, поле %q", settings.Load().Palette, s.palEd[0].Text())
 	}
 }
+
+func TestMarkerOpacitySliderIsSavedToDisk(t *testing.T) {
+	s := testState(t)
+	if s.marker.Value() != 43 {
+		t.Fatalf("по умолчанию 43%%, в окне %v", s.marker.Value())
+	}
+	s.marker.Set(70)
+	s.layout(frameContext(700, 650))
+	if got := settings.Load().MarkerOpacity; got != 70 {
+		t.Errorf("в файле %d, ожидали 70", got)
+	}
+}

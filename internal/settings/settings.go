@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"math"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -78,6 +79,8 @@ type Settings struct {
 	Tools ToolStyles `json:"tools"`
 	// Palette — цвета панели инструментов, #RRGGBB.
 	Palette [PaletteSize]string `json:"palette"`
+	// MarkerOpacity — непрозрачность маркера, 5-100 %.
+	MarkerOpacity int `json:"marker_opacity"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
@@ -85,7 +88,7 @@ type Settings struct {
 // Default возвращает настройки по умолчанию.
 func Default() Settings {
 	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
-		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, DefaultTool: "select", Palette: DefaultPalette}
+		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, DefaultTool: "select", Palette: DefaultPalette, MarkerOpacity: 43}
 }
 
 // Path возвращает путь к файлу настроек.
@@ -122,6 +125,7 @@ func (s *Settings) normalize() {
 	}
 	s.Tools.normalize()
 	normalizePalette(&s.Palette)
+	s.MarkerOpacity = min(max(s.MarkerOpacity, MinMarkerOpacity), 100)
 	s.HandleRadius = min(max(s.HandleRadius, 0), MaxHandleRadius)
 	if c, err := ParseColor(s.BorderColor); err == nil {
 		s.BorderColor = FormatColor(c)
@@ -312,6 +316,14 @@ func (s Settings) BorderNRGBA() color.NRGBA {
 		c, _ = ParseColor(Default().BorderColor)
 	}
 	return c
+}
+
+// MinMarkerOpacity — наименьшая непрозрачность маркера в процентах: ниже его не видно.
+const MinMarkerOpacity = 5
+
+// MarkerAlpha возвращает непрозрачность маркера как альфа-канал 0-255.
+func (s Settings) MarkerAlpha() uint8 {
+	return uint8(math.Round(float64(s.MarkerOpacity) * 255 / 100))
 }
 
 // DefaultFilePrefix — начало имени файла, если своё не задано.

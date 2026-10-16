@@ -615,7 +615,7 @@ func (m *monitor) press(p f32.Point) {
 		m.ed.SetText("")
 		m.focusEditor = true
 	case annotate.ToolPen, annotate.ToolMarker:
-		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p}}
+		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p}, Alpha: m.store.Get().MarkerAlpha()}
 	default:
 		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p, p}}
 	}

@@ -194,3 +194,25 @@ func TestPaletteFromSettings(t *testing.T) {
 		t.Errorf("остальные цвета по умолчанию: %+v", m.palette[1])
 	}
 }
+
+func TestMarkerOpacityFromSettings(t *testing.T) {
+	sandbox(t)
+	m, _ := newTestMonitor(t)
+	m.press(f32.Pt(50, 50))
+	m.release(f32.Pt(300, 250))
+	m.setTool(annotate.ToolMarker)
+
+	m.press(f32.Pt(100, 100))
+	if m.cur == nil || m.cur.Alpha != 110 {
+		t.Fatalf("маркер по умолчанию: альфа 110, получили %+v", m.cur)
+	}
+	m.release(f32.Pt(200, 100))
+
+	if err := m.store.Update(func(s *settings.Settings) { s.MarkerOpacity = 80 }); err != nil {
+		t.Fatal(err)
+	}
+	m.press(f32.Pt(100, 150))
+	if m.cur == nil || m.cur.Alpha != 204 {
+		t.Errorf("80%% это альфа 204: %+v", m.cur)
+	}
+}

@@ -60,6 +60,7 @@ type state struct {
 	bDash    *slider     // рамка: штрих
 	bGap     *slider     // рамка: пауза
 	handle   *slider     // радиус угловых ручек
+	marker   *slider     // непрозрачность маркера
 
 	palEd    [settings.PaletteSize]widget.Editor // цвета панели
 	palErr   string
@@ -94,6 +95,9 @@ func newState(store *settings.Store) *state {
 	s.bGap = s.addSlider(0, 12, 0.5, px,
 		func(c settings.Settings) float64 { return c.BorderGap },
 		func(c *settings.Settings, v float64) { c.BorderGap = v })
+	s.marker = s.addSlider(settings.MinMarkerOpacity, 100, 1, func(v float64) string { return fmt.Sprintf("%.0f%%", v) },
+		func(c settings.Settings) float64 { return float64(c.MarkerOpacity) },
+		func(c *settings.Settings, v float64) { c.MarkerOpacity = int(v) })
 	s.handle = s.addSlider(0, settings.MaxHandleRadius, 0.5, func(v float64) string {
 		if v == 0 {
 			return "нет"
@@ -716,6 +720,7 @@ func (s *state) items() []layout.Widget {
 			s.toolControls()),
 		s.row("Цвета панели", "Восемь цветов в панели инструментов, #RRGGBB. Пустое поле: цвет по умолчанию. Применяется при следующем снимке.",
 			s.paletteControls()),
+		s.row("Прозрачность маркера", "Чем больше процент, тем плотнее закраска.", s.slider(s.marker)),
 		s.section("Вид"),
 		s.row("Рамка выделения", "Пунктир вокруг выбранной области.", s.borderControls()),
 		s.row("Размер области", "Подпись «ширина × высота» над левым верхним углом.",

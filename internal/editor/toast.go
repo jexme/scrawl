@@ -108,7 +108,7 @@ func (m *monitor) layoutToast(gtx layout.Context, win image.Point, selWin image.
 	if sample {
 		col := m.color
 		if m.toastTool == annotate.ToolMarker {
-			col.A = 110
+			col.A = m.store.Get().MarkerAlpha()
 		}
 		var p clip.Path
 		p.Begin(gtx.Ops)

@@ -428,3 +428,24 @@ func TestPalette(t *testing.T) {
 		t.Errorf("пятый цвет по умолчанию: %+v", c)
 	}
 }
+
+func TestMarkerOpacity(t *testing.T) {
+	sandbox(t)
+	if got := Load(); got.MarkerOpacity != 43 || got.MarkerAlpha() != 110 {
+		t.Errorf("по умолчанию 43%% (альфа 110): %d%%, альфа %d", got.MarkerOpacity, got.MarkerAlpha())
+	}
+	for body, want := range map[string]int{
+		`{"marker_opacity":100}`: 100,
+		`{"marker_opacity":0}`:   MinMarkerOpacity,
+		`{"marker_opacity":500}`: 100,
+		`{"marker_opacity":"x"}`: 43,
+	} {
+		writeConfig(t, body)
+		if got := Load().MarkerOpacity; got != want {
+			t.Errorf("%s: получили %d, ожидали %d", body, got, want)
+		}
+	}
+	if a := (Settings{MarkerOpacity: 100}).MarkerAlpha(); a != 255 {
+		t.Errorf("100%% это альфа 255, а не %d", a)
+	}
+}

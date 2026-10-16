@@ -60,7 +60,12 @@ type Shape struct {
 	Width float32     // толщина линии, пиксели кадра
 	Pts   []f32.Point // ключевые точки
 	Text  string      // только для ToolText
+	// Alpha — непрозрачность маркера, 1-255; 0 означает DefaultMarkerAlpha.
+	Alpha uint8
 }
+
+// DefaultMarkerAlpha — непрозрачность маркера, если не задана иначе (43%).
+const DefaultMarkerAlpha = 110
 
 // TextSize возвращает размер шрифта текстовой аннотации в пикселях кадра.
 func TextSize(width float32) float32 { return 12 + width*3 }
@@ -118,7 +123,10 @@ func (s Shape) Draw(ops *op.Ops, env Env) {
 		}
 	case ToolMarker:
 		c := s.Color
-		c.A = 110
+		c.A = s.Alpha
+		if c.A == 0 {
+			c.A = DefaultMarkerAlpha
+		}
 		stroke(ops, c, s.Width*4, s.Pts...)
 	case ToolBlur:
 		s.drawBlur(ops, env)
