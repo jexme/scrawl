@@ -3,6 +3,7 @@
 package settingsui
 
 import (
+	"image"
 	"image/color"
 	"os"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/text"
 	"gioui.org/unit"
@@ -42,6 +44,7 @@ type state struct {
 	dir    widget.Editor
 	reset  widget.Clickable
 	close  widget.Clickable
+	list   widget.List // прокрутка содержимого
 
 	dirErr string
 }
@@ -52,6 +55,7 @@ func newState(store *settings.Store) *state {
 	th.Palette = material.Palette{Bg: bgColor, Fg: fgColor, ContrastBg: accentColor, ContrastFg: color.NRGBA{R: 255, G: 255, B: 255, A: 255}}
 
 	s := &state{th: th, store: store}
+	s.list.Axis = layout.Vertical
 	cur := store.Get()
 	s.choice.Value = string(cur.DoubleClick)
 	s.dir.SingleLine = true
@@ -71,7 +75,7 @@ func Run(store *settings.Store) {
 
 func loop(s *state) {
 	w := new(app.Window)
-	w.Option(app.Title("Screen Editor: настройки"), app.Size(unit.Dp(560), unit.Dp(520)))
+	w.Option(app.Title("Screen Editor: настройки"), app.Size(unit.Dp(600), unit.Dp(600)), app.MinSize(unit.Dp(420), unit.Dp(300)))
 	var ops op.Ops
 	for {
 		switch e := w.Event().(type) {
@@ -139,87 +143,133 @@ func (s *state) applyDir(dir string) {
 	}
 }
 
-func (s *state) layout(gtx layout.Context) layout.Dimensions {
-	s.apply(gtx)
+// row — одна настройка: название, пояснение и элемент управления.
+func (s *state) row(name, hint string, control layout.Widget) layout.Widget {
+	return func(gtx layout.Context) layout.Dimensions {
+		children := []layout.FlexChild{layout.Rigid(s.label(material.Body1, name, fgColor))}
+		if hint != "" {
+			children = append(children, layout.Rigid(s.label(material.Caption, hint, mutedColor)))
+		}
+		if control != nil {
+			children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout), layout.Rigid(control))
+		}
+		children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(18)}.Layout))
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	}
+}
+
+// section — заголовок раздела с линией под ним.
+func (s *state) section(name string) layout.Widget {
+	return func(gtx layout.Context) layout.Dimensions {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(s.label(material.Subtitle1, name, accentColor)),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				h := gtx.Dp(1)
+				paint.FillShape(gtx.Ops, borderColor, clip.Rect{Max: image.Pt(gtx.Constraints.Max.X, h)}.Op())
+				return layout.Dimensions{Size: image.Pt(gtx.Constraints.Max.X, h)}
+			}),
+			layout.Rigid(layout.Spacer{Height: unit.Dp(12)}.Layout),
+		)
+	}
+}
+
+// label делает текстовый виджет заданного стиля и цвета.
+func (s *state) label(style func(*material.Theme, string) material.LabelStyle, txt string, c color.NRGBA) layout.Widget {
+	l := style(s.th, txt)
+	l.Color = c
+	return l.Layout
+}
+
+func (s *state) radio(key, label string) layout.Widget {
+	rb := material.RadioButton(s.th, &s.choice, key, label)
+	rb.Color = fgColor
+	// Выбранный вариант синий, остальные светло-серые: на тёмном фоне иначе не видно.
+	rb.IconColor = mutedColor
+	if s.choice.Value == key {
+		rb.IconColor = accentColor
+	}
+	return rb.Layout
+}
+
+// radios складывает варианты выбора в столбик.
+func radios(items ...layout.Widget) layout.Widget {
+	return func(gtx layout.Context) layout.Dimensions {
+		children := make([]layout.FlexChild, len(items))
+		for i, w := range items {
+			children[i] = layout.Rigid(w)
+		}
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	}
+}
+
+// items — содержимое прокручиваемой части окна: разделы и настройки по порядку.
+func (s *state) items() []layout.Widget {
 	th := s.th
 
-	heading := material.H6(th, "Настройки")
-	heading.Color = fgColor
-	muted := func(txt string) layout.Widget {
-		l := material.Caption(th, txt)
-		l.Color = mutedColor
-		return l.Layout
-	}
-	title := func(txt string) layout.Widget {
-		l := material.Body1(th, txt)
-		l.Color = fgColor
-		return l.Layout
-	}
-	gap := func(dp int) layout.FlexChild {
-		return layout.Rigid(layout.Spacer{Height: unit.Dp(dp)}.Layout)
-	}
-	radio := func(key, label string) layout.FlexChild {
-		rb := material.RadioButton(th, &s.choice, key, label)
-		rb.Color = fgColor
-		// Выбранный вариант синий, остальные светло-серые: на тёмном фоне иначе не видно.
-		rb.IconColor = mutedColor
-		if s.choice.Value == key {
-			rb.IconColor = accentColor
-		}
-		return layout.Rigid(rb.Layout)
-	}
-
-	children := []layout.FlexChild{
-		layout.Rigid(heading.Layout),
-		gap(18),
-		layout.Rigid(title("Двойной клик внутри выделения")),
-		layout.Rigid(muted("Работает с инструментом «выделение», не на рамке.")),
-		gap(6),
-		radio(string(settings.DoubleClickOff), "Ничего"),
-		radio(string(settings.DoubleClickCopy), "Копировать в буфер обмена"),
-		radio(string(settings.DoubleClickCopySave), "Копировать и сохранить в файл"),
-		gap(22),
-		layout.Rigid(title("Папка для скриншотов")),
-		layout.Rigid(muted("Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь.")),
-		gap(8),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return widget.Border{Color: borderColor, CornerRadius: unit.Dp(6), Width: unit.Dp(1)}.Layout(gtx,
-				func(gtx layout.Context) layout.Dimensions {
-					return layout.UniformInset(unit.Dp(10)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-						ed := material.Editor(th, &s.dir, "~/Pictures/Screenshots")
-						ed.Color = fgColor
-						ed.HintColor = mutedColor
-						return ed.Layout(gtx)
+	dirField := func(gtx layout.Context) layout.Dimensions {
+		children := []layout.FlexChild{
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return widget.Border{Color: borderColor, CornerRadius: unit.Dp(6), Width: unit.Dp(1)}.Layout(gtx,
+					func(gtx layout.Context) layout.Dimensions {
+						return layout.UniformInset(unit.Dp(10)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							ed := material.Editor(th, &s.dir, "~/Pictures/Screenshots")
+							ed.Color = fgColor
+							ed.HintColor = mutedColor
+							return ed.Layout(gtx)
+						})
 					})
-				})
-		}),
-	}
-	if s.dirErr != "" {
-		errLabel := material.Caption(th, s.dirErr)
-		errLabel.Color = errorColor
-		children = append(children, gap(6), layout.Rigid(errLabel.Layout))
-	}
-	children = append(children,
-		gap(8),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			}),
+		}
+		if s.dirErr != "" {
+			children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout), layout.Rigid(s.label(material.Caption, s.dirErr, errorColor)))
+		}
+		children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout), layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			b := material.Button(th, &s.reset, "По умолчанию")
 			b.Background = borderColor
 			return b.Layout(gtx)
-		}),
-		gap(22),
-		layout.Rigid(title("О программе")),
-		layout.Rigid(muted("Screen Editor "+version.String()+" · "+version.Home)),
-		layout.Flexed(1, layout.Spacer{}.Layout),
-		layout.Rigid(muted("Изменения применяются сразу. Файл: "+settings.Path())),
-		gap(10),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			b := material.Button(th, &s.close, "Закрыть")
-			b.Background = accentColor
-			return b.Layout(gtx)
-		}),
-	)
+		}))
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	}
+
+	return []layout.Widget{
+		s.section("Действия"),
+		s.row("Двойной клик внутри выделения", "Работает с инструментом «выделение», не на рамке.",
+			radios(
+				s.radio(string(settings.DoubleClickOff), "Ничего"),
+				s.radio(string(settings.DoubleClickCopy), "Копировать в буфер обмена"),
+				s.radio(string(settings.DoubleClickCopySave), "Копировать и сохранить в файл"),
+			)),
+		s.section("Сохранение"),
+		s.row("Папка для скриншотов", "Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь.", dirField),
+		s.section("О программе"),
+		s.row("Screen Editor "+version.String(), version.Home, nil),
+	}
+}
+
+func (s *state) layout(gtx layout.Context) layout.Dimensions {
+	s.apply(gtx)
+	th := s.th
+	items := s.items()
 
 	return layout.UniformInset(unit.Dp(22)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(s.label(material.H6, "Настройки", fgColor)),
+			layout.Rigid(layout.Spacer{Height: unit.Dp(14)}.Layout),
+			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+				list := material.List(th, &s.list)
+				return list.Layout(gtx, len(items), func(gtx layout.Context, i int) layout.Dimensions {
+					// Справа место под полосу прокрутки, чтобы она не лежала на элементах.
+					return layout.Inset{Right: unit.Dp(14)}.Layout(gtx, items[i])
+				})
+			}),
+			layout.Rigid(layout.Spacer{Height: unit.Dp(10)}.Layout),
+			layout.Rigid(s.label(material.Caption, "Изменения применяются сразу. Файл: "+settings.Path(), mutedColor)),
+			layout.Rigid(layout.Spacer{Height: unit.Dp(10)}.Layout),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				b := material.Button(th, &s.close, "Закрыть")
+				b.Background = accentColor
+				return b.Layout(gtx)
+			}),
+		)
 	})
 }

@@ -95,3 +95,24 @@ func TestRenderWindow(t *testing.T) {
 		png.Encode(f, out)
 	}
 }
+
+// TestContentScrollsInSmallWindow: в низком окне содержимое не обрезается, а
+// прокручивается; в высоком влезает целиком.
+func TestContentScrollsInSmallWindow(t *testing.T) {
+	small := testState(t)
+	small.layout(frameContext(600, 380))
+	if !small.list.Position.BeforeEnd {
+		t.Error("в низком окне часть настроек должна быть ниже видимой области")
+	}
+	small.list.ScrollTo(len(small.items()) - 1)
+	small.layout(frameContext(600, 380))
+	if small.list.Position.BeforeEnd {
+		t.Errorf("после прокрутки к последнему разделу конец списка должен быть виден: %+v", small.list.Position)
+	}
+
+	tall := testState(t)
+	tall.layout(frameContext(600, 1200))
+	if tall.list.Position.BeforeEnd || tall.list.Position.First != 0 {
+		t.Errorf("в высоком окне всё должно помещаться: %+v", tall.list.Position)
+	}
+}
