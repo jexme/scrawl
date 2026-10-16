@@ -37,15 +37,17 @@ Wayland의 GNOME에서는 앱이 화면을 직접 캡처할 수 없고 데스크
 
 ## 상태
 
-활발히 개발 중인 개인 프로젝트입니다. **아직 릴리스가 없으므로** 지금은 소스에서 빌드해야 합니다(몇 분이면 됩니다). Wayland의 GNOME(Linux)만 지원합니다. Windows용은 빌드는 되지만 화면 캡처는 아직 작성되지 않았습니다. 자세한 내용은 [docs/WINDOWS.md](../WINDOWS.md)를 참고하세요.
+활발히 개발 중인 개인 프로젝트입니다. **아직 릴리스가 없으므로** 지금은 소스에서 빌드해야 합니다(몇 분이면 됩니다). 주요 대상은 Wayland의 GNOME(Linux)입니다. **X11** 세션(Xorg의 GNOME, KDE, XFCE 등)에서도 동작하지만, 이 지원은 새것이고 지금까지 가상 X 서버에서만 테스트했습니다. 실제 기기에서의 제보를 환영합니다. Windows용은 빌드는 되지만 화면 캡처는 아직 작성되지 않았습니다. 자세한 내용은 [docs/WINDOWS.md](../WINDOWS.md)를 참고하세요.
 
 ## 요구 사항
 
 - PipeWire를 쓰는 Wayland의 GNOME, `xdg-desktop-portal`(1.21 이상, 앱 등록 지원 필요), `xdg-desktop-portal-gnome`. 개발과 테스트는 Ubuntu와 GNOME 50에서 했습니다.
-- 클립보드용 `wl-clipboard`(`wl-copy` 명령)와 알림용 `libnotify`(`notify-send` 명령):
+- 클립보드용 `wl-clipboard`(`wl-copy` 명령)와 알림용 `libnotify`(`notify-send` 명령).
+- **X11**에는 포털이 없어 화면을 직접 캡처하며, 클립보드에는 `wl-clipboard` 대신 `xclip`이 필요합니다.
 
 ```bash
-sudo apt install wl-clipboard libnotify-bin
+sudo apt install wl-clipboard libnotify-bin   # Wayland
+sudo apt install xclip libnotify-bin          # X11
 ```
 
 ## 설치
@@ -77,6 +79,8 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 `~/.local/bin`이 `PATH`에 들어 있는지 확인하세요.
 
 ### 2. 처음 실행: 한 번만 하는 세 단계
+
+*X11에서는 1, 2단계가 필요 없고(포털이 없습니다) 단축키만 설정하면 됩니다.*
 
 설정 창(`scrawl -settings`)의 버튼을 쓰거나 명령을 실행하세요:
 

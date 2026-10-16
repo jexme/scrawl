@@ -6,7 +6,7 @@
  	Focused bool
 +	// OutputPos, if not nil, selects the monitor whose top-left corner is at
 +	// this position in the compositor's coordinate space for Fullscreen mode.
-+	// Supported on Wayland only; ignored elsewhere.
++	// Supported on Wayland and X11; ignored elsewhere.
 +	OutputPos *image.Point
  	// decoHeight is the height of the fallback decoration for platforms such
  	// as Wayland that may need fallback client-side decorations.
@@ -68,7 +68,7 @@
  
 +// FullscreenAt sets the Fullscreen mode on the monitor whose top-left corner
 +// is at (x, y) in the compositor's coordinate space. It is supported on
-+// Wayland only; other platforms behave like Fullscreen.
++// Wayland and X11; other platforms behave like Fullscreen.
 +func FullscreenAt(x, y int) Option {
 +	return func(_ unit.Metric, cnf *Config) {
 +		cnf.Mode = Fullscreen
@@ -79,3 +79,19 @@
  // TopMost windows will be rendered above all other non-top-most windows.
  //
  // TopMost windows are supported on macOS, Windows.
+--- a/app/os_x11.go
++++ b/app/os_x11.go
+@@ -184,6 +184,13 @@
+ 			fallthrough
+ 		default:
+ 			w.config.Mode = Fullscreen
++			// Move the window onto the requested monitor first: the window
++			// manager makes it fullscreen on the monitor it currently covers.
++			// Requests of one client are handled in order, so the move is
++			// seen before the state change.
++			if pos := cnf.OutputPos; pos != nil {
++				C.XMoveWindow(w.x, w.xw, C.int(pos.X), C.int(pos.Y))
++			}
+ 			w.sendWMStateEvent(_NET_WM_STATE_ADD, w.atoms.wmStateFullscreen, 0)
+ 		}
+ 	case Minimized:

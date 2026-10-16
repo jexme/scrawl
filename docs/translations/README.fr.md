@@ -37,15 +37,17 @@ Sous GNOME avec Wayland, les applications ne peuvent pas capturer l'écran direc
 
 ## État
 
-Projet personnel en développement actif. **Aucune version n'a encore été publiée** : pour l'instant il faut le compiler depuis les sources (quelques minutes). Uniquement Linux avec GNOME sous Wayland. Une version Windows compile, mais la capture d'écran n'est pas encore écrite ; voir [docs/WINDOWS.md](../WINDOWS.md).
+Projet personnel en développement actif. **Aucune version n'a encore été publiée** : pour l'instant il faut le compiler depuis les sources (quelques minutes). La cible principale est GNOME sous Wayland (Linux) ; les sessions **X11** (GNOME sur Xorg, KDE, XFCE et d'autres) fonctionnent aussi, mais ce support est récent et n'a été testé jusqu'ici que sur un serveur X virtuel ; les retours de vraies machines sont les bienvenus. Une version Windows compile, mais la capture d'écran n'est pas encore écrite ; voir [docs/WINDOWS.md](../WINDOWS.md).
 
 ## Prérequis
 
 - GNOME sous Wayland avec PipeWire, `xdg-desktop-portal` (1.21 ou plus récent, avec l'enregistrement des applications) et `xdg-desktop-portal-gnome`. Développé et testé sous Ubuntu avec GNOME 50.
-- `wl-clipboard` (la commande `wl-copy`) pour le presse-papiers et `libnotify` (la commande `notify-send`) pour les notifications :
+- `wl-clipboard` (la commande `wl-copy`) pour le presse-papiers et `libnotify` (la commande `notify-send`) pour les notifications .
+- Sous **X11** il n'y a pas de portail : l'écran est capturé directement, et le presse-papiers demande `xclip` au lieu de `wl-clipboard`.
 
 ```bash
-sudo apt install wl-clipboard libnotify-bin
+sudo apt install wl-clipboard libnotify-bin   # Wayland
+sudo apt install xclip libnotify-bin          # X11
 ```
 
 ## Installation
@@ -77,6 +79,8 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 Vérifiez que `~/.local/bin` figure dans votre `PATH`.
 
 ### 2. Premier lancement : trois étapes, une seule fois
+
+*Sous X11, les étapes 1 et 2 ne sont pas nécessaires (pas de portail), seul le raccourci l'est.*
 
 Ouvrez la fenêtre de réglages (`scrawl -settings`) et utilisez ces boutons, ou lancez les commandes :
 

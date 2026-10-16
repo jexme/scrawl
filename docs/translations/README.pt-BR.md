@@ -37,15 +37,17 @@ No GNOME com Wayland, os aplicativos não conseguem capturar a tela diretamente:
 
 ## Status
 
-Projeto pessoal em desenvolvimento ativo. **Ainda não há nenhuma versão publicada**, então por enquanto é preciso compilar a partir do código-fonte (leva alguns minutos). Apenas Linux com GNOME no Wayland. Existe uma compilação para Windows, mas a captura de tela ainda não foi escrita; veja [docs/WINDOWS.md](../WINDOWS.md).
+Projeto pessoal em desenvolvimento ativo. **Ainda não há nenhuma versão publicada**, então por enquanto é preciso compilar a partir do código-fonte (leva alguns minutos). O alvo principal é o GNOME no Wayland (Linux); as sessões **X11** (GNOME no Xorg, KDE, XFCE e outras) também funcionam, mas esse suporte é novo e até agora só foi testado em um servidor X virtual; relatos de máquinas reais são bem-vindos. Existe uma compilação para Windows, mas a captura de tela ainda não foi escrita; veja [docs/WINDOWS.md](../WINDOWS.md).
 
 ## Requisitos
 
 - GNOME no Wayland com PipeWire, `xdg-desktop-portal` (1.21 ou mais recente, com suporte ao registro de aplicativos) e `xdg-desktop-portal-gnome`. Desenvolvido e testado no Ubuntu com GNOME 50.
-- `wl-clipboard` (o comando `wl-copy`) para a área de transferência e `libnotify` (o comando `notify-send`) para as notificações:
+- `wl-clipboard` (o comando `wl-copy`) para a área de transferência e `libnotify` (o comando `notify-send`) para as notificações.
+- No **X11** não há portal: a tela é capturada diretamente e a área de transferência precisa do `xclip` em vez do `wl-clipboard`.
 
 ```bash
-sudo apt install wl-clipboard libnotify-bin
+sudo apt install wl-clipboard libnotify-bin   # Wayland
+sudo apt install xclip libnotify-bin          # X11
 ```
 
 ## Instalação
@@ -77,6 +79,8 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 Confira se `~/.local/bin` está no seu `PATH`.
 
 ### 2. Primeira execução: três passos, uma única vez
+
+*No X11 os passos 1 e 2 não são necessários (não há portal), apenas a tecla de atalho.*
 
 Abra a janela de configurações (`scrawl -settings`) e use estes botões, ou execute os comandos:
 

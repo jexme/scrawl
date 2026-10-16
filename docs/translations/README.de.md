@@ -37,15 +37,17 @@ Unter GNOME mit Wayland können Programme den Bildschirm nicht direkt aufnehmen:
 
 ## Status
 
-Ein persönliches Projekt in aktiver Entwicklung. **Es gibt noch keine veröffentlichte Version**, daher muss man es vorerst aus dem Quellcode bauen (das dauert ein paar Minuten). Nur Linux mit GNOME unter Wayland. Ein Windows-Build lässt sich kompilieren, die Bildschirmaufnahme dafür ist aber noch nicht geschrieben; siehe [docs/WINDOWS.md](../WINDOWS.md).
+Ein persönliches Projekt in aktiver Entwicklung. **Es gibt noch keine veröffentlichte Version**, daher muss man es vorerst aus dem Quellcode bauen (das dauert ein paar Minuten). Hauptziel ist GNOME unter Wayland (Linux); **X11**-Sitzungen (GNOME unter Xorg, KDE, XFCE und andere) funktionieren ebenfalls, doch diese Unterstützung ist neu und bisher nur auf einem virtuellen X-Server getestet; Rückmeldungen von echten Rechnern sind willkommen. Ein Windows-Build lässt sich kompilieren, die Bildschirmaufnahme dafür ist aber noch nicht geschrieben; siehe [docs/WINDOWS.md](../WINDOWS.md).
 
 ## Voraussetzungen
 
 - GNOME unter Wayland mit PipeWire, `xdg-desktop-portal` (ab 1.21, mit Unterstützung für die Registrierung von Anwendungen) und `xdg-desktop-portal-gnome`. Entwickelt und getestet unter Ubuntu mit GNOME 50.
-- `wl-clipboard` (der Befehl `wl-copy`) für die Zwischenablage und `libnotify` (der Befehl `notify-send`) für Benachrichtigungen:
+- `wl-clipboard` (der Befehl `wl-copy`) für die Zwischenablage und `libnotify` (der Befehl `notify-send`) für Benachrichtigungen.
+- Unter **X11** gibt es kein Portal: Der Bildschirm wird direkt aufgenommen, und für die Zwischenablage braucht man `xclip` statt `wl-clipboard`.
 
 ```bash
-sudo apt install wl-clipboard libnotify-bin
+sudo apt install wl-clipboard libnotify-bin   # Wayland
+sudo apt install xclip libnotify-bin          # X11
 ```
 
 ## Installation
@@ -77,6 +79,8 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 Stellen Sie sicher, dass `~/.local/bin` in Ihrem `PATH` liegt.
 
 ### 2. Erster Start: drei einmalige Schritte
+
+*Unter X11 sind die Schritte 1 und 2 nicht nötig (es gibt kein Portal), nur das Tastenkürzel.*
 
 Öffnen Sie das Einstellungsfenster (`scrawl -settings`) und nutzen Sie diese Schaltflächen, oder führen Sie die Befehle aus:
 

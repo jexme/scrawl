@@ -37,15 +37,17 @@ En GNOME con Wayland, las aplicaciones no pueden capturar la pantalla directamen
 
 ## Estado
 
-Proyecto personal en desarrollo activo. **Todavía no hay ninguna versión publicada**, así que por ahora hay que compilarlo desde el código fuente (lleva unos minutos). Solo Linux con GNOME en Wayland. Existe una compilación para Windows, pero la captura de pantalla aún no está escrita; consulta [docs/WINDOWS.md](../WINDOWS.md).
+Proyecto personal en desarrollo activo. **Todavía no hay ninguna versión publicada**, así que por ahora hay que compilarlo desde el código fuente (lleva unos minutos). El objetivo principal es GNOME en Wayland (Linux); las sesiones **X11** (GNOME sobre Xorg, KDE, XFCE y otras) también funcionan, pero ese soporte es nuevo y hasta ahora solo se ha probado en un servidor X virtual, así que se agradecen informes de máquinas reales. Existe una compilación para Windows, pero la captura de pantalla aún no está escrita; consulta [docs/WINDOWS.md](../WINDOWS.md).
 
 ## Requisitos
 
 - GNOME en Wayland con PipeWire, `xdg-desktop-portal` (1.21 o superior, con soporte para registrar aplicaciones) y `xdg-desktop-portal-gnome`. Desarrollado y probado en Ubuntu con GNOME 50.
-- `wl-clipboard` (el comando `wl-copy`) para el portapapeles y `libnotify` (el comando `notify-send`) para las notificaciones:
+- `wl-clipboard` (el comando `wl-copy`) para el portapapeles y `libnotify` (el comando `notify-send`) para las notificaciones.
+- En **X11** no hay portal: la pantalla se captura directamente y el portapapeles necesita `xclip` en lugar de `wl-clipboard`.
 
 ```bash
-sudo apt install wl-clipboard libnotify-bin
+sudo apt install wl-clipboard libnotify-bin   # Wayland
+sudo apt install xclip libnotify-bin          # X11
 ```
 
 ## Instalación
@@ -77,6 +79,8 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 Comprueba que `~/.local/bin` está en tu `PATH`.
 
 ### 2. Primer uso: tres pasos, una sola vez
+
+*En X11 no hacen falta los pasos 1 y 2 (no hay portal), solo la tecla de acceso rápido.*
 
 Abre la ventana de ajustes (`scrawl -settings`) y usa estos botones, o ejecuta los comandos:
 

@@ -37,15 +37,17 @@
 
 ## 状态
 
-个人项目，正在积极开发。**尚未发布正式版本**，目前需要从源码构建（几分钟即可）。仅支持 Wayland 下的 GNOME（Linux）。Windows 版本可以编译，但还没有实现屏幕捕获，详见 [docs/WINDOWS.md](../WINDOWS.md)。
+个人项目，正在积极开发。**尚未发布正式版本**，目前需要从源码构建（几分钟即可）。主要目标是 Wayland 下的 GNOME（Linux）；**X11 会话**（Xorg 下的 GNOME、KDE、XFCE 等）也能使用，但这项支持是新的，目前只在虚拟 X 服务器上测试过，欢迎在真实机器上反馈。Windows 版本可以编译，但还没有实现屏幕捕获，详见 [docs/WINDOWS.md](../WINDOWS.md)。
 
 ## 系统要求
 
 - 使用 PipeWire 的 Wayland 下 GNOME，`xdg-desktop-portal`（1.21 或更高，需支持应用注册）以及 `xdg-desktop-portal-gnome`。开发和测试环境为 Ubuntu + GNOME 50。
-- 剪贴板需要 `wl-clipboard`（`wl-copy` 命令），通知需要 `libnotify`（`notify-send` 命令）：
+- 剪贴板需要 `wl-clipboard`（`wl-copy` 命令），通知需要 `libnotify`（`notify-send` 命令）。
+- 在 **X11** 上没有门户：直接截取屏幕，剪贴板需要 `xclip` 而不是 `wl-clipboard`。
 
 ```bash
-sudo apt install wl-clipboard libnotify-bin
+sudo apt install wl-clipboard libnotify-bin   # Wayland
+sudo apt install xclip libnotify-bin          # X11
 ```
 
 ## 安装
@@ -77,6 +79,8 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 请确认 `~/.local/bin` 在 `PATH` 中。
 
 ### 2. 首次运行：三个一次性步骤
+
+*在 X11 上不需要步骤 1 和 2（没有门户），只需设置快捷键。*
 
 打开设置窗口（`scrawl -settings`）点击按钮，或直接执行命令：
 

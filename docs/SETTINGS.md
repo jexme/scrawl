@@ -42,7 +42,7 @@ Example:
 | `keep_open` | `false`, `true` | stay in the editor after copying or saving; leave with `Esc` |
 | `notifications` | `true`, `false` | notifications after a shot; errors are always shown |
 | `remember_region` | `true`, `false` | remember the last area, show it at launch, `R` restores it |
-| `include_cursor` | `false`, `true` | draw the mouse cursor into the shot (normal PipeWire capture only, not the fallback) |
+| `include_cursor` | `false`, `true` | draw the mouse cursor into the shot (normal PipeWire capture only: not the Screenshot-portal fallback and not X11) |
 | `default_tool` | `select`, `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text` | tool switched on as soon as an area is selected |
 | `keys` | object | overlay keys, see below |
 | `language` | `auto`, `ru`, `en` | interface language; `auto` follows the system locale |

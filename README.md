@@ -24,7 +24,7 @@ is one key press: the frozen screen appears in about 150 ms.
 - Selection with a dashed frame. Drag the corners to resize; with the *select*
   tool drag an edge to resize or drag inside to move.
 - Remembers the last area and brings it back with one key (`R`).
-- Optional mouse cursor in the shot.
+- Optional mouse cursor in the shot (Wayland only for now).
 
 **Annotate**
 - Pen, line, arrow, box, marker, **blur** and text; eight colours.
@@ -46,18 +46,23 @@ is one key press: the frozen screen appears in about 150 ms.
 
 A personal project under active development. **No release has been published
 yet**, so for now you build it from source (it takes a few minutes).
-Linux with GNOME on Wayland only. A Windows build compiles, but screen capture
-is not written yet; see [docs/WINDOWS.md](docs/WINDOWS.md).
+Linux: GNOME on Wayland is the main target. **X11 sessions** (GNOME on Xorg, KDE,
+XFCE and others) work too, but that support is new and has so far been tested only on a
+virtual X server, so reports from real machines are welcome. A Windows build compiles, but
+screen capture is not written yet; see [docs/WINDOWS.md](docs/WINDOWS.md).
 
 ## Requirements
 
 - GNOME on Wayland with PipeWire, `xdg-desktop-portal` (1.21 or newer, it must
   support host app registration) and `xdg-desktop-portal-gnome`. Developed and tested on Ubuntu with GNOME 50.
 - `wl-clipboard` (the `wl-copy` command) for the clipboard and `libnotify`
-  (the `notify-send` command) for notifications:
+  (the `notify-send` command) for notifications.
+- On **X11** there is no portal: the screen is captured directly, and the clipboard
+  needs `xclip` instead of `wl-clipboard`.
 
 ```bash
-sudo apt install wl-clipboard libnotify-bin
+sudo apt install wl-clipboard libnotify-bin   # Wayland
+sudo apt install xclip libnotify-bin          # X11
 ```
 
 ## Install
@@ -92,6 +97,8 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 Make sure `~/.local/bin` is in your `PATH`.
 
 ### 2. First run: three one-time steps
+
+*On X11 steps 1 and 2 are not needed (there is no portal), only the hotkey.*
 
 Open the settings window (`scrawl -settings`) and use these buttons, or run the commands:
 

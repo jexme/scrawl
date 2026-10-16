@@ -37,15 +37,17 @@ Wayland 上の GNOME では、アプリは画面を直接取得できず、デ�
 
 ## ステータス
 
-個人プロジェクトで、活発に開発中です。**まだリリースはありません**。今のところソースからのビルドが必要です（数分で終わります）。対応は Wayland 上の GNOME（Linux）のみ。Windows 版はビルドできますが、画面取得はまだ実装されていません。詳しくは [docs/WINDOWS.md](../WINDOWS.md) を参照してください。
+個人プロジェクトで、活発に開発中です。**まだリリースはありません**。今のところソースからのビルドが必要です（数分で終わります）。主な対象は Wayland 上の GNOME（Linux）です。**X11** セッション（Xorg 上の GNOME、KDE、XFCE など）でも動作しますが、このサポートは新しく、今のところ仮想 X サーバーでしか試していません。実機での報告を歓迎します。Windows 版はビルドできますが、画面取得はまだ実装されていません。詳しくは [docs/WINDOWS.md](../WINDOWS.md) を参照してください。
 
 ## 必要なもの
 
 - PipeWire を使う Wayland 上の GNOME、`xdg-desktop-portal`（1.21 以降、アプリ登録に対応していること）、`xdg-desktop-portal-gnome`。開発とテストは Ubuntu + GNOME 50 で行っています。
-- クリップボード用に `wl-clipboard`（`wl-copy` コマンド）、通知用に `libnotify`（`notify-send` コマンド）：
+- クリップボード用に `wl-clipboard`（`wl-copy` コマンド）、通知用に `libnotify`（`notify-send` コマンド）。
+- **X11** ではポータルがなく、画面は直接取得されます。クリップボードには `wl-clipboard` の代わりに `xclip` が必要です。
 
 ```bash
-sudo apt install wl-clipboard libnotify-bin
+sudo apt install wl-clipboard libnotify-bin   # Wayland
+sudo apt install xclip libnotify-bin          # X11
 ```
 
 ## インストール
@@ -77,6 +79,8 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 `~/.local/bin` が `PATH` に入っていることを確認してください。
 
 ### 2. 初回起動：一度だけの 3 ステップ
+
+*X11 ではステップ 1 と 2 は不要です（ポータルがないため）。ホットキーだけ設定してください。*
 
 設定ウィンドウ（`scrawl -settings`）のボタンを使うか、コマンドを実行します：
 
