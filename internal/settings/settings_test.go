@@ -218,3 +218,20 @@ func TestValidateAndExpandDir(t *testing.T) {
 		}
 	}
 }
+
+func TestNotificationsDefaultOnAndToggles(t *testing.T) {
+	sandbox(t)
+	if !Load().Notifications {
+		t.Error("по умолчанию уведомления включены")
+	}
+	writeConfig(t, `{"notifications":"no"}`)
+	if !Load().Notifications {
+		t.Error("значение неверного типа должно дать значение по умолчанию (включено)")
+	}
+	if err := Save(Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: false}); err != nil {
+		t.Fatal(err)
+	}
+	if Load().Notifications {
+		t.Error("выключенные уведомления должны сохраняться как false")
+	}
+}

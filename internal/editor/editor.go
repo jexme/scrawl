@@ -731,7 +731,7 @@ func (m *monitor) export(toClipboard, toFile bool) {
 			msg += " (и в буфер обмена)"
 		}
 	}
-	notify("Скриншот готов", msg)
+	m.inform("Скриншот готов", msg)
 	m.quit()
 }
 

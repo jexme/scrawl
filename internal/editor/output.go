@@ -94,6 +94,14 @@ func encodePNG(img image.Image) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// inform показывает уведомление об успешном действии, если оно не отключено в
+// настройках. Ошибки и подсказки идут через notify и показываются всегда.
+func (m *monitor) inform(title, body string) {
+	if m.store.Get().Notifications {
+		notify(title, body)
+	}
+}
+
 // notify показывает уведомление, если есть notify-send. Ошибки не важны.
 func notify(title, body string) {
 	exec.Command("notify-send", "-a", "Screen Editor", title, body).Run()

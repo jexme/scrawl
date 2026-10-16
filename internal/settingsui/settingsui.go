@@ -42,6 +42,7 @@ type state struct {
 
 	choice widget.Enum // двойной клик: off, copy, copy_save
 	enter  widget.Enum // Enter: copy_save, copy, save
+	notify widget.Bool // уведомления после снимка
 	dir    widget.Editor
 	reset  widget.Clickable
 	close  widget.Clickable
@@ -60,6 +61,7 @@ func newState(store *settings.Store) *state {
 	cur := store.Get()
 	s.choice.Value = string(cur.DoubleClick)
 	s.enter.Value = string(cur.Enter)
+	s.notify.Value = cur.Notifications
 	s.dir.SingleLine = true
 	s.dir.SetText(cur.SaveDir)
 	return s
@@ -117,6 +119,13 @@ func (s *state) apply(gtx layout.Context) {
 	s.enter.Update(gtx)
 	if want := settings.Enter(s.enter.Value); want != s.store.Get().Enter {
 		if err := s.store.Update(func(c *settings.Settings) { c.Enter = want }); err != nil {
+			s.dirErr = "Не удалось сохранить: " + err.Error()
+		}
+	}
+
+	s.notify.Update(gtx)
+	if want := s.notify.Value; want != s.store.Get().Notifications {
+		if err := s.store.Update(func(c *settings.Settings) { c.Notifications = want }); err != nil {
 			s.dirErr = "Не удалось сохранить: " + err.Error()
 		}
 	}
@@ -200,6 +209,16 @@ func (s *state) radio(group *widget.Enum, key, label string) layout.Widget {
 	return rb.Layout
 }
 
+func (s *state) checkbox(b *widget.Bool, label string) layout.Widget {
+	cb := material.CheckBox(s.th, b, label)
+	cb.Color = fgColor
+	cb.IconColor = mutedColor
+	if b.Value {
+		cb.IconColor = accentColor
+	}
+	return cb.Layout
+}
+
 // radios складывает варианты выбора в столбик.
 func radios(items ...layout.Widget) layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
@@ -254,6 +273,8 @@ func (s *state) items() []layout.Widget {
 				s.radio(&s.enter, string(settings.EnterCopy), "Только копировать в буфер обмена"),
 				s.radio(&s.enter, string(settings.EnterSave), "Только сохранить в файл"),
 			)),
+		s.row("Уведомления", "После снимка и действий с подборкой. Ошибки показываются всегда.",
+			s.checkbox(&s.notify, "Показывать уведомления")),
 		s.section("Сохранение"),
 		s.row("Папка для скриншотов", "Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь.", dirField),
 		s.section("О программе"),

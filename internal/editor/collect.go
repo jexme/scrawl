@@ -42,7 +42,7 @@ func (m *monitor) addToCollection() {
 		fail("подборка", err)
 		return
 	}
-	notify("Добавлено в подборку", fmt.Sprintf("Картинок в подборке: %d", collection.Count()))
+	m.inform("Добавлено в подборку", fmt.Sprintf("Картинок в подборке: %d", collection.Count()))
 	m.quit()
 }
 
@@ -104,7 +104,7 @@ func (m *monitor) glueCollection() {
 	if err := collection.Clear(); err != nil {
 		fail("очистка подборки", err)
 	}
-	notify(fmt.Sprintf("Склеено картинок: %d", len(imgs)), msg)
+	m.inform(fmt.Sprintf("Склеено картинок: %d", len(imgs)), msg)
 	m.quit()
 }
 
@@ -154,7 +154,7 @@ func (m *monitor) sendSeparately() {
 	if err := collection.Clear(); err != nil {
 		fail("очистка подборки", err)
 	}
-	notify("Скриншоты готовы", msg)
+	m.inform("Скриншоты готовы", msg)
 	m.quit()
 }
 
@@ -165,5 +165,5 @@ func (m *monitor) clearCollection() {
 		return
 	}
 	m.queued = 0
-	notify("Подборка очищена", "")
+	m.inform("Подборка очищена", "")
 }

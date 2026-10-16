@@ -46,12 +46,17 @@ func (e Enter) Targets() (clipboard, file bool) {
 type Settings struct {
 	DoubleClick DoubleClick `json:"double_click"`
 	Enter       Enter       `json:"enter"`
+	// Notifications — показывать уведомления после снимка и действий с подборкой.
+	// Ошибки и подсказки, почему действие не вышло, показываются всегда.
+	Notifications bool `json:"notifications"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
 
 // Default возвращает настройки по умолчанию.
-func Default() Settings { return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave} }
+func Default() Settings {
+	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true}
+}
 
 // Path возвращает путь к файлу настроек.
 func Path() string {

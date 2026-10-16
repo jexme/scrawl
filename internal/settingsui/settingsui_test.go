@@ -128,3 +128,15 @@ func TestEnterChoiceIsSavedToDisk(t *testing.T) {
 		t.Errorf("выбор Enter не дошёл до файла: %q", got)
 	}
 }
+
+func TestNotificationsCheckboxIsSavedToDisk(t *testing.T) {
+	s := testState(t)
+	if !s.notify.Value {
+		t.Fatal("по умолчанию уведомления включены")
+	}
+	s.notify.Value = false
+	s.layout(frameContext(700, 650))
+	if settings.Load().Notifications {
+		t.Error("выключенные уведомления не дошли до файла")
+	}
+}

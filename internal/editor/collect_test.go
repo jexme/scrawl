@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"errors"
 	"image"
 	"image/color"
 	"image/png"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/jexme/screen-editor/internal/collection"
 	"github.com/jexme/screen-editor/internal/screencast"
+	"github.com/jexme/screen-editor/internal/settings"
 )
 
 // sandbox подменяет HOME, кэш и внешние команды, чтобы тест не трогал буфер
@@ -147,5 +149,37 @@ func TestAddToCollection(t *testing.T) {
 	m.addToCollection()
 	if collection.Count() != 1 || !*finished {
 		t.Errorf("в подборке %d, завершение=%v", collection.Count(), *finished)
+	}
+}
+
+// TestNotificationsSetting: успех молчит при выключенных уведомлениях, ошибки нет.
+func TestNotificationsSetting(t *testing.T) {
+	sandbox(t)
+	log := filepath.Join(t.TempDir(), "notify.log")
+	bin := t.TempDir()
+	if err := os.WriteFile(filepath.Join(bin, "notify-send"), []byte("#!/bin/sh\necho \"$3\" >> "+log+"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+":"+os.Getenv("PATH"))
+	shown := func() string { data, _ := os.ReadFile(log); return string(data) }
+
+	m, _ := newTestMonitor(t)
+	m.inform("Скриншот готов", "x")
+	if !strings.Contains(shown(), "Скриншот готов") {
+		t.Fatalf("по умолчанию уведомление должно показываться, лог: %q", shown())
+	}
+
+	os.Remove(log)
+	if err := m.store.Update(func(s *settings.Settings) { s.Notifications = false }); err != nil {
+		t.Fatal(err)
+	}
+	m.inform("Скриншот готов", "x")
+	fail("рендер", errors.New("сбой"))
+	got := shown()
+	if strings.Contains(got, "Скриншот готов") {
+		t.Errorf("при выключенных уведомлениях успех не должен показываться: %q", got)
+	}
+	if !strings.Contains(got, "Ошибка: рендер") {
+		t.Errorf("ошибка должна показываться всегда: %q", got)
 	}
 }
