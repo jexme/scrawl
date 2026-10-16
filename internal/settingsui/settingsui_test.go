@@ -559,3 +559,67 @@ func TestHotkeyButton(t *testing.T) {
 		t.Errorf("конфликт: %q (ошибка %v)", msg, failed)
 	}
 }
+
+func keyRowFor(t *testing.T, s *state, action string) *keyRow {
+	t.Helper()
+	for _, r := range s.keyRows {
+		if r.action == action {
+			return r
+		}
+	}
+	t.Fatalf("нет строки действия %s", action)
+	return nil
+}
+
+func TestKeyAssignment(t *testing.T) {
+	s := testState(t)
+	if len(s.keyRows) != len(settings.KeyActions) {
+		t.Fatalf("строк клавиш %d, действий %d", len(s.keyRows), len(settings.KeyActions))
+	}
+	restore := keyRowFor(t, s, settings.ActionRestore)
+
+	s.assignKey(restore, "f5")
+	if got := settings.Load().Keys.Of(settings.ActionRestore); got != "F5" || restore.err != "" {
+		t.Errorf("F5 должна сохраниться: %q, ошибка %q", got, restore.err)
+	}
+
+	// Клавиша, занятая другим действием (A у «добавить в подборку»), отклоняется.
+	s.assignKey(restore, "A")
+	if restore.err == "" || !strings.Contains(restore.err, "Добавить в подборку") {
+		t.Errorf("ожидали сообщение о занятой клавише: %q", restore.err)
+	}
+	if got := settings.Load().Keys.Of(settings.ActionRestore); got != "F5" {
+		t.Errorf("при конфликте прежняя клавиша остаётся: %q", got)
+	}
+
+	s.assignKey(restore, "Super+Q")
+	if restore.err == "" {
+		t.Error("неизвестный модификатор должен давать ошибку")
+	}
+
+	// Освободившаяся клавиша R доступна другому действию.
+	add := keyRowFor(t, s, settings.ActionAdd)
+	s.assignKey(add, "R")
+	if got := settings.Load().Keys; got.Of(settings.ActionAdd) != "R" || got.Of(settings.ActionRestore) != "F5" {
+		t.Errorf("клавиши: %+v", got)
+	}
+
+	// Сброс возвращает умолчание.
+	s.assignKey(restore, "") // умолчание R занято действием «добавить»: сброс не проходит
+	if restore.err == "" || settings.Load().Keys.Of(settings.ActionRestore) != "F5" {
+		t.Errorf("сброс в занятую клавишу должен отклоняться: %q", restore.err)
+	}
+	s.assignKey(add, "")
+	s.assignKey(restore, "")
+	if got := settings.Load().Keys; got != (settings.Keys{}) {
+		t.Errorf("после сброса ожидали умолчания: %+v", got)
+	}
+
+	// Нажатие кнопки сброса из окна.
+	s.assignKey(restore, "F6")
+	restore.reset.Click()
+	s.layout(frameContext(700, 650))
+	if got := settings.Load().Keys.Of(settings.ActionRestore); got != "R" {
+		t.Errorf("кнопка «Сброс»: %q", got)
+	}
+}

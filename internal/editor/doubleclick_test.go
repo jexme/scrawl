@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"gioui.org/f32"
+	"gioui.org/io/key"
 
 	"github.com/jexme/scrawl/internal/annotate"
 	"github.com/jexme/scrawl/internal/settings"
@@ -331,5 +332,63 @@ func TestSaveFileDoesNotOverwrite(t *testing.T) {
 	}
 	if paths[0] == paths[1] || paths[1] == paths[2] || !strings.HasSuffix(paths[1], "-1-2.png") || !strings.HasSuffix(paths[2], "-1-3.png") {
 		t.Errorf("имена должны различаться: %v", paths)
+	}
+}
+
+// actionFor возвращает действие, на которое сработает нажатие, или "".
+func actionFor(m *monitor, name key.Name, mods key.Modifiers) string {
+	for _, kb := range m.keys {
+		if kb.binding.Matches(key.Event{Name: name, Modifiers: mods, State: key.Press}) {
+			return kb.action
+		}
+	}
+	return ""
+}
+
+func TestKeysFromSettings(t *testing.T) {
+	sandbox(t)
+	m, _ := newTestMonitor(t)
+	for want, ev := range map[string]key.Event{
+		settings.ActionConfirm: {Name: key.NameReturn}, settings.ActionCancel: {Name: key.NameEscape},
+		settings.ActionRestore: {Name: "R"}, settings.ActionAdd: {Name: "A"}, settings.ActionGlue: {Name: "G"},
+		settings.ActionSend: {Name: "D"}, settings.ActionUndo: {Name: "Z", Modifiers: key.ModCtrl},
+		settings.ActionCopy: {Name: "C", Modifiers: key.ModCtrl}, settings.ActionSave: {Name: "S", Modifiers: key.ModCtrl},
+	} {
+		if got := actionFor(m, ev.Name, ev.Modifiers); got != want {
+			t.Errorf("клавиша %v по умолчанию: действие %q, ожидали %q", ev.Name, got, want)
+		}
+	}
+	if len(m.keyFilters()) < len(settings.KeyActions) {
+		t.Errorf("фильтров %d, действий %d", len(m.keyFilters()), len(settings.KeyActions))
+	}
+
+	if err := m.store.Update(func(s *settings.Settings) {
+		s.Keys.Set(settings.ActionRestore, "F5")
+		s.Keys.Set(settings.ActionSave, "Ctrl+Shift+S")
+		s.Keys.Set(settings.ActionCancel, "Q")
+	}); err != nil {
+		t.Fatal(err)
+	}
+	m, finished := newTestMonitor(t)
+	if got := actionFor(m, "F5", 0); got != settings.ActionRestore {
+		t.Errorf("F5: %q", got)
+	}
+	if got := actionFor(m, "R", 0); got != "" {
+		t.Errorf("старая клавиша R больше ничего не делает: %q", got)
+	}
+	if got := actionFor(m, "S", key.ModCtrl); got != "" {
+		t.Errorf("Ctrl+S больше не сохраняет: %q", got)
+	}
+	if got := actionFor(m, "S", key.ModCtrl|key.ModShift); got != settings.ActionSave {
+		t.Errorf("Ctrl+Shift+S: %q", got)
+	}
+	// «Выход» на Q действительно закрывает оверлей.
+	for _, kb := range m.keys {
+		if kb.action == settings.ActionCancel {
+			kb.run()
+		}
+	}
+	if !*finished {
+		t.Error("Q должна закрывать оверлей")
 	}
 }

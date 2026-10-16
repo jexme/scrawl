@@ -87,6 +87,8 @@ Press the hotkey, drag to select. Keys:
 | `A` / `G` / `D` | add to collection / glue collection / send collection as files |
 | mouse wheel | thickness, text size or blur strength of the current tool |
 
+Every key below can be changed in the settings window ("Overlay keys") or in the `keys` setting.
+
 Flags: `-v` prints timings, `-fresh` ignores the remembered area, `-setup` picks
 monitors again, `-settings` opens the settings window.
 
@@ -123,6 +125,7 @@ application menu entry "Settings". Changes apply immediately. Settings are store
 | `jpeg_quality` | 1-100, `90` | JPEG quality |
 | `default_tool` | `select` (default), `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text` | tool switched on once an area is selected |
 | `tools` | object per tool: `{"arrow": {"color": "#E53935", "width": 6}}` | default colour (`#RRGGBB`) and thickness per tool; applies until you pick a colour in the toolbar |
+| `keys` | object: `confirm`, `cancel`, `restore`, `add`, `glue`, `send`, `undo`, `copy`, `save` | overlay keys as `Ctrl+Shift+S`, `R`, `Enter`, `F5`; empty means the default, two actions cannot share a key |
 | `palette` | list of 8 colours `#RRGGBB` | colours in the toolbar |
 | `marker_opacity` | 5-100, `43` | marker opacity, % |
 | `dim_percent` | 0-100, `86` | dimming outside the area, % |

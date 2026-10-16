@@ -88,6 +88,9 @@ type state struct {
 	monitors   task   // повторный выбор мониторов
 	hotkey     task   // назначение горячей клавиши
 	hotkeyEd   widget.Editor
+	keyRows    []*keyRow
+	capturing  *keyRow // строка, для которой ждём нажатия клавиши
+	capTag     bool    // тег фокуса для записи клавиши
 	dirErr     string
 	prefixErr  string
 }
@@ -127,6 +130,7 @@ func newState(store *settings.Store) *state {
 	for _, sl := range s.sliders {
 		sl.Set(sl.get(cur))
 	}
+	s.initKeys()
 	s.hotkeyEd.SingleLine = true
 	s.hotkeyEd.SetText("Print")
 	if cur := currentHotkey(); cur != "" {
@@ -201,7 +205,11 @@ func loop(s *state) {
 					break
 				}
 				if k, ok := ev.(key.Event); ok && k.State == key.Press {
-					w.Perform(system.ActionClose)
+					if s.capturing != nil {
+						s.capturing = nil // Esc отменяет запись клавиши, а не закрывает окно
+					} else {
+						w.Perform(system.ActionClose)
+					}
 				}
 			}
 			if s.close.Clicked(gtx) {
@@ -217,6 +225,7 @@ func loop(s *state) {
 // apply приводит сохранённые настройки в соответствие с виджетами. Вызывается
 // на каждом кадре: ничего не пишет, пока значения не изменились.
 func (s *state) apply(gtx layout.Context) {
+	s.updateKeys(gtx)
 	if s.hotkey.btn.Clicked(gtx) {
 		accel := strings.TrimSpace(s.hotkeyEd.Text())
 		s.start(&s.hotkey, func(func(string)) (string, error) {
@@ -915,6 +924,9 @@ func (s *state) items() []layout.Widget {
 			s.taskControl(&s.monitors, "Выбрать мониторы заново")),
 		s.row("Разрешение на запасной снимок", "Нужно запасному способу захвата через Screenshot portal, когда PipeWire не отдал кадр. Раньше: scrawl -grant-screenshot.",
 			s.taskControl(&s.grant, "Выдать разрешение")),
+		s.section("Клавиши оверлея"),
+		s.row("Клавиши", "Нажмите кнопку и затем новую комбинацию. Esc отменяет запись. Применяются при следующем снимке.",
+			s.keyControls()),
 		s.section("Склейка «было/стало»"),
 		s.row("Расположение", "Картинки выравниваются по самой низкой (рядом) или по самой узкой (друг под другом).",
 			radios(

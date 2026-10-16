@@ -90,6 +90,8 @@ type Settings struct {
 	// KeepOpen — после копирования или сохранения не закрывать оверлей, а дать
 	// продолжить правку. Выход по Esc.
 	KeepOpen bool `json:"keep_open"`
+	// Keys — клавиши действий оверлея; пусто: по умолчанию.
+	Keys Keys `json:"keys"`
 	// IncludeCursor — рисовать курсор мыши в снимке (только при захвате через PipeWire).
 	IncludeCursor bool `json:"include_cursor"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
@@ -149,6 +151,7 @@ func (s *Settings) normalize() {
 	s.Tools.normalize()
 	normalizePalette(&s.Palette)
 	s.Glue.normalize()
+	s.Keys.normalize()
 	if s.Format != FormatPNG && s.Format != FormatJPEG {
 		s.Format = def.Format
 	}

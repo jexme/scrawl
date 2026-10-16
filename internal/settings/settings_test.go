@@ -615,3 +615,65 @@ func TestLegacyConfigIsReadAndKept(t *testing.T) {
 		t.Errorf("битый старый файл: %+v", got)
 	}
 }
+
+func TestParseChord(t *testing.T) {
+	good := map[string]string{
+		"r": "R", "R": "R", "ctrl+z": "Ctrl+Z", "Control+Shift+s": "Ctrl+Shift+S", "alt+ctrl+X": "Ctrl+Alt+X",
+		"enter": "Enter", "ESCAPE": "Escape", "f5": "F5", "F12": "F12", "pageup": "PageUp", "5": "5", " Ctrl + Z ": "Ctrl+Z",
+	}
+	for in, want := range good {
+		if got, err := ParseChord(in); err != nil || got != want {
+			t.Errorf("ParseChord(%q) = %q, %v; ожидали %q", in, got, err, want)
+		}
+	}
+	for _, bad := range []string{"", "Ctrl+", "Super+S", "F13", "F0", "foo", "-", "Ctrl+Shift", "Ctrl++"} {
+		if got, err := ParseChord(bad); err == nil {
+			t.Errorf("ParseChord(%q) = %q, ожидали ошибку", bad, got)
+		}
+	}
+}
+
+func TestKeys(t *testing.T) {
+	sandbox(t)
+	k := Load().Keys
+	for _, a := range KeyActions {
+		if k.Of(a) != DefaultKeys[a] || DefaultKeys[a] == "" {
+			t.Errorf("действие %s: по умолчанию %q, получили %q", a, DefaultKeys[a], k.Of(a))
+		}
+	}
+	if _, _, clash := k.Conflict(); clash {
+		t.Error("клавиши по умолчанию не должны конфликтовать")
+	}
+
+	// Свои клавиши читаются в каноническом виде; значения по умолчанию хранятся пустыми.
+	writeConfig(t, `{"keys":{"restore":"f5","add":"ctrl+shift+a","undo":"Ctrl+Z","glue":"nonsense","send":5}}`)
+	k = Load().Keys
+	if k.Of(ActionRestore) != "F5" || k.Of(ActionAdd) != "Ctrl+Shift+A" {
+		t.Errorf("свои клавиши: %+v", k)
+	}
+	if k.Of(ActionGlue) != "G" || k.Of(ActionSend) != "D" || k.Undo != "" {
+		t.Errorf("неверные и умолчательные клавиши: %+v", k)
+	}
+
+	// Две одинаковые клавиши: всё возвращается к умолчаниям.
+	writeConfig(t, `{"keys":{"restore":"X","add":"x","glue":"F2"}}`)
+	k = Load().Keys
+	if k != (Keys{}) {
+		t.Errorf("при конфликте ожидали умолчания: %+v", k)
+	}
+	// Клавиша действия совпала с умолчанием другого: тоже конфликт.
+	writeConfig(t, `{"keys":{"restore":"A"}}`)
+	if k := Load().Keys; k != (Keys{}) {
+		t.Errorf("R -> A конфликтует с добавлением в подборку: %+v", k)
+	}
+
+	var set Keys
+	set.Set(ActionCopy, "Ctrl+C")
+	set.Set(ActionSave, "Ctrl+Shift+S")
+	if set.Copy != "" || set.Save != "Ctrl+Shift+S" {
+		t.Errorf("Set: %+v", set)
+	}
+	if a, b, clash := (Keys{Add: "R"}).Conflict(); !clash || a != ActionRestore || b != ActionAdd {
+		t.Errorf("Conflict: %s %s %v", a, b, clash)
+	}
+}

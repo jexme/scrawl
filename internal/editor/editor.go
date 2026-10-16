@@ -30,6 +30,7 @@ import (
 
 	"github.com/jexme/scrawl/internal/annotate"
 	"github.com/jexme/scrawl/internal/collection"
+	"github.com/jexme/scrawl/internal/keymap"
 	"github.com/jexme/scrawl/internal/screencast"
 	"github.com/jexme/scrawl/internal/settings"
 )
@@ -147,6 +148,7 @@ type monitor struct {
 
 	tool    annotate.Tool
 	color   color.NRGBA
+	keys    []keyBinding                      // клавиши оверлея по настройкам
 	palette [settings.PaletteSize]color.NRGBA // цвета панели из настроек
 	// colorPicked: цвет выбран в панели вручную, цвета инструментов из настроек больше не применяются.
 	colorPicked bool
@@ -178,6 +180,7 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 	m.env = annotate.Env{Shaper: m.shaper, Blur: annotate.NewBlurrer(f.Img)}
 	m.queued = collection.Count()
 	m.store = settings.NewStore()
+	m.initKeys()
 	m.palette = m.store.Get().PaletteColors()
 	m.color = m.palette[0]
 	if !cfg.Fresh && m.store.Get().RememberRegion {
@@ -436,20 +439,7 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 	}
 
 	for {
-		ev, ok := gtx.Event(
-			// Без привязки к фокусу: после клика по кнопке панели фокус уходит
-			// с холста, а Esc и Enter должны работать всегда.
-			key.Filter{Name: key.NameEscape},
-			key.Filter{Name: key.NameReturn},
-			key.Filter{Name: key.NameEnter},
-			key.Filter{Name: "R"},
-			key.Filter{Name: "A"},
-			key.Filter{Name: "G"},
-			key.Filter{Name: "D"},
-			key.Filter{Name: "Z", Required: key.ModCtrl},
-			key.Filter{Name: "C", Required: key.ModCtrl},
-			key.Filter{Name: "S", Required: key.ModCtrl},
-		)
+		ev, ok := gtx.Event(m.keyFilters()...)
 		if !ok {
 			break
 		}
@@ -457,28 +447,66 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 		if !ok || e.State != key.Press {
 			continue
 		}
-		ctrl := e.Modifiers.Contain(key.ModCtrl)
-		switch {
-		case e.Name == key.NameEscape:
-			m.quit()
-		case e.Name == key.NameReturn || e.Name == key.NameEnter:
-			m.export(m.store.Get().Enter.Targets())
-		case !ctrl && e.Name == "R":
-			m.applyLast()
-		case !ctrl && e.Name == "A":
-			m.addToCollection()
-		case !ctrl && e.Name == "G" && m.queued+boolInt(m.hasSel) >= 2:
-			m.glueCollection()
-		case !ctrl && e.Name == "D" && m.queued+boolInt(m.hasSel) >= 1:
-			m.sendSeparately()
-		case ctrl && e.Name == "Z":
-			m.undo()
-		case ctrl && e.Name == "C":
-			m.export(true, false)
-		case ctrl && e.Name == "S":
-			m.export(false, true)
+		for _, kb := range m.keys {
+			if kb.binding.Matches(e) {
+				kb.run()
+				break
+			}
 		}
 	}
+}
+
+// keyBinding — клавиша оверлея и действие, которое она запускает.
+type keyBinding struct {
+	action  string
+	binding keymap.Binding
+	run     func()
+}
+
+// initKeys составляет таблицу клавиш по настройкам. Клавиши назначены на
+// запуск оверлея: пока он открыт, настройки не меняются.
+func (m *monitor) initKeys() {
+	keys := m.store.Get().Keys
+	actions := map[string]func(){
+		settings.ActionConfirm: func() { m.export(m.store.Get().Enter.Targets()) },
+		settings.ActionCancel:  m.quit,
+		settings.ActionRestore: m.applyLast,
+		settings.ActionAdd:     m.addToCollection,
+		settings.ActionGlue: func() {
+			if m.queued+boolInt(m.hasSel) >= 2 {
+				m.glueCollection()
+			}
+		},
+		settings.ActionSend: func() {
+			if m.queued+boolInt(m.hasSel) >= 1 {
+				m.sendSeparately()
+			}
+		},
+		settings.ActionUndo: m.undo,
+		settings.ActionCopy: func() { m.export(true, false) },
+		settings.ActionSave: func() { m.export(false, true) },
+	}
+	m.keys = nil
+	for _, action := range settings.KeyActions {
+		b, ok := keymap.Parse(keys.Of(action))
+		if !ok {
+			b, _ = keymap.Parse(settings.DefaultKeys[action])
+		}
+		m.keys = append(m.keys, keyBinding{action: action, binding: b, run: actions[action]})
+	}
+}
+
+// keyFilters возвращает фильтры событий для всех клавиш оверлея. Без привязки к
+// фокусу: после клика по кнопке панели фокус уходит с холста, а клавиши должны
+// работать всегда.
+func (m *monitor) keyFilters() []event.Filter {
+	var fs []event.Filter
+	for _, kb := range m.keys {
+		for _, f := range kb.binding.Filters() {
+			fs = append(fs, f)
+		}
+	}
+	return fs
 }
 
 func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.Point) {
