@@ -82,8 +82,10 @@ type state struct {
 	bColor     widget.Editor
 	colorErr   string
 
-	dirErr    string
-	prefixErr string
+	invalidate func() // перерисовать окно из другой горутины
+	grant      task   // выдача разрешения на запасной снимок
+	dirErr     string
+	prefixErr  string
 }
 
 func newState(store *settings.Store) *state {
@@ -175,6 +177,7 @@ func Run(store *settings.Store) {
 
 func loop(s *state) {
 	w := new(app.Window)
+	s.invalidate = w.Invalidate
 	w.Option(app.Title("Scrawl: настройки"), app.Size(unit.Dp(600), unit.Dp(600)), app.MinSize(unit.Dp(420), unit.Dp(300)))
 	var ops op.Ops
 	for {
@@ -205,6 +208,15 @@ func loop(s *state) {
 // apply приводит сохранённые настройки в соответствие с виджетами. Вызывается
 // на каждом кадре: ничего не пишет, пока значения не изменились.
 func (s *state) apply(gtx layout.Context) {
+	if s.grant.btn.Clicked(gtx) {
+		s.start(&s.grant, func(func(string)) (string, error) {
+			if err := grantPermission(); err != nil {
+				return "", fmt.Errorf("Не удалось выдать разрешение: %w", err)
+			}
+			return "Разрешение выдано приложению " + screencast.AppID, nil
+		})
+	}
+
 	s.choice.Update(gtx)
 	if want := settings.DoubleClick(s.choice.Value); want != s.store.Get().DoubleClick {
 		if err := s.store.Update(func(c *settings.Settings) { c.DoubleClick = want }); err != nil {
@@ -846,6 +858,9 @@ func (s *state) items() []layout.Widget {
 			s.radio(&s.format, string(settings.FormatJPEG), "JPEG: файл меньше, есть потери"),
 		)),
 		s.row("Качество JPEG", "Чем выше, тем лучше картинка и больше файл.", s.slider(s.quality)),
+		s.section("Захват экрана"),
+		s.row("Разрешение на запасной снимок", "Нужно запасному способу захвата через Screenshot portal, когда PipeWire не отдал кадр. Раньше: scrawl -grant-screenshot.",
+			s.taskControl(&s.grant, "Выдать разрешение")),
 		s.section("Склейка «было/стало»"),
 		s.row("Расположение", "Картинки выравниваются по самой низкой (рядом) или по самой узкой (друг под другом).",
 			radios(

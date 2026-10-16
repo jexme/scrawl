@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"gioui.org/gpu/headless"
 	"gioui.org/layout"
@@ -440,5 +441,41 @@ func TestCursorCheckboxIsSavedToDisk(t *testing.T) {
 	s.layout(frameContext(700, 650))
 	if !settings.Load().IncludeCursor {
 		t.Error("включённая настройка не дошла до файла")
+	}
+}
+
+// waitDone ждёт, пока фоновое действие закончится.
+func waitDone(t *testing.T, tk *task) {
+	t.Helper()
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		if _, _, running := tk.status(); !running {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatal("действие не закончилось за 3 с")
+}
+
+func TestGrantButton(t *testing.T) {
+	s := testState(t)
+	old := grantPermission
+	defer func() { grantPermission = old }()
+
+	calls := 0
+	grantPermission = func() error { calls++; return nil }
+	s.grant.btn.Click()
+	s.layout(frameContext(700, 650))
+	waitDone(t, &s.grant)
+	if msg, failed, _ := s.grant.status(); calls != 1 || failed || !strings.Contains(msg, "io.github.jexme.Scrawl") {
+		t.Errorf("вызовов %d, сообщение %q, ошибка %v", calls, msg, failed)
+	}
+
+	grantPermission = func() error { return errors.New("portal молчит") }
+	s.grant.btn.Click()
+	s.layout(frameContext(700, 650))
+	waitDone(t, &s.grant)
+	if msg, failed, _ := s.grant.status(); !failed || !strings.Contains(msg, "portal молчит") {
+		t.Errorf("ошибка должна показываться: %q, %v", msg, failed)
 	}
 }
