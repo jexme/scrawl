@@ -92,6 +92,7 @@ type state struct {
 	lang       widget.Enum        // язык интерфейса: auto, ru, en
 	tab        int                // выбранная вкладка
 	tabBtns    []widget.Clickable // кнопки вкладок
+	shownTab   int                // вкладка, чьё содержимое нарисовано в последнем кадре
 	checkUpd   widget.Bool        // проверять обновления при старте
 	update     task               // проверка обновлений
 	autostart  widget.Bool        // запуск значка при входе
@@ -110,6 +111,7 @@ func newState(store *settings.Store) *state {
 
 	s := &state{th: th, store: store}
 	s.list.Axis = layout.Vertical
+	s.tabBtns = make([]widget.Clickable, len(s.tabs()))
 	px := func(v float64) string { return fmt.Sprintf("%.1f px", v) }
 	s.dim = s.addSlider(0, 100, 1, func(v float64) string { return fmt.Sprintf("%.0f%%", v) },
 		func(c settings.Settings) float64 { return float64(c.DimPercent) },
@@ -207,7 +209,7 @@ func Run(store *settings.Store) {
 func loop(s *state) {
 	w := new(app.Window)
 	s.invalidate = w.Invalidate
-	w.Option(app.Title(i18n.T("Scrawl: настройки")), app.Size(unit.Dp(820), unit.Dp(640)), app.MinSize(unit.Dp(620), unit.Dp(360)))
+	w.Option(app.Title(i18n.T("Scrawl: настройки")), app.Size(unit.Dp(820), unit.Dp(640)), app.MinSize(unit.Dp(700), unit.Dp(360)))
 	var ops op.Ops
 	for {
 		switch e := w.Event().(type) {
@@ -241,6 +243,14 @@ func loop(s *state) {
 // apply приводит сохранённые настройки в соответствие с виджетами. Вызывается
 // на каждом кадре: ничего не пишет, пока значения не изменились.
 func (s *state) apply(gtx layout.Context) {
+	// Клик по вкладке обрабатывается до того, как кадр выберет, что рисовать:
+	// иначе содержимое сменится только на следующем кадре, а он не придёт,
+	// пока не будет нового события, и клик покажется запоздавшим.
+	for i := range s.tabBtns {
+		if s.tabBtns[i].Clicked(gtx) {
+			s.selectTab(i)
+		}
+	}
 	s.checkUpd.Update(gtx)
 	if want := s.checkUpd.Value; want != s.store.Get().CheckUpdates {
 		if err := s.store.Update(func(c *settings.Settings) { c.CheckUpdates = want }); err != nil {
@@ -1101,42 +1111,53 @@ func (s *state) selectTab(i int) {
 	}
 }
 
-// tabBar рисует боковую панель с вкладками.
+// tabBar рисует вкладки в ряд и под ним тонкую линию на всю ширину.
 func (s *state) tabBar(gtx layout.Context, tabs []settingsTab) layout.Dimensions {
-	if len(s.tabBtns) < len(tabs) {
-		s.tabBtns = make([]widget.Clickable, len(tabs))
-	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions { return s.tabRow(gtx, tabs) }),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			h := gtx.Dp(1)
+			w := gtx.Constraints.Max.X
+			paint.FillShape(gtx.Ops, borderColor, clip.Rect{Max: image.Pt(w, h)}.Op())
+			return layout.Dimensions{Size: image.Pt(w, h)}
+		}),
+	)
+}
+
+// tabRow — сами вкладки: выбранная подчёркнута акцентным цветом, под курсором
+// подсвечивается.
+func (s *state) tabRow(gtx layout.Context, tabs []settingsTab) layout.Dimensions {
 	children := make([]layout.FlexChild, 0, len(tabs))
 	for i := range tabs {
 		i := i
-		if s.tabBtns[i].Clicked(gtx) {
-			s.selectTab(i)
-		}
 		children = append(children, layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			selected := i == s.tab
 			return s.tabBtns[i].Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 				return layout.Stack{}.Layout(gtx,
 					layout.Expanded(func(gtx layout.Context) layout.Dimensions {
-						bg := color.NRGBA{}
-						switch {
-						case selected:
-							bg = accentColor
-						case s.tabBtns[i].Hovered():
-							bg = borderColor
+						size := gtx.Constraints.Min
+						if s.tabBtns[i].Hovered() && !selected {
+							paint.FillShape(gtx.Ops, borderColor, clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(6)).Op(gtx.Ops))
 						}
-						rr := gtx.Dp(6)
-						paint.FillShape(gtx.Ops, bg, clip.UniformRRect(image.Rectangle{Max: gtx.Constraints.Min}, rr).Op(gtx.Ops))
-						return layout.Dimensions{Size: gtx.Constraints.Min}
+						if selected {
+							h := gtx.Dp(2)
+							paint.FillShape(gtx.Ops, accentColor, clip.Rect{Min: image.Pt(0, size.Y-h), Max: size}.Op())
+						}
+						return layout.Dimensions{Size: size}
 					}),
 					layout.Stacked(func(gtx layout.Context) layout.Dimensions {
-						return layout.Inset{Top: unit.Dp(9), Bottom: unit.Dp(9), Left: unit.Dp(12), Right: unit.Dp(12)}.Layout(gtx,
-							s.label(material.Body1, tabs[i].label, fgColor))
+						c := mutedColor
+						if selected || s.tabBtns[i].Hovered() {
+							c = fgColor
+						}
+						return layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(9), Left: unit.Dp(11), Right: unit.Dp(11)}.Layout(gtx,
+							s.label(material.Body2, tabs[i].label, c))
 					}),
 				)
 			})
-		}), layout.Rigid(layout.Spacer{Height: unit.Dp(2)}.Layout))
+		}))
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	return layout.Flex{}.Layout(gtx, children...)
 }
 
 func (s *state) layout(gtx layout.Context) layout.Dimensions {
@@ -1144,30 +1165,21 @@ func (s *state) layout(gtx layout.Context) layout.Dimensions {
 	th := s.th
 	tabs := s.tabs()
 	s.tab = min(max(s.tab, 0), len(tabs)-1)
+	s.shownTab = s.tab
 	items := tabs[s.tab].rows
 
 	return layout.UniformInset(unit.Dp(22)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(s.label(material.H6, i18n.T("Настройки"), fgColor)),
+			layout.Rigid(layout.Spacer{Height: unit.Dp(10)}.Layout),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions { return s.tabBar(gtx, tabs) }),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(14)}.Layout),
 			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-				return layout.Flex{}.Layout(gtx,
-					// Слева вкладки: их мало, но длинные названия на английском и русском
-					// должны помещаться, поэтому ширина фиксированная.
-					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						gtx.Constraints.Min.X = gtx.Dp(150)
-						gtx.Constraints.Max.X = gtx.Dp(150)
-						return s.tabBar(gtx, tabs)
-					}),
-					layout.Rigid(layout.Spacer{Width: unit.Dp(18)}.Layout),
-					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-						list := material.List(th, &s.list)
-						return list.Layout(gtx, len(items), func(gtx layout.Context, i int) layout.Dimensions {
-							// Справа место под полосу прокрутки, чтобы она не лежала на элементах.
-							return layout.Inset{Right: unit.Dp(14)}.Layout(gtx, items[i])
-						})
-					}),
-				)
+				list := material.List(th, &s.list)
+				return list.Layout(gtx, len(items), func(gtx layout.Context, i int) layout.Dimensions {
+					// Справа место под полосу прокрутки, чтобы она не лежала на элементах.
+					return layout.Inset{Right: unit.Dp(14)}.Layout(gtx, items[i])
+				})
 			}),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(10)}.Layout),
 			layout.Rigid(s.label(material.Caption, i18n.T("Изменения применяются сразу. Файл: ")+settings.Path(), mutedColor)),

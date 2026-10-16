@@ -107,12 +107,12 @@ func TestRenderWindow(t *testing.T) {
 // прокручивается; в высоком влезает целиком.
 func TestContentScrollsInSmallWindow(t *testing.T) {
 	small := testState(t)
-	small.layout(frameContext(600, 560))
+	small.layout(frameContext(820, 700))
 	if !small.list.Position.BeforeEnd {
 		t.Error("в низком окне часть настроек должна быть ниже видимой области")
 	}
 	small.list.ScrollTo(len(small.rows()) - 1)
-	small.layout(frameContext(600, 560))
+	small.layout(frameContext(820, 700))
 	if small.list.Position.BeforeEnd {
 		t.Errorf("после прокрутки к последнему разделу конец списка должен быть виден: %+v", small.list.Position)
 	}
@@ -857,5 +857,31 @@ func TestTabs(t *testing.T) {
 	s.layout(frameContext(820, 700))
 	if s.tab != 2 {
 		t.Errorf("клик по вкладке: выбрана %d", s.tab)
+	}
+	// Содержимое меняется в том же кадре, где пришёл клик: следующего кадра может
+	// не быть до нового события, и клик казался бы запоздавшим.
+	s.tabBtns[5].Click()
+	s.layout(frameContext(820, 700))
+	if s.shownTab != 5 {
+		t.Errorf("после клика в этом же кадре нарисована вкладка %d, ожидали 5", s.shownTab)
+	}
+}
+
+// Ряд вкладок помещается в окно минимальной ширины на обоих языках.
+func TestTabBarFitsMinimumWidth(t *testing.T) {
+	defer i18n.SetLanguage(i18n.RU)
+	const minWindowDp, padding = 700, 44 // MinSize окна и отступы по 22 с каждой стороны
+	for _, lang := range []string{i18n.RU, i18n.EN} {
+		i18n.SetLanguage(lang)
+		s := testState(t)
+		gtx := layout.Context{
+			Ops:         new(op.Ops),
+			Constraints: layout.Constraints{Max: image.Pt(4000, 400)},
+			Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
+		}
+		dims := s.tabRow(gtx, s.tabs())
+		if dims.Size.X > minWindowDp-padding {
+			t.Errorf("%s: ряд вкладок %d dp шире доступных %d dp", lang, dims.Size.X, minWindowDp-padding)
+		}
 	}
 }
