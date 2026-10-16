@@ -53,6 +53,28 @@ func TestDoubleClickCopies(t *testing.T) {
 	}
 }
 
+// Инструмент по умолчанию после выбора области — стрелка, двойной клик должен
+// работать и с ним, и с пером (без случайной точки на снимке).
+func TestDoubleClickWorksWithDrawingTools(t *testing.T) {
+	for _, tool := range []annotate.Tool{annotate.ToolArrow, annotate.ToolLine, annotate.ToolRect, annotate.ToolBlur, annotate.ToolPen, annotate.ToolMarker} {
+		m, finished, home := dcMonitor(t, settings.DoubleClickCopy)
+		m.tool = tool
+		p := f32.Pt(200, 150)
+		for i := 0; i < 2; i++ {
+			m.press(p)
+			if !*finished {
+				m.release(p)
+			}
+		}
+		if !*finished || !clipboardImage(home) {
+			t.Errorf("инструмент %v: двойной клик должен скопировать и закрыть: завершение=%v, буфер=%v", tool, *finished, clipboardImage(home))
+		}
+		if len(m.shapes) != 0 {
+			t.Errorf("инструмент %v: от кликов не должно остаться фигур: %d", tool, len(m.shapes))
+		}
+	}
+}
+
 func TestDoubleClickCopyAndSave(t *testing.T) {
 	m, finished, home := dcMonitor(t, settings.DoubleClickCopySave)
 	custom := filepath.Join(home, "мои-скрины")
@@ -80,7 +102,7 @@ func TestDoubleClickIgnored(t *testing.T) {
 		{"режим off", func(m *monitor) {
 			m.store.Update(func(s *settings.Settings) { s.DoubleClick = settings.DoubleClickOff })
 		}, f32.Pt(200, 150), 0},
-		{"не инструмент выделения", func(m *monitor) { m.tool = annotate.ToolArrow }, f32.Pt(200, 150), 0},
+		{"инструмент «текст»", func(m *monitor) { m.tool = annotate.ToolText }, f32.Pt(200, 150), 0},
 		{"снаружи области", func(m *monitor) {}, f32.Pt(380, 280), 0},
 		{"на краю рамки", func(m *monitor) {}, f32.Pt(50, 150), 0},
 		{"слишком медленно", func(m *monitor) {}, f32.Pt(200, 150), doubleClickWindow + 100*time.Millisecond},

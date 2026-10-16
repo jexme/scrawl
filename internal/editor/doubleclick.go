@@ -32,18 +32,31 @@ func (m *monitor) isDoubleClick(p f32.Point) bool {
 }
 
 // doubleClickAction выполняет действие двойного клика из настроек. Возвращает
-// true, если клик обработан: только внутри выделения, с инструментом
-// «выделение» и не на рамке.
+// true, если клик обработан: только внутри выделения и не на рамке. Работает с
+// любым инструментом, кроме текста: после выбора области включается инструмент
+// по умолчанию, и клик не должен зависеть от него.
 func (m *monitor) doubleClickAction(p f32.Point) bool {
 	mode := m.store.Get().DoubleClick
-	if mode == settings.DoubleClickOff || !m.hasSel || m.tool != annotate.ToolSelect || !inRect(p, m.sel) {
+	if mode == settings.DoubleClickOff || !m.hasSel || m.tool == annotate.ToolText || !inRect(p, m.sel) {
 		return false
 	}
 	if _, onEdge := hitHandle(m.sel, p, m.tol, true); onEdge {
 		return false
 	}
+	m.dropClickDot()
 	m.export(true, mode == settings.DoubleClickCopySave)
 	return true
+}
+
+// dropClickDot убирает точку, которую первый клик двойного оставил пером или
+// маркером: остальные инструменты от клика без движения ничего не рисуют.
+func (m *monitor) dropClickDot() {
+	if n := len(m.shapes); n > 0 {
+		last := m.shapes[n-1]
+		if (last.Tool == annotate.ToolPen || last.Tool == annotate.ToolMarker) && len(last.Pts) == 1 {
+			m.shapes = m.shapes[:n-1]
+		}
+	}
 }
 
 // openSettingsWindow закрывает оверлей и открывает отдельное окно настроек:
