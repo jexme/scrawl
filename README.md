@@ -1,4 +1,4 @@
-# screen-editor
+# Scrawl
 
 [Русская версия](README.ru.md)
 
@@ -50,9 +50,9 @@ No `sudo`? `scripts/fetch-pipewire-headers.sh` unpacks the PipeWire headers into
 
 ```bash
 make install            # to ~/.local (PREFIX=/usr/local for system-wide)
-screen-editor -setup    # one-time: GNOME asks to pick each monitor
-screen-editor -grant-screenshot
-scripts/gnome-hotkey.sh # binds Print to screen-editor
+scrawl -setup    # one-time: GNOME asks to pick each monitor
+scrawl -grant-screenshot
+scripts/gnome-hotkey.sh # binds Print to scrawl
 ```
 
 - `-setup` shows one GNOME dialog **per monitor**: pick a different monitor each
@@ -62,6 +62,16 @@ scripts/gnome-hotkey.sh # binds Print to screen-editor
 - `-version` prints the build version and exits (also shown in the settings window).
 - `scripts/gnome-hotkey.sh [KEY] [BINARY] [--dry-run]` creates a GNOME custom
   shortcut and refuses to overwrite one that is already taken.
+
+### Upgrading from screen-editor
+
+Scrawl is the new name of screen-editor. Settings are picked up from
+`~/.config/screen-editor/config.json` until `~/.config/scrawl/config.json`
+exists (the old file is left untouched). The portal ties monitor choices and
+the screenshot permission to the app id, which changed, so run
+`scrawl -setup` and `scrawl -grant-screenshot` once more and point your hotkey
+at `scrawl` (`scripts/gnome-hotkey.sh`). The last area and the collection start
+fresh.
 
 ## Usage
 
@@ -81,14 +91,14 @@ Flags: `-v` prints timings, `-fresh` ignores the remembered area, `-setup` picks
 monitors again, `-settings` opens the settings window.
 
 Files: images in `~/Pictures/Screenshots`; state (monitor tokens, last area,
-collection) in `~/.cache/screen-editor/`.
+collection) in `~/.cache/scrawl/`.
 
 ## Settings
 
 Open the settings window with the gear button on the toolbar (it closes the
-overlay and opens a separate window), with `screen-editor -settings`, or from the
+overlay and opens a separate window), with `scrawl -settings`, or from the
 application menu entry "Settings". Changes apply immediately. Settings are stored in
-`~/.config/screen-editor/config.json`, which you can also edit by hand:
+`~/.config/scrawl/config.json`, which you can also edit by hand:
 
 ```json
 {
@@ -119,13 +129,13 @@ fullscreen [Gio](https://gioui.org) windows, one per monitor; Gio is patched
 
 - Nothing happens on the hotkey: `xdg-desktop-portal` may be hung. Restart it:
   `systemctl --user restart xdg-desktop-portal xdg-desktop-portal-gnome`.
-- A monitor was added or replaced: run `screen-editor -setup` again.
-- The fallback path says the portal refused: run `screen-editor -grant-screenshot`.
+- A monitor was added or replaced: run `scrawl -setup` again.
+- The fallback path says the portal refused: run `scrawl -grant-screenshot`.
 
 ## Building
 
 ```bash
-make build   # bin/screen-editor; fetches and patches Gio on first run
+make build   # bin/scrawl; fetches and patches Gio on first run
 make test
 make notices # regenerate THIRD_PARTY_NOTICES.md
 ```

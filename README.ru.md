@@ -1,4 +1,4 @@
-# screen-editor
+# Scrawl
 
 [English version](README.md)
 
@@ -51,9 +51,9 @@ sudo apt install gcc pkg-config patch libwayland-dev libx11-dev libx11-xcb-dev \
 
 ```bash
 make install            # в ~/.local (PREFIX=/usr/local для всей системы)
-screen-editor -setup    # один раз: GNOME спросит про каждый монитор
-screen-editor -grant-screenshot
-scripts/gnome-hotkey.sh # назначает Print на screen-editor
+scrawl -setup    # один раз: GNOME спросит про каждый монитор
+scrawl -grant-screenshot
+scripts/gnome-hotkey.sh # назначает Print на scrawl
 ```
 
 - `-setup` показывает по одному диалогу GNOME **на монитор**: каждый раз
@@ -64,6 +64,16 @@ scripts/gnome-hotkey.sh # назначает Print на screen-editor
 - `-version` печатает версию сборки и выходит (она же в окне настроек).
 - `scripts/gnome-hotkey.sh [КЛАВИША] [БИНАРНИК] [--dry-run]` создаёт
   пользовательский ярлык GNOME и не перезаписывает уже занятую комбинацию.
+
+### Обновление с screen-editor
+
+Scrawl это новое название screen-editor. Пока нет файла
+`~/.config/scrawl/config.json`, настройки берутся из
+`~/.config/screen-editor/config.json` (старый файл не меняется). Выбор
+мониторов и разрешение на снимки portal привязывает к идентификатору
+приложения, а он сменился, поэтому один раз выполните `scrawl -setup` и
+`scrawl -grant-screenshot` и перенаправьте горячую клавишу на `scrawl`
+(`scripts/gnome-hotkey.sh`). Прошлая область и подборка начинаются заново.
 
 ## Использование
 
@@ -83,14 +93,14 @@ scripts/gnome-hotkey.sh # назначает Print на screen-editor
 `-setup` заново выбирает мониторы, `-settings` открывает окно настроек.
 
 Файлы: картинки в `~/Pictures/Screenshots`; состояние (токены мониторов,
-прошлая область, подборка) в `~/.cache/screen-editor/`.
+прошлая область, подборка) в `~/.cache/scrawl/`.
 
 ## Настройки
 
 Окно настроек открывается шестерёнкой на панели инструментов (она закрывает
-оверлей и открывает отдельное окно), командой `screen-editor -settings` или
+оверлей и открывает отдельное окно), командой `scrawl -settings` или
 пунктом «Настройки» в меню приложения. Изменения применяются сразу. Настройки лежат в
-`~/.config/screen-editor/config.json`, файл можно править и руками:
+`~/.config/scrawl/config.json`, файл можно править и руками:
 
 ```json
 {
@@ -121,13 +131,13 @@ scripts/gnome-hotkey.sh # назначает Print на screen-editor
 
 - По хоткею ничего не происходит: возможно, завис `xdg-desktop-portal`.
   Перезапустите: `systemctl --user restart xdg-desktop-portal xdg-desktop-portal-gnome`.
-- Добавили или заменили монитор: снова запустите `screen-editor -setup`.
-- Запасной путь пишет, что portal отказал: выполните `screen-editor -grant-screenshot`.
+- Добавили или заменили монитор: снова запустите `scrawl -setup`.
+- Запасной путь пишет, что portal отказал: выполните `scrawl -grant-screenshot`.
 
 ## Сборка
 
 ```bash
-make build   # bin/screen-editor; при первом запуске скачивает и патчит Gio
+make build   # bin/scrawl; при первом запуске скачивает и патчит Gio
 make test
 make notices # пересобрать THIRD_PARTY_NOTICES.md
 ```
