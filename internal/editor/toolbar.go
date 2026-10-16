@@ -151,10 +151,10 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 
 	for i := range t.colors {
 		if t.colors[i].Clicked(gtx) {
-			m.color = annotate.Palette[i]
+			m.color = m.palette[i]
 			m.colorPicked = true
 		}
-		c := annotate.Palette[i]
+		c := m.palette[i]
 		active := m.color == c
 		place(func(g layout.Context) layout.Dimensions {
 			return t.colors[i].Layout(g, func(g layout.Context) layout.Dimensions {

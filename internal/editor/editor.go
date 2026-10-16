@@ -143,8 +143,9 @@ type monitor struct {
 	lastBtn widget.Clickable
 	tol     float32 // допуск попадания в ручку, пиксели кадра
 
-	tool  annotate.Tool
-	color color.NRGBA
+	tool    annotate.Tool
+	color   color.NRGBA
+	palette [settings.PaletteSize]color.NRGBA // цвета панели из настроек
 	// colorPicked: цвет выбран в панели вручную, цвета инструментов из настроек больше не применяются.
 	colorPicked bool
 	widths      map[annotate.Tool]float32 // толщина или сила для каждого инструмента отдельно
@@ -168,7 +169,6 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 		shaper:      annotate.NewShaper(),
 		bar:         newToolbar(),
 		imageOp:     paint.NewImageOp(f.Img),
-		color:       annotate.Palette[0],
 		widths:      make(map[annotate.Tool]float32),
 		focusCanvas: true,
 	}
@@ -176,6 +176,8 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 	m.env = annotate.Env{Shaper: m.shaper, Blur: annotate.NewBlurrer(f.Img)}
 	m.queued = collection.Count()
 	m.store = settings.NewStore()
+	m.palette = m.store.Get().PaletteColors()
+	m.color = m.palette[0]
 	if !cfg.Fresh && m.store.Get().RememberRegion {
 		m.last, m.hasLast = loadLastRegion(f)
 		// Если собирают подборку («было/стало»), снимать «стало» нужно в том же

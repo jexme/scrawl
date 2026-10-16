@@ -317,3 +317,34 @@ func TestToolDefaultsAreSavedToDisk(t *testing.T) {
 		t.Errorf("пустой цвет должен очищать: ошибка=%q, в файле %q", arrow.err, settings.Load().Tools.Arrow.Color)
 	}
 }
+
+func TestPaletteIsSavedToDisk(t *testing.T) {
+	s := testState(t)
+	s.palEd[0].SetText("ff0000")
+	s.palEd[3].SetText("")
+	s.layout(frameContext(700, 650))
+	got := settings.Load().Palette
+	if got[0] != "#FF0000" || got[3] != settings.DefaultPalette[3] || s.palErr != "" {
+		t.Errorf("палитра: %v, ошибка %q", got, s.palErr)
+	}
+
+	// Неверный цвет: ошибка, файл не меняется.
+	s.palEd[1].SetText("oops")
+	s.layout(frameContext(700, 650))
+	if s.palErr == "" || settings.Load().Palette[1] != settings.DefaultPalette[1] || settings.Load().Palette[0] != "#FF0000" {
+		t.Errorf("неверный цвет должен отклоняться целиком: ошибка=%q, палитра %v", s.palErr, settings.Load().Palette)
+	}
+
+	// Кнопка «По умолчанию».
+	s.palEd[1].SetText("")
+	s.palEd[0].SetText("00ff00")
+	s.layout(frameContext(700, 650))
+	if settings.Load().Palette[0] != "#00FF00" {
+		t.Fatalf("новый цвет не сохранился: %v", settings.Load().Palette)
+	}
+	s.palReset.Click()
+	s.layout(frameContext(700, 650))
+	if settings.Load().Palette != settings.DefaultPalette || s.palEd[0].Text() != settings.DefaultPalette[0] {
+		t.Errorf("кнопка должна вернуть палитру по умолчанию: %v, поле %q", settings.Load().Palette, s.palEd[0].Text())
+	}
+}

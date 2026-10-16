@@ -61,6 +61,10 @@ type state struct {
 	bGap     *slider     // рамка: пауза
 	handle   *slider     // радиус угловых ручек
 
+	palEd    [settings.PaletteSize]widget.Editor // цвета панели
+	palErr   string
+	palReset widget.Clickable
+
 	toolChoice widget.Enum // инструмент после выбора области
 	toolRows   []*toolRow
 	bColor     widget.Editor
@@ -103,6 +107,10 @@ func newState(store *settings.Store) *state {
 		sl.Set(sl.get(cur))
 	}
 	s.initTools(cur)
+	for i := range s.palEd {
+		s.palEd[i].SingleLine = true
+		s.palEd[i].SetText(cur.Palette[i])
+	}
 	s.bColor.SingleLine = true
 	s.bColor.SetText(cur.BorderColor)
 	s.choice.Value = string(cur.DoubleClick)
@@ -188,6 +196,21 @@ func (s *state) apply(gtx layout.Context) {
 			}
 		}
 	}
+	palChanged := s.palReset.Clicked(gtx)
+	if palChanged {
+		for i := range s.palEd {
+			s.palEd[i].SetText(settings.DefaultPalette[i])
+		}
+	}
+	for i := range s.palEd {
+		if edited(gtx, &s.palEd[i]) {
+			palChanged = true
+		}
+	}
+	if palChanged {
+		s.applyPalette()
+	}
+
 	s.toolChoice.Update(gtx)
 	if want := s.toolChoice.Value; want != s.store.Get().DefaultTool {
 		if err := s.store.Update(func(c *settings.Settings) { c.DefaultTool = want }); err != nil {
@@ -542,6 +565,73 @@ func (s *state) checkbox(b *widget.Bool, label string) layout.Widget {
 	return cb.Layout
 }
 
+// applyPalette сохраняет цвета панели. Пустые поля берут цвет по умолчанию; пока
+// в каком-то поле неверный цвет, настройка не меняется.
+func (s *state) applyPalette() {
+	var pal [settings.PaletteSize]string
+	for i := range s.palEd {
+		txt := strings.TrimSpace(s.palEd[i].Text())
+		if txt == "" {
+			pal[i] = settings.DefaultPalette[i]
+			continue
+		}
+		c, err := settings.ParseColor(txt)
+		if err != nil {
+			s.palErr = fmt.Sprintf("Цвет %d: %v", i+1, err)
+			return
+		}
+		pal[i] = settings.FormatColor(c)
+	}
+	s.palErr = ""
+	if err := s.store.Update(func(c *settings.Settings) { c.Palette = pal }); err != nil {
+		s.palErr = "Не удалось сохранить: " + err.Error()
+	}
+}
+
+// paletteControls — цвета панели в две колонки и кнопка сброса.
+func (s *state) paletteControls() layout.Widget {
+	cell := func(i int) layout.Widget {
+		return func(gtx layout.Context) layout.Dimensions {
+			c, _ := settings.ParseColor(settings.DefaultPalette[i])
+			if parsed, err := settings.ParseColor(s.palEd[i].Text()); err == nil {
+				c = parsed
+			}
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(s.label(material.Body2, fmt.Sprintf("%d", i+1), mutedColor)),
+				layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions { return swatchBox(gtx, c, 28) }),
+				layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
+				layout.Flexed(1, s.field(&s.palEd[i], settings.DefaultPalette[i])),
+			)
+		}
+	}
+	return func(gtx layout.Context) layout.Dimensions {
+		const half = settings.PaletteSize / 2
+		var children []layout.FlexChild
+		for r := 0; r < half; r++ {
+			r := r
+			children = append(children,
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					return layout.Flex{}.Layout(gtx,
+						layout.Flexed(1, cell(r)),
+						layout.Rigid(layout.Spacer{Width: unit.Dp(16)}.Layout),
+						layout.Flexed(1, cell(r+half)),
+					)
+				}),
+				layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout))
+		}
+		if s.palErr != "" {
+			children = append(children, layout.Rigid(s.label(material.Caption, s.palErr, errorColor)), layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout))
+		}
+		children = append(children, layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			b := material.Button(s.th, &s.palReset, "По умолчанию")
+			b.Background = borderColor
+			return b.Layout(gtx)
+		}))
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	}
+}
+
 // toolChoiceRadios — выбор инструмента по умолчанию.
 func (s *state) toolChoiceRadios() layout.Widget {
 	items := make([]layout.Widget, len(settings.ToolNames))
@@ -624,6 +714,8 @@ func (s *state) items() []layout.Widget {
 			s.toolChoiceRadios()),
 		s.row("Цвет и толщина по умолчанию", "Цвет #RRGGBB: пусто значит не менять. Цвет работает, пока вы сами не выбрали цвет в панели. Толщина для текста это размер, для размытия сила.",
 			s.toolControls()),
+		s.row("Цвета панели", "Восемь цветов в панели инструментов, #RRGGBB. Пустое поле: цвет по умолчанию. Применяется при следующем снимке.",
+			s.paletteControls()),
 		s.section("Вид"),
 		s.row("Рамка выделения", "Пунктир вокруг выбранной области.", s.borderControls()),
 		s.row("Размер области", "Подпись «ширина × высота» над левым верхним углом.",

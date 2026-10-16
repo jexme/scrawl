@@ -168,3 +168,29 @@ func TestToolNamesMatchEditorTools(t *testing.T) {
 		t.Error("границы толщины в настройках и редакторе разошлись")
 	}
 }
+
+func TestPaletteFromSettings(t *testing.T) {
+	sandbox(t)
+	for i, c := range annotate.Palette {
+		if settings.FormatColor(c) != settings.DefaultPalette[i] {
+			t.Errorf("цвет %d: в редакторе %s, в настройках %s", i, settings.FormatColor(c), settings.DefaultPalette[i])
+		}
+	}
+	if len(annotate.Palette) != settings.PaletteSize {
+		t.Fatalf("в панели %d цветов, в настройках %d", len(annotate.Palette), settings.PaletteSize)
+	}
+
+	s := settings.Default()
+	s.Palette[0] = "#112233"
+	if err := settings.Save(s); err != nil {
+		t.Fatal(err)
+	}
+	m, _ := newTestMonitor(t)
+	want := color.NRGBA{R: 0x11, G: 0x22, B: 0x33, A: 255}
+	if m.palette[0] != want || m.color != want {
+		t.Errorf("первый цвет палитры должен быть и текущим: палитра %+v, текущий %+v", m.palette[0], m.color)
+	}
+	if m.palette[1] != annotate.Palette[1] {
+		t.Errorf("остальные цвета по умолчанию: %+v", m.palette[1])
+	}
+}

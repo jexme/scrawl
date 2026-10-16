@@ -76,6 +76,8 @@ type Settings struct {
 	DefaultTool string `json:"default_tool"`
 	// Tools — цвет и толщина по умолчанию для каждого инструмента.
 	Tools ToolStyles `json:"tools"`
+	// Palette — цвета панели инструментов, #RRGGBB.
+	Palette [PaletteSize]string `json:"palette"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
@@ -83,7 +85,7 @@ type Settings struct {
 // Default возвращает настройки по умолчанию.
 func Default() Settings {
 	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
-		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, DefaultTool: "select"}
+		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, DefaultTool: "select", Palette: DefaultPalette}
 }
 
 // Path возвращает путь к файлу настроек.
@@ -119,6 +121,7 @@ func (s *Settings) normalize() {
 		s.DefaultTool = def.DefaultTool
 	}
 	s.Tools.normalize()
+	normalizePalette(&s.Palette)
 	s.HandleRadius = min(max(s.HandleRadius, 0), MaxHandleRadius)
 	if c, err := ParseColor(s.BorderColor); err == nil {
 		s.BorderColor = FormatColor(c)

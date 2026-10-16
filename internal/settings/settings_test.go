@@ -408,3 +408,23 @@ func TestToolStylesSaveOnlyWhatIsSet(t *testing.T) {
 		t.Errorf("после перезагрузки: %+v", got)
 	}
 }
+
+func TestPalette(t *testing.T) {
+	sandbox(t)
+	if got := Load().Palette; got != DefaultPalette {
+		t.Errorf("палитра по умолчанию: %v", got)
+	}
+	writeConfig(t, `{"palette":["ff0000","","nope","#00ff00"]}`)
+	got := Load().Palette
+	if got[0] != "#FF0000" || got[1] != DefaultPalette[1] || got[2] != DefaultPalette[2] || got[3] != "#00FF00" || got[7] != DefaultPalette[7] {
+		t.Errorf("пустые и неверные цвета заменяются, остальные нормализуются: %v", got)
+	}
+	// Палитра не того типа: целиком по умолчанию, соседние ключи целы.
+	writeConfig(t, `{"palette":"red","dim_percent":30}`)
+	if got := Load(); got.Palette != DefaultPalette || got.DimPercent != 30 {
+		t.Errorf("неверный тип палитры: %+v", got)
+	}
+	if c := Load().PaletteColors()[4]; c.R != 30 || c.G != 136 || c.B != 229 {
+		t.Errorf("пятый цвет по умолчанию: %+v", c)
+	}
+}
