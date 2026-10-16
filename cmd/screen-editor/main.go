@@ -18,6 +18,7 @@ import (
 	"github.com/jexme/screen-editor/internal/settings"
 	"github.com/jexme/screen-editor/internal/settingsui"
 	"github.com/jexme/screen-editor/internal/singleton"
+	"github.com/jexme/screen-editor/internal/version"
 )
 
 func main() {
@@ -27,7 +28,13 @@ func main() {
 	openSettings := flag.Bool("settings", false, "открыть окно настроек")
 	grant := flag.Bool("grant-screenshot", false, "разрешить приложению запасной снимок через Screenshot portal и выйти")
 	exitAfter := flag.Duration("exit-after", 0, "закрыться штатно через указанное время (для проверок)")
+	showVersion := flag.Bool("version", false, "показать версию и выйти")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("screen-editor", version.String())
+		return
+	}
 
 	if *grant {
 		if err := screencast.GrantScreenshotPermission(); err != nil {

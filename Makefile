@@ -29,8 +29,11 @@ gio: third_party/gio/.screen-editor-patched
 third_party/gio/.screen-editor-patched: third_party/gio.patch scripts/setup-gio.sh go.mod
 	./scripts/setup-gio.sh -f
 
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null)
+LDFLAGS := $(if $(VERSION),-ldflags "-X github.com/jexme/screen-editor/internal/version.Version=$(VERSION)")
+
 build: gio
-	$(GO) build -o bin/screen-editor ./cmd/screen-editor
+	$(GO) build $(LDFLAGS) -o bin/screen-editor ./cmd/screen-editor
 
 test: gio
 	$(GO) test ./...

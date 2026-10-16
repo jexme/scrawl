@@ -21,6 +21,7 @@ import (
 
 	"github.com/jexme/screen-editor/internal/screencast"
 	"github.com/jexme/screen-editor/internal/settings"
+	"github.com/jexme/screen-editor/internal/version"
 )
 
 var (
@@ -205,6 +206,9 @@ func (s *state) layout(gtx layout.Context) layout.Dimensions {
 			b.Background = borderColor
 			return b.Layout(gtx)
 		}),
+		gap(22),
+		layout.Rigid(title("О программе")),
+		layout.Rigid(muted("Screen Editor "+version.String()+" · "+version.Home)),
 		layout.Flexed(1, layout.Spacer{}.Layout),
 		layout.Rigid(muted("Изменения применяются сразу. Файл: "+settings.Path())),
 		gap(10),
