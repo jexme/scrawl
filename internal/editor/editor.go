@@ -53,9 +53,6 @@ func shadeColor(percent int) color.NRGBA {
 	return color.NRGBA{A: uint8(math.Round(float64(min(max(percent, 0), 100)) * 255 / 100))}
 }
 
-// handleRadius — радиус угловой ручки.
-const handleRadius = 3.0
-
 // Режимы правки готовой области.
 const (
 	adjustNone = iota
@@ -357,10 +354,11 @@ func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 	dashedRect(gtx.Ops, r, cfg.BorderNRGBA(), float32(cfg.BorderWidth)/sx, float32(cfg.BorderDash)/sx, float32(cfg.BorderGap)/sx)
 
 	// Ручки только в углах: за стороны рамку тянут инструментом «выделение».
-	hr := handleRadius / sx
-	for _, c := range cornerPoints(r) {
-		dot := clip.Ellipse(image.Rect(int(c.X-hr), int(c.Y-hr), int(c.X+hr), int(c.Y+hr)))
-		paint.FillShape(gtx.Ops, handleFg, dot.Op(gtx.Ops))
+	if hr := float32(cfg.HandleRadius) / sx; hr > 0 {
+		for _, c := range cornerPoints(r) {
+			dot := clip.Ellipse(image.Rect(int(c.X-hr), int(c.Y-hr), int(c.X+hr), int(c.Y+hr)))
+			paint.FillShape(gtx.Ops, handleFg, dot.Op(gtx.Ops))
+		}
 	}
 }
 

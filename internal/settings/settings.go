@@ -67,6 +67,8 @@ type Settings struct {
 	BorderDash  float64 `json:"border_dash"`
 	BorderGap   float64 `json:"border_gap"`
 	BorderColor string  `json:"border_color"`
+	// HandleRadius — радиус угловых ручек в пикселях экрана; 0 прячет ручки.
+	HandleRadius float64 `json:"handle_radius"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
@@ -74,7 +76,7 @@ type Settings struct {
 // Default возвращает настройки по умолчанию.
 func Default() Settings {
 	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
-		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF"}
+		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3}
 }
 
 // Path возвращает путь к файлу настроек.
@@ -106,6 +108,7 @@ func (s *Settings) normalize() {
 	s.BorderWidth = min(max(s.BorderWidth, MinBorderWidth), MaxBorderWidth)
 	s.BorderDash = min(max(s.BorderDash, MinBorderDash), MaxBorderDash)
 	s.BorderGap = min(max(s.BorderGap, 0), MaxBorderGap)
+	s.HandleRadius = min(max(s.HandleRadius, 0), MaxHandleRadius)
 	if c, err := ParseColor(s.BorderColor); err == nil {
 		s.BorderColor = FormatColor(c)
 	} else {
@@ -255,6 +258,7 @@ const (
 	MinBorderWidth, MaxBorderWidth = 0.5, 4
 	MinBorderDash, MaxBorderDash   = 1, 20
 	MaxBorderGap                   = 20
+	MaxHandleRadius                = 10
 )
 
 // ParseColor разбирает цвет вида #RRGGBB (решётка необязательна).

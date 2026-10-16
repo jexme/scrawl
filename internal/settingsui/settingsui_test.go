@@ -249,3 +249,18 @@ func TestBorderControlsAreSavedToDisk(t *testing.T) {
 		t.Errorf("верный цвет должен сохраниться как #RRGGBB: ошибка=%q, файл=%q", s.colorErr, settings.Load().BorderColor)
 	}
 }
+
+func TestHandleSliderIsSavedToDisk(t *testing.T) {
+	s := testState(t)
+	if s.handle.Value() != 3 {
+		t.Fatalf("ручки по умолчанию 3 px, а в окне %v", s.handle.Value())
+	}
+	s.handle.Set(0)
+	s.layout(frameContext(700, 650))
+	if got := settings.Load().HandleRadius; got != 0 {
+		t.Errorf("0 (ручки спрятаны) должен сохраниться как 0, а не вернуться к умолчанию: %v", got)
+	}
+	if got := s.handle.format(0); got != "нет" {
+		t.Errorf("подпись нуля: %q", got)
+	}
+}

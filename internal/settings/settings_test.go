@@ -327,3 +327,22 @@ func TestStoreUpdateWithoutChangeDoesNotWrite(t *testing.T) {
 		t.Error("настоящее изменение должно записаться")
 	}
 }
+
+func TestHandleRadius(t *testing.T) {
+	sandbox(t)
+	if got := Load().HandleRadius; got != 3 {
+		t.Errorf("радиус ручек по умолчанию 3, а не %v", got)
+	}
+	for body, want := range map[string]float64{
+		`{"handle_radius":0}`:   0, // ручки спрятаны
+		`{"handle_radius":6.5}`: 6.5,
+		`{"handle_radius":100}`: MaxHandleRadius,
+		`{"handle_radius":-1}`:  0,
+		`{"handle_radius":"x"}`: 3,
+	} {
+		writeConfig(t, body)
+		if got := Load().HandleRadius; got != want {
+			t.Errorf("%s: получили %v, ожидали %v", body, got, want)
+		}
+	}
+}

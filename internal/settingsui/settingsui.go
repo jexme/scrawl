@@ -58,6 +58,7 @@ type state struct {
 	bWidth   *slider     // рамка: толщина
 	bDash    *slider     // рамка: штрих
 	bGap     *slider     // рамка: пауза
+	handle   *slider     // радиус угловых ручек
 	bColor   widget.Editor
 	colorErr string
 
@@ -85,6 +86,14 @@ func newState(store *settings.Store) *state {
 	s.bGap = s.addSlider(0, 12, 0.5, px,
 		func(c settings.Settings) float64 { return c.BorderGap },
 		func(c *settings.Settings, v float64) { c.BorderGap = v })
+	s.handle = s.addSlider(0, settings.MaxHandleRadius, 0.5, func(v float64) string {
+		if v == 0 {
+			return "нет"
+		}
+		return fmt.Sprintf("%.1f px", v)
+	},
+		func(c settings.Settings) float64 { return c.HandleRadius },
+		func(c *settings.Settings, v float64) { c.HandleRadius = v })
 	cur := store.Get()
 	for _, sl := range s.sliders {
 		sl.Set(sl.get(cur))
@@ -478,6 +487,7 @@ func (s *state) items() []layout.Widget {
 			s.checkbox(&s.remember, "Запоминать область снимка")),
 		s.section("Вид"),
 		s.row("Рамка выделения", "Пунктир вокруг выбранной области.", s.borderControls()),
+		s.row("Угловые ручки", "Кружки в углах рамки, за них меняют размер области. «нет» прячет их.", s.slider(s.handle)),
 		s.row("Затемнение вне области", "0% не затемняет совсем, 100% закрашивает чёрным.", s.slider(s.dim)),
 		s.section("Сохранение"),
 		s.row("Папка для скриншотов", "Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь.", dirField),
