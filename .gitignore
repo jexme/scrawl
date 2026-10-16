@@ -3,3 +3,4 @@ bin/
 /third_party/gio/
 /.deps/
 /dist/
+!docs/images/*.png

@@ -760,3 +760,40 @@ func TestUpdateButtonAndSwitch(t *testing.T) {
 		t.Error("включённая проверка не дошла до файла")
 	}
 }
+
+// TestDocSettingsImages рисует окно настроек на двух языках для README
+// (папка в переменной SCRAWL_DOC_IMAGES).
+func TestDocSettingsImages(t *testing.T) {
+	dir := os.Getenv("SCRAWL_DOC_IMAGES")
+	if dir == "" {
+		t.Skip("нужна переменная SCRAWL_DOC_IMAGES")
+	}
+	defer i18n.SetLanguage(i18n.RU)
+	const W, H = 640, 980
+	for lang, name := range map[string]string{i18n.RU: "settings-ru.png", i18n.EN: "settings-en.png"} {
+		i18n.SetLanguage(lang)
+		t.Setenv("XDG_CONFIG_HOME", "/home/you/.config") // красивый путь в подписи; файл не создаётся
+		s := newState(settings.NewStore())
+		win, err := headless.NewWindow(W, H)
+		if err != nil {
+			t.Skipf("headless рендер недоступен: %v", err)
+		}
+		gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Exact(image.Pt(W, H)), Metric: unit.Metric{PxPerDp: 1.1, PxPerSp: 1.1}}
+		paint.Fill(gtx.Ops, bgColor)
+		s.layout(gtx)
+		if err := win.Frame(gtx.Ops); err != nil {
+			t.Fatal(err)
+		}
+		out := image.NewRGBA(image.Rect(0, 0, W, H))
+		if err := win.Screenshot(out); err != nil {
+			t.Fatal(err)
+		}
+		win.Release()
+		f, err := os.Create(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		png.Encode(f, out)
+		f.Close()
+	}
+}

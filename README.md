@@ -1,186 +1,230 @@
 # Scrawl
 
-[Русская версия](README.ru.md)
+**Fast screenshots with annotations for GNOME on Wayland.** Press a key, select
+an area on any monitor, draw arrows, boxes and text, blur out private data, and
+the result is already in your clipboard and saved as a file.
 
-A fast screenshot tool with annotations for **GNOME on Wayland**. Press a key,
-select an area on any monitor, draw arrows, boxes, text, blur out sensitive
-data, and the result goes to the clipboard and to a file. No "which screen do
-you want to share?" dialog on every shot.
+[English](README.md) · [Русский](README.ru.md) · [简体中文](docs/translations/README.zh-CN.md) · [Español](docs/translations/README.es.md) · [Português (Brasil)](docs/translations/README.pt-BR.md) · [日本語](docs/translations/README.ja.md) · [Deutsch](docs/translations/README.de.md) · [Français](docs/translations/README.fr.md) · [한국어](docs/translations/README.ko.md)
 
-> Status: personal project under active development, not released yet.
-> Linux (GNOME, Wayland) only for now; a Windows port is planned (it builds, but capture is not written yet: see [docs/WINDOWS.md](docs/WINDOWS.md)). The interface
-> is available in Russian and English (settings → "Interface language").
+![Scrawl overlay: a selected area with a box, an arrow, a caption, a marker stroke and a blurred spot, and the toolbar below it](docs/images/overlay.png)
+
+*The picture is a real render of the overlay over a made-up desktop.*
+
+## Why Scrawl
+
+On GNOME with Wayland, apps cannot grab the screen directly. They ask the desktop
+portal, and the portal asks **"which screen do you want to share?" on every shot**.
+Scrawl asks once per monitor, remembers the answer, and after that a screenshot
+is one key press: the frozen screen appears in about 150 ms.
 
 ## Features
 
-- Frozen screen on every monitor appears in about 150 ms after the hotkey.
-- Selection with a dashed frame: drag the corners to resize; with the *select*
-  tool drag any edge to resize, or drag inside to move.
-- Tools: pen, line, arrow, box, marker, **blur**, text. Eight colors; the mouse
-  wheel or the `−`/`+` buttons change thickness, text size or blur strength.
-- **Before/after collections:** put shots aside, then glue them side by side with
-  captions "Before"/"After" (or "Step N" for three and more; the words are
-  configurable), or send them as separate files.
+**Capture**
+- Works on every monitor at once; the overlay opens on all of them and you select on any.
+- Selection with a dashed frame. Drag the corners to resize; with the *select*
+  tool drag an edge to resize or drag inside to move.
 - Remembers the last area and brings it back with one key (`R`).
-- Saves PNG to `~/Pictures/Screenshots` and copies the image to the clipboard.
-- A separate settings window (gear button): for example, a double click inside
-  the selection can copy it to the clipboard.
+- Optional mouse cursor in the shot.
+
+**Annotate**
+- Pen, line, arrow, box, marker, **blur** and text; eight colours.
+- Mouse wheel (or the `−` / `+` buttons) changes the thickness, the text size or the blur strength.
+- Undo with `Ctrl+Z`.
+
+**Save and share**
+- `Enter` copies the image to the clipboard and saves a PNG to `~/Pictures/Screenshots`.
+  `Ctrl+C` only copies, `Ctrl+S` only saves. JPEG is available too.
+- **Before/after collections:** set shots aside with `A`, then glue them into one
+  picture with captions ("Before", "After", or "Step 1…" for more), side by side
+  or one under another. Or send the collection as separate files that paste into a chat as attachments.
+
+**Make it yours**
+- A settings window for almost everything: keys, colours, default tools, the look of the selection, file names and format, language (English, Russian).
+- A tray icon with autostart, a hotkey button, and an optional update check (off by default).
+
+## Status
+
+A personal project under active development. **No release has been published
+yet**, so for now you build it from source (it takes a few minutes).
+Linux with GNOME on Wayland only. A Windows build compiles, but screen capture
+is not written yet; see [docs/WINDOWS.md](docs/WINDOWS.md).
 
 ## Requirements
 
-- GNOME on Wayland, PipeWire, and `xdg-desktop-portal` with host app registration
-  (`org.freedesktop.host.portal.Registry`; developed and tested on 1.21 with GNOME
-  50), plus `xdg-desktop-portal-gnome`.
-- `wl-clipboard` (`wl-copy`) for the clipboard, `libnotify` (`notify-send`) for
-  notifications.
+- GNOME on Wayland with PipeWire, `xdg-desktop-portal` (1.21 or newer, it must
+  support host app registration) and `xdg-desktop-portal-gnome`. Developed and tested on Ubuntu with GNOME 50.
+- `wl-clipboard` (the `wl-copy` command) for the clipboard and `libnotify`
+  (the `notify-send` command) for notifications:
 
-Build dependencies: Go (version from `go.mod`), a C compiler, `pkg-config`,
-`patch`, and development headers:
+```bash
+sudo apt install wl-clipboard libnotify-bin
+```
+
+## Install
+
+### 1. Get the program
+
+**From source** (works today):
 
 ```bash
 sudo apt install gcc pkg-config patch libwayland-dev libx11-dev libx11-xcb-dev \
   libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev \
   libxcursor-dev libvulkan-dev libpipewire-0.3-dev
+git clone https://github.com/jexme/scrawl.git && cd scrawl
+make install            # builds and installs to ~/.local (PREFIX=/usr/local for system-wide)
 ```
 
-No `sudo`? `scripts/fetch-pipewire-headers.sh` unpacks the PipeWire headers into
-`.deps/` and the Makefile picks them up.
+You need Go (the version from `go.mod`). No `sudo`? `scripts/fetch-pipewire-headers.sh`
+unpacks the PipeWire headers into `.deps/`, and the Makefile picks them up.
 
-## Install
-
-```bash
-make install            # to ~/.local (PREFIX=/usr/local for system-wide)
-scrawl -setup    # one-time: GNOME asks to pick each monitor
-scrawl -grant-screenshot
-scripts/gnome-hotkey.sh # binds Print to scrawl
-```
-
-- `-setup` shows one GNOME dialog **per monitor**: pick a different monitor each
-  time and keep "Remember this choice" ticked. After that no dialogs appear.
-- `-grant-screenshot` gives the app the permission it needs for the fallback
-  capture path (see below). It writes one entry to the portal permission store.
-- `-version` prints the build version and exits (also shown in the settings window).
-- `scripts/gnome-hotkey.sh [KEY] [BINARY] [--dry-run]` creates a GNOME custom
-  shortcut and refuses to overwrite one that is already taken.
-
-### Install from a release archive
-
-Releases (built by GitHub Actions on a `v*` tag) carry `scrawl-VERSION-linux-amd64.tar.gz`
-and `SHA256SUMS`:
+**From a release archive** (once a version is published): download
+`scrawl-VERSION-linux-amd64.tar.gz` and `SHA256SUMS` from the
+[Releases](https://github.com/jexme/scrawl/releases) page, then:
 
 ```bash
 sha256sum -c --ignore-missing SHA256SUMS
 tar xzf scrawl-*-linux-amd64.tar.gz && cd scrawl-*-linux-amd64
 ./install.sh            # to ~/.local (PREFIX=/usr/local for system-wide)
+sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland-cursor0 \
+  libxkbcommon-x11-0 libegl1 libx11-6 libxcursor1
 ```
 
-The binary needs these runtime libraries (Ubuntu names):
-`sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland-cursor0 libxkbcommon-x11-0 libegl1 libx11-6 libxcursor1`.
-Then run `scrawl -setup` and `scrawl -grant-screenshot` (or use the same buttons in `scrawl -settings`).
+Make sure `~/.local/bin` is in your `PATH`.
+
+### 2. First run: three one-time steps
+
+Open the settings window (`scrawl -settings`) and use these buttons, or run the commands:
+
+1. **Pick the monitors:** button "Pick monitors again" or `scrawl -setup`.
+   GNOME shows one dialog **per monitor**. In each, choose a *different* monitor,
+   keep **"Remember this choice"** ticked and press the share button.
+   After that, no dialogs.
+2. **Grant the fallback permission:** button "Grant permission" or `scrawl -grant-screenshot`.
+   This lets Scrawl use the slower Screenshot portal on the rare shot when
+   PipeWire gives no frame.
+3. **Set a hotkey:** the "Launch hotkey" field and the "Assign" button (default `Print`),
+   or `scripts/gnome-hotkey.sh [KEY]`. It creates a GNOME custom shortcut and never
+   overwrites one that is taken. If `Print` still opens GNOME's own screenshot tool, turn that
+   off in *Settings → Keyboard → View and Customize Shortcuts → Screenshots*.
 
 ### Upgrading from screen-editor
 
-Scrawl is the new name of screen-editor. Settings are picked up from
+Scrawl is the new name of screen-editor. Your settings are picked up from
 `~/.config/screen-editor/config.json` until `~/.config/scrawl/config.json`
-exists (the old file is left untouched). The portal ties monitor choices and
-the screenshot permission to the app id, which changed, so run
-`scrawl -setup` and `scrawl -grant-screenshot` once more and point your hotkey
-at `scrawl` (`scripts/gnome-hotkey.sh`). The last area and the collection start
-fresh.
+exists (the old file stays untouched). The portal ties monitor choices and
+permissions to the app id, which changed, so repeat steps 1 to 3 once, and point your hotkey
+at `scrawl`. The last area and the collection start fresh.
 
-## Usage
+## Using Scrawl
 
-Press the hotkey, drag to select. Keys:
+1. Press your hotkey. The screen freezes and dims.
+2. Drag to select an area (on any monitor). A toolbar appears under it.
+3. Annotate if you want: pick a tool and a colour, drag on the area.
+4. Press `Enter`. The image is in your clipboard and in `~/Pictures/Screenshots`. Paste it anywhere.
+
+`Esc` cancels at any point.
+
+### Keys
 
 | Key | Action |
 | --- | --- |
-| `Enter` | save to file and copy (configurable in settings) |
+| `Enter` | copy to the clipboard **and** save to a file (what it does is configurable) |
 | `Ctrl+C` / `Ctrl+S` | only copy / only save |
-| `Ctrl+Z` | undo |
+| `Ctrl+Z` | undo the last annotation |
 | `Esc` | cancel |
-| `R` | restore the previous area |
-| `A` / `G` / `D` | add to collection / glue collection / send collection as files |
+| `R` | restore the area of the previous shot |
+| `A` | add the shot to the collection |
+| `G` | glue the collection (and the current area) into one image |
+| `D` | save the collection as separate files and put the file list in the clipboard |
 | mouse wheel | thickness, text size or blur strength of the current tool |
 
-Every key below can be changed in the settings window ("Overlay keys") or in the `keys` setting.
+Every key can be changed in the settings window ("Overlay keys").
 
-Flags: `-tray` keeps a notification-area icon (autostart at login is a switch in the settings window; left click: screenshot; menu: screenshot, settings, quit; on GNOME it needs the AppIndicator extension, enabled by default in Ubuntu), `-v` prints timings, `-fresh` ignores the remembered area, `-setup` picks
-monitors again, `-settings` opens the settings window.
+### Toolbar
 
-Files: images in `~/Pictures/Screenshots`; state (monitor tokens, last area,
-collection) in `~/.cache/scrawl/`.
+From left to right: select, pen, line, arrow, box, marker, blur, text · eight
+colours · `−` thickness `+` · settings (closes the overlay and opens the settings
+window) · add to collection · undo · copy · save · close.
+
+### Before/after collections
+
+Take the first shot and press `A`. Take the next one: the previous area is already
+selected, so you shoot the same place again. Press `G` to glue the shots into one
+image (it is saved and copied), or `D` to get separate files. The small panel
+at the bottom of the screen shows what is in the collection and has the same actions as buttons.
+
+## Tray icon and autostart
+
+`scrawl -tray` keeps an icon in the notification area: left click takes a screenshot,
+the menu has "Screenshot", "Settings" and "Quit". To start it at login, switch on
+*Settings → Startup → Autostart*. On GNOME the icon needs the AppIndicator
+extension (enabled by default in Ubuntu).
 
 ## Settings
 
-Open the settings window with the gear button on the toolbar (it closes the
-overlay and opens a separate window), with `scrawl -settings`, or from the
-application menu entry "Settings". Changes apply immediately. Settings are stored in
-`~/.config/scrawl/config.json`, which you can also edit by hand:
+![The settings window](docs/images/settings-en.png)
 
-```json
-{
-  "enter": "copy",
-  "dim_percent": 60,
-  "tools": { "marker": { "color": "#FDD835" } },
-  "glue": { "before": "Before", "after": "After" }
-}
-```
+Open it from the toolbar (gear), with `scrawl -settings`, or from the application menu.
+Changes are saved at once to `~/.config/scrawl/config.json`, a plain JSON file
+you can also edit by hand. Missing or invalid values fall back to the defaults.
+Every key is described in the [settings reference](docs/SETTINGS.md).
 
-| Key | Values | Meaning |
-| --- | --- | --- |
-| `double_click` | `off` (default), `copy`, `copy_save` | what a double click inside the selection does (with the *select* tool) |
-| `enter` | `copy_save` (default), `copy`, `save` | what `Enter` does |
-| `keep_open` | `false` | stay in the editor after copying or saving (leave with `Esc`) |
-| `notifications` | `true` | show notifications after a shot; errors are always shown |
-| `remember_region` | `true` | remember the last area and offer it on the next run |
-| `include_cursor` | `false` | draw the mouse cursor into the shot (PipeWire capture only) |
-| `save_dir` | directory, empty by default | where files go; empty means `~/Pictures/Screenshots` |
-| `file_prefix` | text, empty by default | start of the file name, then date and time; empty means `scrawl` |
-| `format` | `png` (default), `jpeg` | file format; the clipboard always gets PNG |
-| `jpeg_quality` | 1-100, `90` | JPEG quality |
-| `default_tool` | `select` (default), `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text` | tool switched on once an area is selected |
-| `tools` | object per tool: `{"arrow": {"color": "#E53935", "width": 6}}` | default colour (`#RRGGBB`) and thickness per tool; applies until you pick a colour in the toolbar |
-| `check_updates` | `false` (default), `true` | ask GitHub Releases for a new version when the settings window and the tray icon start; the only network access of the program (the "Check now" button works either way) |
-| `language` | `auto` (default), `ru`, `en` | interface language; `auto` follows the system locale |
-| `keys` | object: `confirm`, `cancel`, `restore`, `add`, `glue`, `send`, `undo`, `copy`, `save` | overlay keys as `Ctrl+Shift+S`, `R`, `Enter`, `F5`; empty means the default, two actions cannot share a key |
-| `palette` | list of 8 colours `#RRGGBB` | colours in the toolbar |
-| `marker_opacity` | 5-100, `43` | marker opacity, % |
-| `dim_percent` | 0-100, `86` | dimming outside the area, % |
-| `border_width` | 0.5-4, `1` | selection frame: line thickness, px |
-| `border_dash` | 1-20, `4.6` | selection frame: dash length, px |
-| `border_gap` | 0-20, `2` | selection frame: gap between dashes, px |
-| `border_color` | `#RRGGBB`, `#FFFFFF` | selection frame colour |
-| `handle_radius` | 0-10, `3` | corner handle radius, px; `0` hides the handles |
-| `show_size` | `true` | show the "W × H" label |
-| `glue` | object: `before`, `after`, `step`, `layout`, `background`, `pad`, `label_size` | before/after collage: captions (empty means "Было", "Стало", "Шаг"), `layout` `side` (default) or `stack`, `background` `light` (default) or `dark`, `pad` 0-100 (`28`), `label_size` 12-64 (`28`) |
+## Files and privacy
 
-Missing or invalid values fall back to the defaults; numbers outside the allowed range are clamped. Unknown keys are kept when the file is saved.
+- Images go to `~/Pictures/Screenshots` (change it in the settings), named like `scrawl-20260131-142501.png`.
+- Settings: `~/.config/scrawl/`. Monitor tokens, the last area and the collection: `~/.cache/scrawl/`.
+- Scrawl never goes online by itself. The only network request in the program is
+  the optional update check (off by default); it asks GitHub for the latest release, and the only thing it sends besides the usual HTTP headers is the program version.
+- Screenshots never leave your computer unless you paste them somewhere.
 
-## How it works
+## Command line
 
-The screen is captured through the `xdg-desktop-portal` ScreenCast interface
-with a PipeWire client (`internal/pwcapture`). A saved restore token per monitor
-removes the dialog. Mutter delivers frames only when the monitor repaints, and in
-our tests it delivered none over a fullscreen window (direct scanout); when no
-frame arrives within 250 ms the app falls back to the Screenshot portal (slower,
-about 0.5–1 s). Overlays are
-fullscreen [Gio](https://gioui.org) windows, one per monitor; Gio is patched
-(`third_party/gio.patch`) to put a window on a chosen Wayland output.
+| Flag | What it does |
+| --- | --- |
+| `-settings` | open the settings window |
+| `-setup` | pick the monitors again (GNOME dialogs) |
+| `-grant-screenshot` | grant the fallback capture permission and exit |
+| `-tray` | keep the notification-area icon |
+| `-fresh` | do not offer the area of the previous shot |
+| `-v` | print timings |
+| `-version` | print the version and exit |
 
 ## Troubleshooting
 
-- Nothing happens on the hotkey: `xdg-desktop-portal` may be hung. Restart it:
+- **Nothing happens on the hotkey.** `xdg-desktop-portal` may be hung. Restart it:
   `systemctl --user restart xdg-desktop-portal xdg-desktop-portal-gnome`.
-- A monitor was added or replaced: run `scrawl -setup` again.
-- The fallback path says the portal refused: run `scrawl -grant-screenshot`.
+- **GNOME asks which screen to share on every shot.** The "Remember this choice" box was not ticked; repeat step 1.
+- **A monitor was added or replaced.** Pick the monitors again (step 1).
+- **The overlay opens on only one monitor.** Same: step 1 must be done for every monitor.
+- **The message says the portal refused.** Grant the permission (step 2).
+- **Pasting into some app gives nothing.** Check that `wl-copy` is installed (`wl-clipboard`).
+- **No notifications.** Install `libnotify-bin` (the `notify-send` command), and check that notifications are on in the settings.
+- **No tray icon.** Enable the AppIndicator GNOME extension.
+- **`Print` opens GNOME's screenshot tool.** Turn it off in the keyboard shortcuts (see step 3).
 
-## Building
+## How it works
+
+Scrawl captures the screen through the `xdg-desktop-portal` ScreenCast interface
+with its own small PipeWire client (`internal/pwcapture`). A saved restore token for each
+monitor removes the dialog. The compositor (Mutter) delivers frames only when a monitor
+repaints, and it delivered none over a fullscreen window in our tests (direct
+scanout); if no frame arrives within 250 ms Scrawl falls back to the Screenshot portal,
+which is slower (about 0.5-1 s). The overlays are fullscreen [Gio](https://gioui.org)
+windows, one per monitor; Gio is patched (`third_party/gio.patch`) to place a window
+on a chosen Wayland output. The result is rendered by the same code that draws it on screen,
+so the saved image matches what you saw.
+
+## Building and contributing
 
 ```bash
-make build   # bin/scrawl; fetches and patches Gio on first run
-make test
-make notices # regenerate THIRD_PARTY_NOTICES.md
+make build    # bin/scrawl; fetches and patches Gio on the first run
+make test     # unit tests, including the tray icon on the session D-Bus
+make dist     # release archive and checksum in dist/
+make notices  # regenerate THIRD_PARTY_NOTICES.md
 ```
+
+The interface text lives in `internal/i18n/en.go` (English, the source texts are in Russian);
+`go test ./...` checks that every text has a translation. Plan and ideas: [docs/PLAN.md](docs/PLAN.md) (in Russian).
 
 ## License
 
