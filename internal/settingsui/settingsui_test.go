@@ -152,3 +152,20 @@ func TestRememberRegionCheckboxIsSavedToDisk(t *testing.T) {
 		t.Error("выключенная настройка не дошла до файла")
 	}
 }
+
+func TestFilePrefixIsValidatedAndSaved(t *testing.T) {
+	s := testState(t)
+	s.applyPrefix("a/b")
+	if s.prefixErr == "" || settings.Load().FilePrefix != "" {
+		t.Errorf("префикс со слэшем должен отклоняться: ошибка=%q, файл=%q", s.prefixErr, settings.Load().FilePrefix)
+	}
+	s.applyPrefix("shot")
+	if s.prefixErr != "" || settings.Load().FilePrefix != "shot" {
+		t.Errorf("верный префикс должен сохраниться: ошибка=%q, файл=%q", s.prefixErr, settings.Load().FilePrefix)
+	}
+	s.prefix.SetText("typed")
+	s.layout(frameContext(700, 650)) // изменение текста в поле замечается на кадре
+	if got := settings.Load().FilePrefix; got != "typed" {
+		t.Errorf("текст из поля не дошёл до файла: %q", got)
+	}
+}

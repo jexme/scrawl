@@ -12,11 +12,14 @@ package settings
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"sync"
+	"unicode"
+	"unicode/utf8"
 )
 
 // DoubleClick определяет, что делает двойной клик внутри выделенной области.
@@ -51,6 +54,8 @@ type Settings struct {
 	Notifications bool `json:"notifications"`
 	// RememberRegion — запоминать область снимка и предлагать её при следующем запуске.
 	RememberRegion bool `json:"remember_region"`
+	// FilePrefix — начало имени файла скриншота. Пусто: DefaultFilePrefix.
+	FilePrefix string `json:"file_prefix,omitempty"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
@@ -84,6 +89,9 @@ func (s *Settings) normalize() {
 	}
 	if !s.Enter.valid() {
 		s.Enter = def.Enter
+	}
+	if ValidateFilePrefix(s.FilePrefix) != nil {
+		s.FilePrefix = def.FilePrefix
 	}
 	if ValidateSaveDir(s.SaveDir) != nil {
 		s.SaveDir = def.SaveDir
@@ -215,6 +223,44 @@ func (st *Store) Update(change func(*Settings)) error {
 	change(&st.s)
 	st.s.normalize()
 	return Save(st.s)
+}
+
+// DefaultFilePrefix — начало имени файла, если своё не задано.
+const DefaultFilePrefix = "screen-editor"
+
+// StampLayout — формат даты и времени в имени файла.
+const StampLayout = "20060102-150405"
+
+const maxFilePrefix = 60
+
+// ValidateFilePrefix проверяет начало имени файла: пусто (значит по умолчанию) или
+// текст без разделителей пути и управляющих символов, не длиннее 60 знаков.
+func ValidateFilePrefix(p string) error {
+	if utf8.RuneCountInString(p) > maxFilePrefix {
+		return fmt.Errorf("не длиннее %d знаков", maxFilePrefix)
+	}
+	for _, r := range p {
+		if r == '/' || r == '\\' || unicode.IsControl(r) {
+			return errors.New("нельзя использовать / \\ и управляющие символы")
+		}
+	}
+	return nil
+}
+
+// Prefix возвращает начало имени файла с учётом значения по умолчанию.
+func (s Settings) Prefix() string {
+	if s.FilePrefix == "" {
+		return DefaultFilePrefix
+	}
+	return s.FilePrefix
+}
+
+// FileName возвращает имя файла скриншота для отметки времени stamp (StampLayout).
+func (s Settings) FileName(stamp string) string { return s.Prefix() + "-" + stamp + ".png" }
+
+// NumberedFileName возвращает имя n-го файла набора с общей отметкой времени.
+func (s Settings) NumberedFileName(stamp string, n int) string {
+	return fmt.Sprintf("%s-%s-%d.png", s.Prefix(), stamp, n)
 }
 
 // ValidateSaveDir проверяет значение папки сохранения: пусто (значит папка по

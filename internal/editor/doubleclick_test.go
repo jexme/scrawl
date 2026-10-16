@@ -4,6 +4,7 @@ import (
 	"image"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -91,5 +92,20 @@ func TestDoubleClickIgnored(t *testing.T) {
 				t.Errorf("двойной клик не должен срабатывать: завершение=%v, буфер=%v", *finished, clipboardImage(home))
 			}
 		})
+	}
+}
+
+func TestFilePrefixUsedInSavedName(t *testing.T) {
+	home := sandbox(t)
+	m, _ := newTestMonitor(t)
+	if err := m.store.Update(func(s *settings.Settings) { s.FilePrefix = "мой" }); err != nil {
+		t.Fatal(err)
+	}
+	path, err := saveFile(m.store.Get(), []byte("x"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(filepath.Base(path), "мой-") || !strings.HasSuffix(path, ".png") || !strings.HasPrefix(path, home) {
+		t.Errorf("имя файла не по настройке: %q", path)
 	}
 }

@@ -713,7 +713,7 @@ func (m *monitor) export(toClipboard, toFile bool) {
 
 	msg := ""
 	if toFile {
-		path, err := saveFile(m.store.Get().SaveDir, data)
+		path, err := saveFile(m.store.Get(), data)
 		if err != nil {
 			fail("сохранение", err)
 			return

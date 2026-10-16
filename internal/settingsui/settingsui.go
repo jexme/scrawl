@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"os"
 	"strings"
+	"time"
 
 	"gioui.org/app"
 	"gioui.org/font/gofont"
@@ -45,11 +46,13 @@ type state struct {
 	notify   widget.Bool // уведомления после снимка
 	remember widget.Bool // запоминать прошлую область
 	dir      widget.Editor
+	prefix   widget.Editor // начало имени файла
 	reset    widget.Clickable
 	close    widget.Clickable
 	list     widget.List // прокрутка содержимого
 
-	dirErr string
+	dirErr    string
+	prefixErr string
 }
 
 func newState(store *settings.Store) *state {
@@ -66,6 +69,8 @@ func newState(store *settings.Store) *state {
 	s.remember.Value = cur.RememberRegion
 	s.dir.SingleLine = true
 	s.dir.SetText(cur.SaveDir)
+	s.prefix.SingleLine = true
+	s.prefix.SetText(cur.FilePrefix)
 	return s
 }
 
@@ -139,22 +144,42 @@ func (s *state) apply(gtx layout.Context) {
 		}
 	}
 
-	changed := false
-	for {
-		ev, ok := s.dir.Update(gtx)
-		if !ok {
-			break
-		}
-		if _, ok := ev.(widget.ChangeEvent); ok {
-			changed = true
-		}
-	}
+	changed := edited(gtx, &s.dir)
 	if s.reset.Clicked(gtx) {
 		s.dir.SetText("")
 		changed = true
 	}
 	if changed {
 		s.applyDir(strings.TrimSpace(s.dir.Text()))
+	}
+	if edited(gtx, &s.prefix) {
+		s.applyPrefix(s.prefix.Text())
+	}
+}
+
+// edited сообщает, менялся ли текст в поле с прошлого кадра.
+func edited(gtx layout.Context, ed *widget.Editor) bool {
+	changed := false
+	for {
+		ev, ok := ed.Update(gtx)
+		if !ok {
+			return changed
+		}
+		if _, ok := ev.(widget.ChangeEvent); ok {
+			changed = true
+		}
+	}
+}
+
+// applyPrefix проверяет и сохраняет начало имени файла; при ошибке настройка не меняется.
+func (s *state) applyPrefix(prefix string) {
+	if err := settings.ValidateFilePrefix(prefix); err != nil {
+		s.prefixErr = err.Error()
+		return
+	}
+	s.prefixErr = ""
+	if err := s.store.Update(func(c *settings.Settings) { c.FilePrefix = prefix }); err != nil {
+		s.prefixErr = "Не удалось сохранить: " + err.Error()
 	}
 }
 
@@ -218,6 +243,21 @@ func (s *state) radio(group *widget.Enum, key, label string) layout.Widget {
 	return rb.Layout
 }
 
+// field — однострочное поле ввода в рамке.
+func (s *state) field(ed *widget.Editor, hint string) layout.Widget {
+	return func(gtx layout.Context) layout.Dimensions {
+		return widget.Border{Color: borderColor, CornerRadius: unit.Dp(6), Width: unit.Dp(1)}.Layout(gtx,
+			func(gtx layout.Context) layout.Dimensions {
+				return layout.UniformInset(unit.Dp(10)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+					e := material.Editor(s.th, ed, hint)
+					e.Color = fgColor
+					e.HintColor = mutedColor
+					return e.Layout(gtx)
+				})
+			})
+	}
+}
+
 func (s *state) checkbox(b *widget.Bool, label string) layout.Widget {
 	cb := material.CheckBox(s.th, b, label)
 	cb.Color = fgColor
@@ -244,19 +284,7 @@ func (s *state) items() []layout.Widget {
 	th := s.th
 
 	dirField := func(gtx layout.Context) layout.Dimensions {
-		children := []layout.FlexChild{
-			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				return widget.Border{Color: borderColor, CornerRadius: unit.Dp(6), Width: unit.Dp(1)}.Layout(gtx,
-					func(gtx layout.Context) layout.Dimensions {
-						return layout.UniformInset(unit.Dp(10)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-							ed := material.Editor(th, &s.dir, "~/Pictures/Screenshots")
-							ed.Color = fgColor
-							ed.HintColor = mutedColor
-							return ed.Layout(gtx)
-						})
-					})
-			}),
-		}
+		children := []layout.FlexChild{layout.Rigid(s.field(&s.dir, "~/Pictures/Screenshots"))}
 		if s.dirErr != "" {
 			children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout), layout.Rigid(s.label(material.Caption, s.dirErr, errorColor)))
 		}
@@ -265,6 +293,21 @@ func (s *state) items() []layout.Widget {
 			b.Background = borderColor
 			return b.Layout(gtx)
 		}))
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	}
+
+	prefixField := func(gtx layout.Context) layout.Dimensions {
+		children := []layout.FlexChild{layout.Rigid(s.field(&s.prefix, settings.DefaultFilePrefix))}
+		if s.prefixErr != "" {
+			children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout), layout.Rigid(s.label(material.Caption, s.prefixErr, errorColor)))
+		}
+		current := s.store.Get()
+		current.FilePrefix = s.prefix.Text()
+		if settings.ValidateFilePrefix(current.FilePrefix) != nil {
+			current = s.store.Get()
+		}
+		example := current.FileName(time.Now().Format(settings.StampLayout))
+		children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout), layout.Rigid(s.label(material.Caption, "Например: "+example, mutedColor)))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
 
@@ -288,6 +331,7 @@ func (s *state) items() []layout.Widget {
 			s.checkbox(&s.remember, "Запоминать область снимка")),
 		s.section("Сохранение"),
 		s.row("Папка для скриншотов", "Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь.", dirField),
+		s.row("Имя файла", "Начало имени, дальше идут дата и время. Пусто: "+settings.DefaultFilePrefix+".", prefixField),
 		s.section("О программе"),
 		s.row("Screen Editor "+version.String(), version.Home, nil),
 	}

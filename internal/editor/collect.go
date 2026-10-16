@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jexme/screen-editor/internal/collection"
+	"github.com/jexme/screen-editor/internal/settings"
 )
 
 // renderCurrent рендерит выделение с аннотациями в PNG.
@@ -90,7 +91,7 @@ func (m *monitor) glueCollection() {
 		fail("склейка", err)
 		return
 	}
-	path, err := saveFile(m.store.Get().SaveDir, data)
+	path, err := saveFile(m.store.Get(), data)
 	if err != nil {
 		fail("склейка", err)
 		return
@@ -135,10 +136,10 @@ func (m *monitor) sendSeparately() {
 	}
 
 	// Файлы одного набора различаются суффиксом, имя берём по текущему времени.
-	stamp := time.Now().Format("20060102-150405")
+	stamp := time.Now().Format(settings.StampLayout)
 	var saved []string
 	for i, data := range datas {
-		path, err := saveNumbered(m.store.Get().SaveDir, data, stamp, i+1)
+		path, err := saveNumbered(m.store.Get(), data, stamp, i+1)
 		if err != nil {
 			fail("отдельные файлы", err)
 			return

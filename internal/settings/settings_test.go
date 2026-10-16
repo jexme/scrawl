@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -233,5 +234,32 @@ func TestNotificationsDefaultOnAndToggles(t *testing.T) {
 	}
 	if Load().Notifications {
 		t.Error("выключенные уведомления должны сохраняться как false")
+	}
+}
+
+func TestFilePrefix(t *testing.T) {
+	sandbox(t)
+	d := Default()
+	if got := d.FileName("20260101-120000"); got != "screen-editor-20260101-120000.png" {
+		t.Errorf("имя по умолчанию: %q", got)
+	}
+	d.FilePrefix = "Скрин"
+	if got := d.NumberedFileName("20260101-120000", 2); got != "Скрин-20260101-120000-2.png" {
+		t.Errorf("имя с префиксом: %q", got)
+	}
+	for _, ok := range []string{"", "shot", "Мой скрин 1", "a.b-c_d"} {
+		if err := ValidateFilePrefix(ok); err != nil {
+			t.Errorf("%q должен быть допустим: %v", ok, err)
+		}
+	}
+	for _, bad := range []string{"a/b", `a\b`, "a\nb", "../x", strings.Repeat("я", 61)} {
+		if ValidateFilePrefix(bad) == nil {
+			t.Errorf("%q должен быть отклонён", bad)
+		}
+	}
+	// Неверный префикс в файле сбрасывается, остальное читается.
+	writeConfig(t, `{"file_prefix":"a/b","save_dir":"/x"}`)
+	if got := Load(); got.FilePrefix != "" || got.SaveDir != "/x" {
+		t.Errorf("неверный префикс должен сброситься: %+v", got)
 	}
 }

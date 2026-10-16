@@ -67,22 +67,22 @@ func outputDir(configured string) (string, error) {
 }
 
 // saveFile пишет PNG в каталог скриншотов и возвращает путь.
-func saveFile(configuredDir string, data []byte) (string, error) {
-	dir, err := outputDir(configuredDir)
+func saveFile(cfg settings.Settings, data []byte) (string, error) {
+	dir, err := outputDir(cfg.SaveDir)
 	if err != nil {
 		return "", err
 	}
-	path := filepath.Join(dir, "screen-editor-"+time.Now().Format("20060102-150405")+".png")
+	path := filepath.Join(dir, cfg.FileName(time.Now().Format(settings.StampLayout)))
 	return path, os.WriteFile(path, data, 0o644)
 }
 
 // saveNumbered пишет PNG в каталог скриншотов под именем с номером в наборе.
-func saveNumbered(configuredDir string, data []byte, stamp string, n int) (string, error) {
-	dir, err := outputDir(configuredDir)
+func saveNumbered(cfg settings.Settings, data []byte, stamp string, n int) (string, error) {
+	dir, err := outputDir(cfg.SaveDir)
 	if err != nil {
 		return "", err
 	}
-	path := filepath.Join(dir, fmt.Sprintf("screen-editor-%s-%d.png", stamp, n))
+	path := filepath.Join(dir, cfg.NumberedFileName(stamp, n))
 	return path, os.WriteFile(path, data, 0o644)
 }
 
