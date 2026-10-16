@@ -100,7 +100,7 @@ Make sure `~/.local/bin` is in your `PATH`.
 
 *On X11 steps 1 and 2 are not needed (there is no portal), only the hotkey.*
 
-Open the settings window (`scrawl -settings`) and use these buttons, or run the commands:
+Open the settings window (`scrawl -settings`, tab "System") and use these buttons, or run the commands:
 
 1. **Pick the monitors:** button "Pick monitors again" or `scrawl -setup`.
    GNOME shows one dialog **per monitor**. In each, choose a *different* monitor,
@@ -145,7 +145,7 @@ at `scrawl`. The last area and the collection start fresh.
 | `D` | save the collection as separate files and put the file list in the clipboard |
 | mouse wheel | thickness, text size or blur strength of the current tool |
 
-Every key can be changed in the settings window ("Overlay keys").
+Every key can be changed in the settings window (the "Keys" tab).
 
 ### Toolbar
 
@@ -164,7 +164,7 @@ at the bottom of the screen shows what is in the collection and has the same act
 
 `scrawl -tray` keeps an icon in the notification area: left click takes a screenshot,
 the menu has "Screenshot", "Settings" and "Quit". To start it at login, switch on
-*Settings → Startup → Autostart*. On GNOME the icon needs the AppIndicator
+*Settings → System → Autostart*. On GNOME the icon needs the AppIndicator
 extension (enabled by default in Ubuntu).
 
 ## Settings

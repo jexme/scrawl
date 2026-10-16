@@ -89,10 +89,12 @@ type state struct {
 	monitors   task   // повторный выбор мониторов
 	hotkey     task   // назначение горячей клавиши
 	hotkeyEd   widget.Editor
-	lang       widget.Enum // язык интерфейса: auto, ru, en
-	checkUpd   widget.Bool // проверять обновления при старте
-	update     task        // проверка обновлений
-	autostart  widget.Bool // запуск значка при входе
+	lang       widget.Enum        // язык интерфейса: auto, ru, en
+	tab        int                // выбранная вкладка
+	tabBtns    []widget.Clickable // кнопки вкладок
+	checkUpd   widget.Bool        // проверять обновления при старте
+	update     task               // проверка обновлений
+	autostart  widget.Bool        // запуск значка при входе
 	autoErr    string
 	keyRows    []*keyRow
 	capturing  *keyRow // строка, для которой ждём нажатия клавиши
@@ -205,7 +207,7 @@ func Run(store *settings.Store) {
 func loop(s *state) {
 	w := new(app.Window)
 	s.invalidate = w.Invalidate
-	w.Option(app.Title(i18n.T("Scrawl: настройки")), app.Size(unit.Dp(600), unit.Dp(600)), app.MinSize(unit.Dp(420), unit.Dp(300)))
+	w.Option(app.Title(i18n.T("Scrawl: настройки")), app.Size(unit.Dp(820), unit.Dp(640)), app.MinSize(unit.Dp(620), unit.Dp(360)))
 	var ops op.Ops
 	for {
 		switch e := w.Event().(type) {
@@ -924,8 +926,15 @@ func radios(items ...layout.Widget) layout.Widget {
 	}
 }
 
-// items — содержимое прокручиваемой части окна: разделы и настройки по порядку.
-func (s *state) items() []layout.Widget {
+// settingsTab — вкладка окна: название и строки настроек в ней.
+type settingsTab struct {
+	label string
+	rows  []layout.Widget
+}
+
+// tabs — все вкладки окна и их содержимое. Окно строится заново на каждом кадре,
+// поэтому тексты сразу следуют выбранному языку.
+func (s *state) tabs() []settingsTab {
 	th := s.th
 
 	dirField := func(gtx layout.Context) layout.Dimensions {
@@ -963,8 +972,7 @@ func (s *state) items() []layout.Widget {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
 
-	items := []layout.Widget{
-		s.section(i18n.T("Общие")),
+	general := []layout.Widget{
 		s.row(i18n.T("Язык интерфейса"), i18n.T("Окно настроек меняется сразу, оверлей и уведомления при следующем снимке."),
 			radios(
 				s.radio(&s.lang, i18n.Auto, i18n.T("Как в системе")),
@@ -992,7 +1000,8 @@ func (s *state) items() []layout.Widget {
 			s.checkbox(&s.notify, i18n.T("Показывать уведомления"))),
 		s.row(i18n.T("Прошлая область"), i18n.T("Показывается сразу при запуске и по клавише R. Без неё «было/стало» не подставит область само."),
 			s.checkbox(&s.remember, i18n.T("Запоминать область снимка"))),
-		s.section(i18n.T("Инструменты")),
+	}
+	tools := []layout.Widget{
 		s.row(i18n.T("Инструмент после выбора области"), i18n.T("Включается сам, когда область выделена. «Выделение»: ничего не включать."),
 			s.toolChoiceRadios()),
 		s.row(i18n.T("Цвет и толщина по умолчанию"), i18n.T("Цвет #RRGGBB: пусто значит не менять. Цвет работает, пока вы сами не выбрали цвет в панели. Толщина для текста это размер, для размытия сила."),
@@ -1000,22 +1009,15 @@ func (s *state) items() []layout.Widget {
 		s.row(i18n.T("Цвета панели"), i18n.T("Восемь цветов в панели инструментов, #RRGGBB. Пустое поле: цвет по умолчанию. Применяется при следующем снимке."),
 			s.paletteControls()),
 		s.row(i18n.T("Прозрачность маркера"), i18n.T("Чем больше процент, тем плотнее закраска."), s.slider(s.marker)),
-		s.row(i18n.T("Формат файла"), i18n.T("В буфер обмена снимок всегда идёт в PNG."), radios(
-			s.radio(&s.format, string(settings.FormatPNG), i18n.T("PNG: без потерь")),
-			s.radio(&s.format, string(settings.FormatJPEG), i18n.T("JPEG: файл меньше, есть потери")),
-		)),
-		s.row(i18n.T("Качество JPEG"), i18n.T("Чем выше, тем лучше картинка и больше файл."), s.slider(s.quality)),
-		s.section(i18n.T("Захват экрана")),
 	}
-	items = append(items, s.captureRows()...)
-	return append(items,
-		s.section(i18n.T("Запуск")),
-		s.row(i18n.T("Автозапуск"), i18n.T("При входе в систему запускается значок в области уведомлений (scrawl -tray): левый клик делает снимок. На GNOME нужно расширение AppIndicator."),
-			s.autostartControl()),
-		s.section(i18n.T("Клавиши оверлея")),
-		s.row(i18n.T("Клавиши"), i18n.T("Нажмите кнопку и затем новую комбинацию. Esc отменяет запись. Применяются при следующем снимке."),
-			s.keyControls()),
-		s.section(i18n.T("Склейка «было/стало»")),
+	look := []layout.Widget{
+		s.row(i18n.T("Рамка выделения"), i18n.T("Пунктир вокруг выбранной области."), s.borderControls()),
+		s.row(i18n.T("Размер области"), i18n.T("Подпись «ширина × высота» над левым верхним углом."),
+			s.checkbox(&s.showSize, i18n.T("Показывать размер"))),
+		s.row(i18n.T("Угловые ручки"), i18n.T("Кружки в углах рамки, за них меняют размер области. «нет» прячет их."), s.slider(s.handle)),
+		s.row(i18n.T("Затемнение вне области"), i18n.T("0% не затемняет совсем, 100% закрашивает чёрным."), s.slider(s.dim)),
+	}
+	glue := []layout.Widget{
 		s.row(i18n.T("Расположение"), i18n.T("Картинки выравниваются по самой низкой (рядом) или по самой узкой (друг под другом)."),
 			radios(
 				s.radio(&s.glueLayout, string(settings.GlueSide), i18n.T("Рядом, слева направо")),
@@ -1029,20 +1031,42 @@ func (s *state) items() []layout.Widget {
 		s.row(i18n.T("Размер подписи"), "", s.slider(s.glueFont)),
 		s.row(i18n.T("Подписи над картинками"), i18n.T("Пусто: слова по умолчанию. При трёх и больше картинок к слову добавляется номер: «Шаг 1»."),
 			s.glueControls()),
-		s.section(i18n.T("Вид")),
-		s.row(i18n.T("Рамка выделения"), i18n.T("Пунктир вокруг выбранной области."), s.borderControls()),
-		s.row(i18n.T("Размер области"), i18n.T("Подпись «ширина × высота» над левым верхним углом."),
-			s.checkbox(&s.showSize, i18n.T("Показывать размер"))),
-		s.row(i18n.T("Угловые ручки"), i18n.T("Кружки в углах рамки, за них меняют размер области. «нет» прячет их."), s.slider(s.handle)),
-		s.row(i18n.T("Затемнение вне области"), i18n.T("0% не затемняет совсем, 100% закрашивает чёрным."), s.slider(s.dim)),
-		s.section(i18n.T("Сохранение")),
+	}
+	files := []layout.Widget{
 		s.row(i18n.T("Папка для скриншотов"), i18n.T("Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь."), dirField),
 		s.row(i18n.T("Имя файла"), i18n.T("Начало имени, дальше идут дата и время. Пусто: ")+settings.DefaultFilePrefix+".", prefixField),
-		s.section(i18n.T("О программе")),
+		s.row(i18n.T("Формат файла"), i18n.T("В буфер обмена снимок всегда идёт в PNG."), radios(
+			s.radio(&s.format, string(settings.FormatPNG), i18n.T("PNG: без потерь")),
+			s.radio(&s.format, string(settings.FormatJPEG), i18n.T("JPEG: файл меньше, есть потери")),
+		)),
+		s.row(i18n.T("Качество JPEG"), i18n.T("Чем выше, тем лучше картинка и больше файл."), s.slider(s.quality)),
+	}
+	keys := []layout.Widget{
+		s.row(i18n.T("Клавиши"), i18n.T("Нажмите кнопку и затем новую комбинацию. Esc отменяет запись. Применяются при следующем снимке."),
+			s.keyControls()),
+	}
+	system := append([]layout.Widget{s.section(i18n.T("Захват экрана"))}, s.captureRows()...)
+	system = append(system,
+		s.section(i18n.T("Запуск")),
+		s.row(i18n.T("Автозапуск"), i18n.T("При входе в систему запускается значок в области уведомлений (scrawl -tray): левый клик делает снимок. На GNOME нужно расширение AppIndicator."),
+			s.autostartControl()),
+	)
+	about := []layout.Widget{
 		s.row("Scrawl "+version.String(), version.Home, nil),
 		s.row(i18n.T("Обновления"), i18n.T("Единственное место, где программа выходит в интернет: запрос к GitHub Releases. По умолчанию выключено; кнопка работает и при выключенной проверке."),
 			s.updateControl()),
-	)
+	}
+
+	return []settingsTab{
+		{label: i18n.T("Общие"), rows: general},
+		{label: i18n.T("Инструменты"), rows: tools},
+		{label: i18n.T("Вид"), rows: look},
+		{label: i18n.T("Склейка"), rows: glue},
+		{label: i18n.T("Файлы"), rows: files},
+		{label: i18n.T("Клавиши"), rows: keys},
+		{label: i18n.T("Система"), rows: system},
+		{label: i18n.T("О программе"), rows: about},
+	}
 }
 
 // captureRows — настройки захвата. В сеансе X11 портала нет: мониторы выбирать и
@@ -1063,21 +1087,87 @@ func (s *state) captureRows() []layout.Widget {
 	)
 }
 
+// rows возвращает строки выбранной вкладки.
+func (s *state) rows() []layout.Widget {
+	tabs := s.tabs()
+	return tabs[min(max(s.tab, 0), len(tabs)-1)].rows
+}
+
+// selectTab переключает вкладку и возвращает прокрутку в начало.
+func (s *state) selectTab(i int) {
+	if i != s.tab {
+		s.tab = i
+		s.list.Position = layout.Position{}
+	}
+}
+
+// tabBar рисует боковую панель с вкладками.
+func (s *state) tabBar(gtx layout.Context, tabs []settingsTab) layout.Dimensions {
+	if len(s.tabBtns) < len(tabs) {
+		s.tabBtns = make([]widget.Clickable, len(tabs))
+	}
+	children := make([]layout.FlexChild, 0, len(tabs))
+	for i := range tabs {
+		i := i
+		if s.tabBtns[i].Clicked(gtx) {
+			s.selectTab(i)
+		}
+		children = append(children, layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			selected := i == s.tab
+			return s.tabBtns[i].Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				return layout.Stack{}.Layout(gtx,
+					layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+						bg := color.NRGBA{}
+						switch {
+						case selected:
+							bg = accentColor
+						case s.tabBtns[i].Hovered():
+							bg = borderColor
+						}
+						rr := gtx.Dp(6)
+						paint.FillShape(gtx.Ops, bg, clip.UniformRRect(image.Rectangle{Max: gtx.Constraints.Min}, rr).Op(gtx.Ops))
+						return layout.Dimensions{Size: gtx.Constraints.Min}
+					}),
+					layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+						return layout.Inset{Top: unit.Dp(9), Bottom: unit.Dp(9), Left: unit.Dp(12), Right: unit.Dp(12)}.Layout(gtx,
+							s.label(material.Body1, tabs[i].label, fgColor))
+					}),
+				)
+			})
+		}), layout.Rigid(layout.Spacer{Height: unit.Dp(2)}.Layout))
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+}
+
 func (s *state) layout(gtx layout.Context) layout.Dimensions {
 	s.apply(gtx)
 	th := s.th
-	items := s.items()
+	tabs := s.tabs()
+	s.tab = min(max(s.tab, 0), len(tabs)-1)
+	items := tabs[s.tab].rows
 
 	return layout.UniformInset(unit.Dp(22)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(s.label(material.H6, i18n.T("Настройки"), fgColor)),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(14)}.Layout),
 			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-				list := material.List(th, &s.list)
-				return list.Layout(gtx, len(items), func(gtx layout.Context, i int) layout.Dimensions {
-					// Справа место под полосу прокрутки, чтобы она не лежала на элементах.
-					return layout.Inset{Right: unit.Dp(14)}.Layout(gtx, items[i])
-				})
+				return layout.Flex{}.Layout(gtx,
+					// Слева вкладки: их мало, но длинные названия на английском и русском
+					// должны помещаться, поэтому ширина фиксированная.
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						gtx.Constraints.Min.X = gtx.Dp(150)
+						gtx.Constraints.Max.X = gtx.Dp(150)
+						return s.tabBar(gtx, tabs)
+					}),
+					layout.Rigid(layout.Spacer{Width: unit.Dp(18)}.Layout),
+					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+						list := material.List(th, &s.list)
+						return list.Layout(gtx, len(items), func(gtx layout.Context, i int) layout.Dimensions {
+							// Справа место под полосу прокрутки, чтобы она не лежала на элементах.
+							return layout.Inset{Right: unit.Dp(14)}.Layout(gtx, items[i])
+						})
+					}),
+				)
 			}),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(10)}.Layout),
 			layout.Rigid(s.label(material.Caption, i18n.T("Изменения применяются сразу. Файл: ")+settings.Path(), mutedColor)),

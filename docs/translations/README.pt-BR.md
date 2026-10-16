@@ -82,7 +82,7 @@ Confira se `~/.local/bin` está no seu `PATH`.
 
 *No X11 os passos 1 e 2 não são necessários (não há portal), apenas a tecla de atalho.*
 
-Abra a janela de configurações (`scrawl -settings`) e use estes botões, ou execute os comandos:
+Abra a janela de configurações (`scrawl -settings`, tab “System”) e use estes botões, ou execute os comandos:
 
 1. **Escolher os monitores:** botão “Pick monitors again” ou `scrawl -setup`. O GNOME mostra uma caixa de diálogo **por monitor**. Em cada uma, escolha um monitor *diferente*, mantenha marcada a opção **“Lembrar esta escolha”** e confirme o compartilhamento. Depois disso, nenhuma caixa de diálogo.
 2. **Conceder a permissão de reserva:** botão “Grant permission” ou `scrawl -grant-screenshot`. Isso permite que o Scrawl use o portal de capturas, mais lento, nas raras vezes em que o PipeWire não entrega imagem.
@@ -115,7 +115,7 @@ Scrawl é o novo nome do screen-editor. Suas configurações são lidas de `~/.c
 | `D` | salvar a coleção como arquivos separados e colocar a lista de arquivos na área de transferência |
 | roda do mouse | espessura, tamanho do texto ou intensidade do desfoque da ferramenta atual |
 
-Todas as teclas podem ser alteradas na janela de configurações (“Overlay keys”).
+Todas as teclas podem ser alteradas na janela de configurações (“Keys”).
 
 ### Barra de ferramentas
 
@@ -127,7 +127,7 @@ Faça a primeira captura e pressione `A`. Faça a seguinte: a área anterior já
 
 ## Ícone na bandeja e início automático
 
-`scrawl -tray` mantém um ícone na área de notificação: o clique esquerdo tira uma captura e o menu tem “Screenshot”, “Settings” e “Quit”. Para iniciar no login, ative *Settings → Startup → Autostart*. No GNOME, o ícone precisa da extensão AppIndicator (ativada por padrão no Ubuntu).
+`scrawl -tray` mantém um ícone na área de notificação: o clique esquerdo tira uma captura e o menu tem “Screenshot”, “Settings” e “Quit”. Para iniciar no login, ative *Settings → System → Autostart*. No GNOME, o ícone precisa da extensão AppIndicator (ativada por padrão no Ubuntu).
 
 ## Configurações
 

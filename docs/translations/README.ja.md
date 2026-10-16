@@ -82,7 +82,7 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 
 *X11 ではステップ 1 と 2 は不要です（ポータルがないため）。ホットキーだけ設定してください。*
 
-設定ウィンドウ（`scrawl -settings`）のボタンを使うか、コマンドを実行します：
+設定ウィンドウ（`scrawl -settings`, tab “System”）のボタンを使うか、コマンドを実行します：
 
 1. **モニターを選ぶ：** ボタン “Pick monitors again” または `scrawl -setup`。GNOME が**モニターごとに**ダイアログを表示します。毎回*別の*モニターを選び、**「この選択を記憶する」**にチェックを入れたまま共有を許可してください。以後ダイアログは出ません。
 2. **予備の権限を与える：** ボタン “Grant permission” または `scrawl -grant-screenshot`。PipeWire から映像が来ないごくまれな場合に、Scrawl がより遅い Screenshot ポータルを使えるようになります。
@@ -115,7 +115,7 @@ Scrawl は screen-editor の新しい名前です。`~/.config/scrawl/config.jso
 | `D` | コレクションを個別のファイルとして保存し、ファイル一覧をクリップボードに入れる |
 | マウスホイール | 現在のツールの太さ・文字サイズ・ぼかしの強さ |
 
-どのキーも設定ウィンドウ（“Overlay keys”）で変更できます。
+どのキーも設定ウィンドウ（“Keys”）で変更できます。
 
 ### ツールバー
 
@@ -127,7 +127,7 @@ Scrawl は screen-editor の新しい名前です。`~/.config/scrawl/config.jso
 
 ## トレイアイコンと自動起動
 
-`scrawl -tray` は通知領域にアイコンを置きます。左クリックでスクリーンショット、メニューには “Screenshot”、“Settings”、“Quit” があります。ログイン時に起動するには *Settings → Startup → Autostart* をオンにします。GNOME ではアイコンの表示に AppIndicator 拡張機能が必要です（Ubuntu では既定で有効）。
+`scrawl -tray` は通知領域にアイコンを置きます。左クリックでスクリーンショット、メニューには “Screenshot”、“Settings”、“Quit” があります。ログイン時に起動するには *Settings → System → Autostart* をオンにします。GNOME ではアイコンの表示に AppIndicator 拡張機能が必要です（Ubuntu では既定で有効）。
 
 ## 設定
 

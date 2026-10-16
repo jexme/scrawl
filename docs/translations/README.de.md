@@ -82,7 +82,7 @@ Stellen Sie sicher, dass `~/.local/bin` in Ihrem `PATH` liegt.
 
 *Unter X11 sind die Schritte 1 und 2 nicht nötig (es gibt kein Portal), nur das Tastenkürzel.*
 
-Öffnen Sie das Einstellungsfenster (`scrawl -settings`) und nutzen Sie diese Schaltflächen, oder führen Sie die Befehle aus:
+Öffnen Sie das Einstellungsfenster (`scrawl -settings`, tab “System”) und nutzen Sie diese Schaltflächen, oder führen Sie die Befehle aus:
 
 1. **Monitore auswählen:** Schaltfläche „Pick monitors again“ oder `scrawl -setup`. GNOME zeigt **pro Monitor** einen Dialog. Wählen Sie in jedem einen *anderen* Monitor, lassen Sie **„Diese Auswahl merken“** angehakt und bestätigen Sie die Freigabe. Danach gibt es keine Dialoge mehr.
 2. **Ersatz-Berechtigung erteilen:** Schaltfläche „Grant permission“ oder `scrawl -grant-screenshot`. Damit darf Scrawl in den seltenen Fällen, in denen PipeWire kein Bild liefert, das langsamere Screenshot-Portal verwenden.
@@ -115,7 +115,7 @@ Scrawl ist der neue Name von screen-editor. Ihre Einstellungen werden aus `~/.co
 | `D` | die Sammlung als einzelne Dateien speichern und die Dateiliste in die Zwischenablage legen |
 | Mausrad | Dicke, Textgröße oder Unschärfestärke des aktuellen Werkzeugs |
 
-Jede Taste lässt sich im Einstellungsfenster („Overlay keys“) ändern.
+Jede Taste lässt sich im Einstellungsfenster („Keys“) ändern.
 
 ### Werkzeugleiste
 
@@ -127,7 +127,7 @@ Machen Sie die erste Aufnahme und drücken Sie `A`. Machen Sie die nächste: Der
 
 ## Tray-Symbol und Autostart
 
-`scrawl -tray` hält ein Symbol im Benachrichtigungsbereich: Linksklick macht einen Screenshot, das Menü bietet „Screenshot“, „Settings“ und „Quit“. Damit es beim Anmelden startet, schalten Sie *Settings → Startup → Autostart* ein. Unter GNOME braucht das Symbol die AppIndicator-Erweiterung (unter Ubuntu standardmäßig aktiv).
+`scrawl -tray` hält ein Symbol im Benachrichtigungsbereich: Linksklick macht einen Screenshot, das Menü bietet „Screenshot“, „Settings“ und „Quit“. Damit es beim Anmelden startet, schalten Sie *Settings → System → Autostart* ein. Unter GNOME braucht das Symbol die AppIndicator-Erweiterung (unter Ubuntu standardmäßig aktiv).
 
 ## Einstellungen
 

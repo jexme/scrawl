@@ -82,7 +82,7 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 
 *在 X11 上不需要步骤 1 和 2（没有门户），只需设置快捷键。*
 
-打开设置窗口（`scrawl -settings`）点击按钮，或直接执行命令：
+打开设置窗口（`scrawl -settings`, tab “System”）点击按钮，或直接执行命令：
 
 1. **选择显示器：**按钮 “Pick monitors again” 或 `scrawl -setup`。GNOME 会**为每个显示器**弹出一个对话框。每次选择一个*不同的*显示器，保持勾选 **“记住此选择”**，然后确认共享。之后不再有对话框。
 2. **授予备用权限：**按钮 “Grant permission” 或 `scrawl -grant-screenshot`。在 PipeWire 偶尔没有返回画面时，Scrawl 可借此改用较慢的 Screenshot portal。
@@ -115,7 +115,7 @@ Scrawl 是 screen-editor 的新名称。在 `~/.config/scrawl/config.json` 出�
 | `D` | 把合集保存为多个独立文件，并把文件列表放入剪贴板 |
 | 鼠标滚轮 | 当前工具的粗细、文字大小或模糊强度 |
 
-所有按键都可以在设置窗口（“Overlay keys”）中更改。
+所有按键都可以在设置窗口（“Keys”）中更改。
 
 ### 工具栏
 
@@ -127,7 +127,7 @@ Scrawl 是 screen-editor 的新名称。在 `~/.config/scrawl/config.json` 出�
 
 ## 托盘图标与自启动
 
-`scrawl -tray` 会在通知区域保留一个图标：左键单击截图，菜单中有 “Screenshot”、“Settings” 和 “Quit”。要在登录时启动，请打开 *Settings → Startup → Autostart*。在 GNOME 上，图标需要 AppIndicator 扩展（Ubuntu 默认已启用）。
+`scrawl -tray` 会在通知区域保留一个图标：左键单击截图，菜单中有 “Screenshot”、“Settings” 和 “Quit”。要在登录时启动，请打开 *Settings → System → Autostart*。在 GNOME 上，图标需要 AppIndicator 扩展（Ubuntu 默认已启用）。
 
 ## 设置
 

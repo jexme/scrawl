@@ -82,7 +82,7 @@ Vérifiez que `~/.local/bin` figure dans votre `PATH`.
 
 *Sous X11, les étapes 1 et 2 ne sont pas nécessaires (pas de portail), seul le raccourci l'est.*
 
-Ouvrez la fenêtre de réglages (`scrawl -settings`) et utilisez ces boutons, ou lancez les commandes :
+Ouvrez la fenêtre de réglages (`scrawl -settings`, tab “System”) et utilisez ces boutons, ou lancez les commandes :
 
 1. **Choisir les écrans :** bouton « Pick monitors again » ou `scrawl -setup`. GNOME affiche une boîte de dialogue **par écran**. Dans chacune, choisissez un écran *différent*, laissez cochée la case **« Se souvenir de ce choix »** et acceptez le partage. Ensuite, plus de boîtes de dialogue.
 2. **Accorder l'autorisation de secours :** bouton « Grant permission » ou `scrawl -grant-screenshot`. Elle permet à Scrawl d'utiliser le portail de capture, plus lent, dans les rares cas où PipeWire ne fournit aucune image.
@@ -115,7 +115,7 @@ Scrawl est le nouveau nom de screen-editor. Vos réglages sont lus depuis `~/.co
 | `D` | enregistrer la collection en fichiers séparés et mettre la liste des fichiers dans le presse-papiers |
 | molette de la souris | épaisseur, taille du texte ou intensité du flou de l'outil actuel |
 
-Chaque touche peut être modifiée dans la fenêtre de réglages (« Overlay keys »).
+Chaque touche peut être modifiée dans la fenêtre de réglages (« Keys »).
 
 ### Barre d'outils
 
@@ -127,7 +127,7 @@ Faites la première capture et appuyez sur `A`. Faites la suivante : la zone pr�
 
 ## Icône de la zone de notification et démarrage automatique
 
-`scrawl -tray` garde une icône dans la zone de notification : le clic gauche fait une capture et le menu propose « Screenshot », « Settings » et « Quit ». Pour la lancer à l'ouverture de session, activez *Settings → Startup → Autostart*. Sous GNOME, l'icône nécessite l'extension AppIndicator (activée par défaut dans Ubuntu).
+`scrawl -tray` garde une icône dans la zone de notification : le clic gauche fait une capture et le menu propose « Screenshot », « Settings » et « Quit ». Pour la lancer à l'ouverture de session, activez *Settings → System → Autostart*. Sous GNOME, l'icône nécessite l'extension AppIndicator (activée par défaut dans Ubuntu).
 
 ## Réglages
 

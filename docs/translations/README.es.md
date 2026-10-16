@@ -82,7 +82,7 @@ Comprueba que `~/.local/bin` está en tu `PATH`.
 
 *En X11 no hacen falta los pasos 1 y 2 (no hay portal), solo la tecla de acceso rápido.*
 
-Abre la ventana de ajustes (`scrawl -settings`) y usa estos botones, o ejecuta los comandos:
+Abre la ventana de ajustes (`scrawl -settings`, tab “System”) y usa estos botones, o ejecuta los comandos:
 
 1. **Elegir los monitores:** botón «Pick monitors again» o `scrawl -setup`. GNOME muestra un diálogo **por monitor**. En cada uno elige un monitor *distinto*, deja marcada la casilla **«Recordar esta elección»** y acepta compartir. Después, no habrá más diálogos.
 2. **Conceder el permiso de reserva:** botón «Grant permission» o `scrawl -grant-screenshot`. Permite a Scrawl usar el portal de capturas, más lento, en las raras ocasiones en que PipeWire no entrega imagen.
@@ -115,7 +115,7 @@ Scrawl es el nuevo nombre de screen-editor. Tus ajustes se leen de `~/.config/sc
 | `D` | guardar la colección como archivos separados y poner la lista de archivos en el portapapeles |
 | rueda del ratón | grosor, tamaño del texto o intensidad del desenfoque de la herramienta actual |
 
-Todas las teclas se pueden cambiar en la ventana de ajustes («Overlay keys»).
+Todas las teclas se pueden cambiar en la ventana de ajustes («Keys»).
 
 ### Barra de herramientas
 
@@ -127,7 +127,7 @@ Haz la primera captura y pulsa `A`. Haz la siguiente: el área anterior ya está
 
 ## Icono en la bandeja e inicio automático
 
-`scrawl -tray` mantiene un icono en el área de notificaciones: el clic izquierdo hace una captura y el menú tiene «Screenshot», «Settings» y «Quit». Para iniciarlo al entrar en la sesión, activa *Settings → Startup → Autostart*. En GNOME el icono necesita la extensión AppIndicator (activada por defecto en Ubuntu).
+`scrawl -tray` mantiene un icono en el área de notificaciones: el clic izquierdo hace una captura y el menú tiene «Screenshot», «Settings» y «Quit». Para iniciarlo al entrar en la sesión, activa *Settings → System → Autostart*. En GNOME el icono necesita la extensión AppIndicator (activada por defecto en Ubuntu).
 
 ## Ajustes
 

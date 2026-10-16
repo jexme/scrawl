@@ -111,7 +111,7 @@ func TestContentScrollsInSmallWindow(t *testing.T) {
 	if !small.list.Position.BeforeEnd {
 		t.Error("в низком окне часть настроек должна быть ниже видимой области")
 	}
-	small.list.ScrollTo(len(small.items()) - 1)
+	small.list.ScrollTo(len(small.rows()) - 1)
 	small.layout(frameContext(600, 560))
 	if small.list.Position.BeforeEnd {
 		t.Errorf("после прокрутки к последнему разделу конец списка должен быть виден: %+v", small.list.Position)
@@ -769,16 +769,17 @@ func TestDocSettingsImages(t *testing.T) {
 		t.Skip("нужна переменная SCRAWL_DOC_IMAGES")
 	}
 	defer i18n.SetLanguage(i18n.RU)
-	const W, H = 640, 980
+	const W, H = 820, 640
 	for lang, name := range map[string]string{i18n.RU: "settings-ru.png", i18n.EN: "settings-en.png"} {
 		i18n.SetLanguage(lang)
 		t.Setenv("XDG_CONFIG_HOME", "/home/you/.config") // красивый путь в подписи; файл не создаётся
 		s := newState(settings.NewStore())
+		s.selectTab(1) // «Инструменты»: на ней больше всего видно
 		win, err := headless.NewWindow(W, H)
 		if err != nil {
 			t.Skipf("headless рендер недоступен: %v", err)
 		}
-		gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Exact(image.Pt(W, H)), Metric: unit.Metric{PxPerDp: 1.1, PxPerSp: 1.1}}
+		gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Exact(image.Pt(W, H)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
 		paint.Fill(gtx.Ops, bgColor)
 		s.layout(gtx)
 		if err := win.Frame(gtx.Ops); err != nil {
@@ -810,4 +811,51 @@ func TestCaptureRowsDependOnSession(t *testing.T) {
 		t.Errorf("строк захвата: Wayland %d (ожидали 3), X11 %d (ожидали 2: без кнопок портала)", wayland, x11)
 	}
 	s.layout(frameContext(700, 3300)) // окно в сеансе X11 рисуется без ошибок
+}
+
+func TestTabs(t *testing.T) {
+	s := testState(t)
+	tabs := s.tabs()
+	if len(tabs) != 8 {
+		t.Fatalf("вкладок %d, ожидали 8", len(tabs))
+	}
+	seen := map[string]bool{}
+	for _, tb := range tabs {
+		if tb.label == "" || len(tb.rows) == 0 || seen[tb.label] {
+			t.Errorf("вкладка %q: пустая или повторяется (строк %d)", tb.label, len(tb.rows))
+		}
+		seen[tb.label] = true
+	}
+
+	// Каждая вкладка рисуется без ошибок, при любой ширине окна и на обоих языках.
+	defer i18n.SetLanguage(i18n.RU)
+	for _, lang := range []string{i18n.RU, i18n.EN} {
+		i18n.SetLanguage(lang)
+		for i := range tabs {
+			s.selectTab(i)
+			for _, w := range []int{620, 820, 1400} {
+				s.layout(frameContext(w, 700))
+			}
+		}
+	}
+
+	// Переключение вкладки возвращает прокрутку наверх.
+	s.selectTab(0)
+	s.list.Position.First = 4
+	s.selectTab(1)
+	if s.list.Position.First != 0 || s.tab != 1 {
+		t.Errorf("после переключения: вкладка %d, прокрутка с %d", s.tab, s.list.Position.First)
+	}
+	s.selectTab(99) // за пределами списка: вкладка подрезается при рисовании
+	s.layout(frameContext(820, 700))
+	if s.tab != len(tabs)-1 {
+		t.Errorf("несуществующая вкладка должна сжаться до последней: %d", s.tab)
+	}
+
+	// Нажатие на кнопку вкладки её выбирает.
+	s.tabBtns[2].Click()
+	s.layout(frameContext(820, 700))
+	if s.tab != 2 {
+		t.Errorf("клик по вкладке: выбрана %d", s.tab)
+	}
 }

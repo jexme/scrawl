@@ -82,7 +82,7 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 
 *X11에서는 1, 2단계가 필요 없고(포털이 없습니다) 단축키만 설정하면 됩니다.*
 
-설정 창(`scrawl -settings`)의 버튼을 쓰거나 명령을 실행하세요:
+설정 창(`scrawl -settings`, tab “System”)의 버튼을 쓰거나 명령을 실행하세요:
 
 1. **모니터 선택:** 버튼 “Pick monitors again” 또는 `scrawl -setup`. GNOME이 **모니터마다** 대화상자를 보여 줍니다. 매번 *다른* 모니터를 고르고 **“이 선택 기억”**에 체크한 채 공유를 허용하세요. 그 뒤로는 대화상자가 나오지 않습니다.
 2. **예비 권한 부여:** 버튼 “Grant permission” 또는 `scrawl -grant-screenshot`. PipeWire가 화면을 주지 못하는 드문 경우에 Scrawl이 더 느린 Screenshot 포털을 쓸 수 있게 해 줍니다.
@@ -115,7 +115,7 @@ Scrawl은 screen-editor의 새 이름입니다. `~/.config/scrawl/config.json`�
 | `D` | 모음을 개별 파일로 저장하고 파일 목록을 클립보드에 넣기 |
 | 마우스 휠 | 현재 도구의 두께, 글자 크기 또는 흐림 강도 |
 
-모든 키는 설정 창(“Overlay keys”)에서 바꿀 수 있습니다.
+모든 키는 설정 창(“Keys”)에서 바꿀 수 있습니다.
 
 ### 도구 모음
 
@@ -127,7 +127,7 @@ Scrawl은 screen-editor의 새 이름입니다. `~/.config/scrawl/config.json`�
 
 ## 트레이 아이콘과 자동 시작
 
-`scrawl -tray`는 알림 영역에 아이콘을 둡니다. 왼쪽 클릭은 스크린샷, 메뉴에는 “Screenshot”, “Settings”, “Quit”이 있습니다. 로그인할 때 시작하려면 *Settings → Startup → Autostart*를 켜세요. GNOME에서는 아이콘을 보려면 AppIndicator 확장이 필요합니다(Ubuntu에서는 기본으로 켜져 있습니다).
+`scrawl -tray`는 알림 영역에 아이콘을 둡니다. 왼쪽 클릭은 스크린샷, 메뉴에는 “Screenshot”, “Settings”, “Quit”이 있습니다. 로그인할 때 시작하려면 *Settings → System → Autostart*를 켜세요. GNOME에서는 아이콘을 보려면 AppIndicator 확장이 필요합니다(Ubuntu에서는 기본으로 켜져 있습니다).
 
 ## 설정
 
