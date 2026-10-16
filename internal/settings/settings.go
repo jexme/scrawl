@@ -1,6 +1,12 @@
 // Package settings хранит пользовательские настройки в JSON-файле
 // ~/.config/screen-editor/config.json. Файл можно править руками; отсутствующие
-// и неверные значения заменяются значениями по умолчанию.
+// и неверные значения заменяются значениями по умолчанию, а ключи, которых
+// программа не знает (от новой версии или дописанные руками), при записи
+// сохраняются.
+//
+// Схема задаётся структурой Settings: ключ файла берётся из json-тега поля,
+// значение по умолчанию из Default, проверка в normalize. Новая настройка
+// это новое поле и строка в Default/normalize.
 package settings
 
 import (
@@ -8,6 +14,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 )
@@ -47,36 +54,97 @@ func (d DoubleClick) valid() bool {
 
 // normalize заменяет неверные значения на значения по умолчанию.
 func (s *Settings) normalize() {
+	def := Default()
 	if !s.DoubleClick.valid() {
-		s.DoubleClick = DoubleClickOff
+		s.DoubleClick = def.DoubleClick
+	}
+	if ValidateSaveDir(s.SaveDir) != nil {
+		s.SaveDir = def.SaveDir
 	}
 }
 
-// Load читает настройки из файла. Нет файла или он повреждён: настройки по умолчанию.
+// keyOf возвращает ключ файла для поля структуры, "" если поле в файл не пишется.
+func keyOf(f reflect.StructField) string {
+	name, _, _ := strings.Cut(f.Tag.Get("json"), ",")
+	if name == "-" {
+		return ""
+	}
+	return name
+}
+
+// readRaw читает файл как набор ключей со значениями без разбора. Нет файла,
+// он не JSON-объект или повреждён: ok == false.
+func readRaw(path string) (raw map[string]json.RawMessage, exists, ok bool) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, false, false
+	}
+	if json.Unmarshal(data, &raw) != nil || raw == nil {
+		return nil, true, false
+	}
+	return raw, true, true
+}
+
+// Load читает настройки из файла. Каждый ключ разбирается отдельно: отсутствующий
+// или неверный по типу ключ получает значение по умолчанию и не портит остальные.
+// Нет файла или он повреждён: настройки по умолчанию.
 func Load() Settings {
 	s := Default()
-	data, err := os.ReadFile(Path())
-	if err != nil {
+	raw, _, ok := readRaw(Path())
+	if !ok {
 		return s
 	}
-	var read Settings
-	if json.Unmarshal(data, &read) != nil {
-		return s
+	v := reflect.ValueOf(&s).Elem()
+	for i := 0; i < v.NumField(); i++ {
+		key := keyOf(v.Type().Field(i))
+		r, found := raw[key]
+		if key == "" || !found {
+			continue
+		}
+		nv := reflect.New(v.Field(i).Type())
+		if json.Unmarshal(r, nv.Interface()) == nil {
+			v.Field(i).Set(nv.Elem())
+		}
 	}
-	s = read
 	s.normalize()
 	return s
 }
 
-// Save записывает настройки в файл целиком и атомарно: сначала во временный файл,
-// потом переименование, чтобы оборвавшаяся запись не оставила битый файл.
+// Save записывает настройки в файл атомарно: сначала во временный файл, потом
+// переименование, чтобы оборвавшаяся запись не оставила битый файл. Свои ключи
+// перезаписываются, чужие остаются как были. Нечитаемый файл перед этим
+// сохраняется рядом как config.json.bak, чтобы не потерять правки руками.
 func Save(s Settings) error {
 	s.normalize()
 	path := Path()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	data, err := json.MarshalIndent(s, "", "  ")
+
+	merged, exists, ok := readRaw(path)
+	if exists && !ok {
+		os.Rename(path, path+".bak")
+	}
+	if merged == nil {
+		merged = map[string]json.RawMessage{}
+	}
+	t := reflect.TypeOf(s)
+	for i := 0; i < t.NumField(); i++ {
+		delete(merged, keyOf(t.Field(i))) // поля с omitempty не должны оставлять старое значение
+	}
+	own, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	var ownRaw map[string]json.RawMessage
+	if err := json.Unmarshal(own, &ownRaw); err != nil {
+		return err
+	}
+	for k, r := range ownRaw {
+		merged[k] = r
+	}
+
+	data, err := json.MarshalIndent(merged, "", "  ")
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -47,6 +48,113 @@ func TestInvalidValuesFallBack(t *testing.T) {
 	os.WriteFile(Path(), []byte(`{oops`), 0o644)
 	if got := Load(); got != Default() {
 		t.Errorf("битый файл должен дать настройки по умолчанию: %+v", got)
+	}
+}
+
+func writeConfig(t *testing.T, body string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(Path()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(Path(), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestEachKeyIsReadIndependently(t *testing.T) {
+	sandbox(t)
+
+	writeConfig(t, `{}`)
+	if got := Load(); got != Default() {
+		t.Errorf("пустой объект должен дать значения по умолчанию: %+v", got)
+	}
+	writeConfig(t, `{"save_dir":"/x"}`)
+	if got := Load(); got.DoubleClick != DoubleClickOff || got.SaveDir != "/x" {
+		t.Errorf("отсутствующий ключ должен получить значение по умолчанию: %+v", got)
+	}
+	// Неверный тип одного ключа не отбрасывает остальные.
+	writeConfig(t, `{"double_click":5,"save_dir":"/x"}`)
+	if got := Load(); got.DoubleClick != DoubleClickOff || got.SaveDir != "/x" {
+		t.Errorf("число вместо строки: ожидали off и /x, получили %+v", got)
+	}
+	writeConfig(t, `{"double_click":"copy","save_dir":["a"]}`)
+	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != "" {
+		t.Errorf("массив вместо строки: ожидали copy и пустую папку, получили %+v", got)
+	}
+	// Относительный путь отклоняется так же, как в окне настроек.
+	writeConfig(t, `{"double_click":"copy","save_dir":"relative/dir"}`)
+	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != "" {
+		t.Errorf("относительная папка должна сброситься: %+v", got)
+	}
+	// Не объект: всё по умолчанию.
+	for _, body := range []string{`[]`, `null`, `"text"`, ``} {
+		writeConfig(t, body)
+		if got := Load(); got != Default() {
+			t.Errorf("%q: ожидали значения по умолчанию, получили %+v", body, got)
+		}
+	}
+}
+
+func readKeys(t *testing.T) map[string]json.RawMessage {
+	t.Helper()
+	data, err := os.ReadFile(Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatalf("файл настроек не JSON: %v\n%s", err, data)
+	}
+	return m
+}
+
+func TestUnknownKeysSurviveSave(t *testing.T) {
+	sandbox(t)
+	writeConfig(t, `{"double_click":"copy","future_option":{"a":[1,2]},"note":"hi"}`)
+
+	st := NewStore()
+	if err := st.Update(func(s *Settings) { s.DoubleClick = DoubleClickCopySave }); err != nil {
+		t.Fatal(err)
+	}
+	m := readKeys(t)
+	if string(m["double_click"]) != `"copy_save"` {
+		t.Errorf("свой ключ не обновился: %s", m["double_click"])
+	}
+	if string(m["note"]) != `"hi"` {
+		t.Errorf("чужой ключ потерян: %s", m["note"])
+	}
+	var future struct{ A []int }
+	if err := json.Unmarshal(m["future_option"], &future); err != nil || len(future.A) != 2 {
+		t.Errorf("чужой вложенный ключ испорчен: %s (%v)", m["future_option"], err)
+	}
+}
+
+func TestEmptyOptionalKeyIsRemoved(t *testing.T) {
+	sandbox(t)
+	writeConfig(t, `{"double_click":"off","save_dir":"/old"}`)
+	if err := Save(Settings{DoubleClick: DoubleClickOff}); err != nil {
+		t.Fatal(err)
+	}
+	if _, has := readKeys(t)["save_dir"]; has {
+		t.Error("пустая папка не должна оставлять в файле старое значение")
+	}
+	if got := Load().SaveDir; got != "" {
+		t.Errorf("после сброса папка %q", got)
+	}
+}
+
+func TestBrokenFileIsBackedUpBeforeSave(t *testing.T) {
+	sandbox(t)
+	writeConfig(t, `{oops, "my": "edit"`)
+	if err := Save(Settings{DoubleClick: DoubleClickCopy}); err != nil {
+		t.Fatal(err)
+	}
+	if got := Load().DoubleClick; got != DoubleClickCopy {
+		t.Errorf("новый файл не записан: %q", got)
+	}
+	bak, err := os.ReadFile(Path() + ".bak")
+	if err != nil || string(bak) != `{oops, "my": "edit"` {
+		t.Errorf("копия битого файла не сохранена: %q, %v", bak, err)
 	}
 }
 
