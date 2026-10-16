@@ -68,6 +68,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, "portal не принял app_id: restore_token работать не будет, диалоги покажутся при каждом запуске")
 	}
 
+	p.IncludeCursor = settings.Load().IncludeCursor
+
 	var tokens []string
 	if !*setup {
 		tokens = screencast.LoadTokens()

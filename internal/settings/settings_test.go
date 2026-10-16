@@ -548,3 +548,14 @@ func TestKeepOpenDefaultOff(t *testing.T) {
 		t.Error("keep_open=true должен читаться")
 	}
 }
+
+func TestIncludeCursorDefaultOff(t *testing.T) {
+	sandbox(t)
+	if Load().IncludeCursor {
+		t.Error("по умолчанию курсор в снимок не попадает")
+	}
+	writeConfig(t, `{"include_cursor":true}`)
+	if !Load().IncludeCursor {
+		t.Error("include_cursor=true должен читаться")
+	}
+}

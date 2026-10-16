@@ -90,6 +90,8 @@ type Settings struct {
 	// KeepOpen — после копирования или сохранения не закрывать оверлей, а дать
 	// продолжить правку. Выход по Esc.
 	KeepOpen bool `json:"keep_open"`
+	// IncludeCursor — рисовать курсор мыши в снимке (только при захвате через PipeWire).
+	IncludeCursor bool `json:"include_cursor"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }

@@ -430,3 +430,15 @@ func TestKeepOpenCheckboxIsSavedToDisk(t *testing.T) {
 		t.Error("включённая настройка не дошла до файла")
 	}
 }
+
+func TestCursorCheckboxIsSavedToDisk(t *testing.T) {
+	s := testState(t)
+	if s.cursor.Value {
+		t.Fatal("по умолчанию курсор выключен")
+	}
+	s.cursor.Value = true
+	s.layout(frameContext(700, 650))
+	if !settings.Load().IncludeCursor {
+		t.Error("включённая настройка не дошла до файла")
+	}
+}

@@ -48,6 +48,24 @@ type Portal struct {
 	// Registered сообщает, принял ли portal регистрацию app_id.
 	// Если нет (старый portal), restore_token работать не будет.
 	Registered bool
+
+	// IncludeCursor просит portal рисовать курсор мыши прямо в кадре. Задаётся
+	// до OpenAll: режим курсора выбирается при создании сессии.
+	IncludeCursor bool
+}
+
+// Режимы курсора ScreenCast portal (cursor_mode).
+const (
+	cursorHidden   uint32 = 1 // курсор не попадает в кадр
+	cursorEmbedded uint32 = 2 // курсор нарисован в кадре
+)
+
+// cursorMode возвращает значение cursor_mode для SelectSources.
+func cursorMode(include bool) uint32 {
+	if include {
+		return cursorEmbedded
+	}
+	return cursorHidden
 }
 
 type stream struct {
@@ -208,7 +226,7 @@ func (p *Portal) NewSession(restore string) (*Session, string, error) {
 	sel := map[string]dbus.Variant{
 		"types":        dbus.MakeVariant(uint32(1)), // monitor
 		"multiple":     dbus.MakeVariant(true),
-		"cursor_mode":  dbus.MakeVariant(uint32(1)), // курсор скрыт
+		"cursor_mode":  dbus.MakeVariant(cursorMode(p.IncludeCursor)),
 		"persist_mode": dbus.MakeVariant(uint32(2)), // помнить выбор
 	}
 	if restore != "" {

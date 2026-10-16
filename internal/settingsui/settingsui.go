@@ -49,6 +49,7 @@ type state struct {
 	remember widget.Bool // запоминать прошлую область
 	showSize widget.Bool // подпись размера области
 	keepOpen widget.Bool // не закрывать оверлей после копирования
+	cursor   widget.Bool // курсор мыши в снимке
 	dir      widget.Editor
 	prefix   widget.Editor // начало имени файла
 	reset    widget.Clickable
@@ -154,6 +155,7 @@ func newState(store *settings.Store) *state {
 	s.remember.Value = cur.RememberRegion
 	s.showSize.Value = cur.ShowSize
 	s.keepOpen.Value = cur.KeepOpen
+	s.cursor.Value = cur.IncludeCursor
 	s.dir.SingleLine = true
 	s.dir.SetText(cur.SaveDir)
 	s.prefix.SingleLine = true
@@ -284,6 +286,13 @@ func (s *state) apply(gtx layout.Context) {
 	}
 	if edited(gtx, &s.bColor) {
 		s.applyBorderColor(s.bColor.Text())
+	}
+
+	s.cursor.Update(gtx)
+	if want := s.cursor.Value; want != s.store.Get().IncludeCursor {
+		if err := s.store.Update(func(c *settings.Settings) { c.IncludeCursor = want }); err != nil {
+			s.dirErr = "Не удалось сохранить: " + err.Error()
+		}
 	}
 
 	s.keepOpen.Update(gtx)
@@ -816,6 +825,8 @@ func (s *state) items() []layout.Widget {
 				s.radio(&s.enter, string(settings.EnterCopy), "Только копировать в буфер обмена"),
 				s.radio(&s.enter, string(settings.EnterSave), "Только сохранить в файл"),
 			)),
+		s.row("Курсор мыши", "Работает при обычном захвате экрана. В запасном способе через Screenshot portal курсора в снимке нет.",
+			s.checkbox(&s.cursor, "Показывать курсор на снимке")),
 		s.row("После копирования", "Enter, Ctrl+C, Ctrl+S, двойной клик и кнопки панели. Выход по Esc.",
 			s.checkbox(&s.keepOpen, "Не закрывать, а продолжать редактировать")),
 		s.row("Уведомления", "После снимка и действий с подборкой. Ошибки показываются всегда.",
