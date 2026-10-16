@@ -102,17 +102,39 @@ application menu entry "Settings". Changes apply immediately. Settings are store
 
 ```json
 {
-  "double_click": "copy",
-  "save_dir": "/home/me/Pictures/Shots"
+  "enter": "copy",
+  "dim_percent": 60,
+  "tools": { "marker": { "color": "#FDD835" } },
+  "glue": { "before": "Before", "after": "After" }
 }
 ```
 
 | Key | Values | Meaning |
 | --- | --- | --- |
-| `double_click` | `off` (default), `copy`, `copy_save` | what a double click inside the selection does (with the *select* tool): nothing, copy to the clipboard, copy and save to a file |
-| `save_dir` | a directory, empty by default | where PNG files go; empty means `~/Pictures/Screenshots` |
+| `double_click` | `off` (default), `copy`, `copy_save` | what a double click inside the selection does (with the *select* tool) |
+| `enter` | `copy_save` (default), `copy`, `save` | what `Enter` does |
+| `keep_open` | `false` | stay in the editor after copying or saving (leave with `Esc`) |
+| `notifications` | `true` | show notifications after a shot; errors are always shown |
+| `remember_region` | `true` | remember the last area and offer it on the next run |
+| `include_cursor` | `false` | draw the mouse cursor into the shot (PipeWire capture only) |
+| `save_dir` | directory, empty by default | where files go; empty means `~/Pictures/Screenshots` |
+| `file_prefix` | text, empty by default | start of the file name, then date and time; empty means `scrawl` |
+| `format` | `png` (default), `jpeg` | file format; the clipboard always gets PNG |
+| `jpeg_quality` | 1-100, `90` | JPEG quality |
+| `default_tool` | `select` (default), `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text` | tool switched on once an area is selected |
+| `tools` | object per tool: `{"arrow": {"color": "#E53935", "width": 6}}` | default colour (`#RRGGBB`) and thickness per tool; applies until you pick a colour in the toolbar |
+| `palette` | list of 8 colours `#RRGGBB` | colours in the toolbar |
+| `marker_opacity` | 5-100, `43` | marker opacity, % |
+| `dim_percent` | 0-100, `86` | dimming outside the area, % |
+| `border_width` | 0.5-4, `1` | selection frame: line thickness, px |
+| `border_dash` | 1-20, `4.6` | selection frame: dash length, px |
+| `border_gap` | 0-20, `2` | selection frame: gap between dashes, px |
+| `border_color` | `#RRGGBB`, `#FFFFFF` | selection frame colour |
+| `handle_radius` | 0-10, `3` | corner handle radius, px; `0` hides the handles |
+| `show_size` | `true` | show the "W × H" label |
+| `glue` | object: `before`, `after`, `step`, `layout`, `background`, `pad`, `label_size` | before/after collage: captions (empty means "Было", "Стало", "Шаг"), `layout` `side` (default) or `stack`, `background` `light` (default) or `dark`, `pad` 0-100 (`28`), `label_size` 12-64 (`28`) |
 
-Missing or invalid values fall back to the defaults.
+Missing or invalid values fall back to the defaults; numbers outside the allowed range are clamped. Unknown keys are kept when the file is saved.
 
 ## How it works
 
