@@ -175,7 +175,7 @@ func Run(store *settings.Store) {
 
 func loop(s *state) {
 	w := new(app.Window)
-	w.Option(app.Title("Screen Editor: настройки"), app.Size(unit.Dp(600), unit.Dp(600)), app.MinSize(unit.Dp(420), unit.Dp(300)))
+	w.Option(app.Title("Scrawl: настройки"), app.Size(unit.Dp(600), unit.Dp(600)), app.MinSize(unit.Dp(420), unit.Dp(300)))
 	var ops op.Ops
 	for {
 		switch e := w.Event().(type) {
@@ -870,7 +870,7 @@ func (s *state) items() []layout.Widget {
 		s.row("Папка для скриншотов", "Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь.", dirField),
 		s.row("Имя файла", "Начало имени, дальше идут дата и время. Пусто: "+settings.DefaultFilePrefix+".", prefixField),
 		s.section("О программе"),
-		s.row("Screen Editor "+version.String(), version.Home, nil),
+		s.row("Scrawl "+version.String(), version.Home, nil),
 	}
 }
 

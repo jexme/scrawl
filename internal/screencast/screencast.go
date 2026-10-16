@@ -31,7 +31,7 @@ const (
 // AppID — идентификатор приложения для portal. Ему должен соответствовать
 // файл AppID+".desktop" (см. packaging/): без зарегистрированного app_id
 // xdg-desktop-portal не выдаёт restore_token и показывает диалог каждый раз.
-const AppID = "io.github.jexme.ScreenEditor"
+const AppID = "io.github.jexme.Scrawl"
 
 // Portal — подключение к session bus для вызовов ScreenCast.
 type Portal struct {

@@ -1,13 +1,13 @@
 #!/bin/sh
-# Назначает горячую клавишу GNOME на screen-editor (настройка пользовательских
+# Назначает горячую клавишу GNOME на scrawl (настройка пользовательских
 # комбинаций через gsettings). Использование:
 #   scripts/gnome-hotkey.sh [КОМБИНАЦИЯ] [ПУТЬ_К_БИНАРНИКУ] [--dry-run]
-# По умолчанию: Print и ~/.local/bin/screen-editor. Если комбинация уже занята
+# По умолчанию: Print и ~/.local/bin/scrawl. Если комбинация уже занята
 # другим пользовательским ярлыком, скрипт ничего не меняет и говорит, кем занята.
 set -eu
 
 accel="Print"
-bin="$HOME/.local/bin/screen-editor"
+bin="$HOME/.local/bin/scrawl"
 dry=0
 i=0
 for arg in "$@"; do
@@ -49,7 +49,7 @@ echo "Будет создан ярлык custom$n: $accel -> $bin"
 [ "$dry" = 1 ] && { echo "(--dry-run: ничего не изменено)"; exit 0; }
 
 key="$schema.custom-keybinding:$path"
-gsettings set "$key" name "screen-editor"
+gsettings set "$key" name "scrawl"
 gsettings set "$key" command "$bin"
 gsettings set "$key" binding "$accel"
 gsettings set "$schema" custom-keybindings "$newlist"

@@ -18,7 +18,7 @@ endif
 PREFIX ?= $(HOME)/.local
 BINDIR ?= $(PREFIX)/bin
 APPDIR ?= $(PREFIX)/share/applications
-DESKTOP := io.github.jexme.ScreenEditor.desktop
+DESKTOP := io.github.jexme.Scrawl.desktop
 
 .PHONY: all gio build test notices install uninstall clean
 

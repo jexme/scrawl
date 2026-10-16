@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-Name=Screen Editor
-Name[ru]=Скриншоты
+Name=Scrawl
+Name[ru]=Scrawl
 Comment=Fast screenshot capture and annotation
 Comment[ru]=Быстрый скриншот с выделением области и аннотациями
 Exec=scrawl

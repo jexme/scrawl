@@ -343,7 +343,7 @@ func (s Settings) MarkerAlpha() uint8 {
 }
 
 // DefaultFilePrefix — начало имени файла, если своё не задано.
-const DefaultFilePrefix = "screen-editor"
+const DefaultFilePrefix = "scrawl"
 
 // StampLayout — формат даты и времени в имени файла.
 const StampLayout = "20060102-150405"

@@ -195,7 +195,7 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 func (m *monitor) loop() {
 	w := new(app.Window)
 	m.win.Store(w)
-	w.Option(app.Title("screen-editor"), app.FullscreenAt(m.frame.X, m.frame.Y))
+	w.Option(app.Title("scrawl"), app.FullscreenAt(m.frame.X, m.frame.Y))
 	var ops op.Ops
 	for {
 		switch e := w.Event().(type) {

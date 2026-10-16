@@ -47,7 +47,7 @@ func main() {
 	if *openSettings {
 		// Своя блокировка: окно настроек не мешает оверлею и наоборот, но второе окно
 		// настроек не открываем.
-		if ok, err := singleton.Acquire("screen-editor-settings"); err == nil && !ok {
+		if ok, err := singleton.Acquire("scrawl-settings"); err == nil && !ok {
 			return
 		}
 		settingsui.Run(settings.NewStore())
@@ -56,7 +56,7 @@ func main() {
 
 	// Повторное нажатие хоткея не должно открывать второй оверлей поверх первого
 	// (и слать параллельные запросы в portal).
-	if ok, err := singleton.Acquire("screen-editor"); err == nil && !ok {
+	if ok, err := singleton.Acquire("scrawl"); err == nil && !ok {
 		return
 	}
 
@@ -94,7 +94,7 @@ func main() {
 		}
 		msg += ", оставьте галочку «Запомнить этот выбор» и нажмите «Дать доступ»"
 		fmt.Println(">>>", msg)
-		exec.Command("notify-send", "-a", "Screen Editor", "Настройка мониторов", msg).Run()
+		exec.Command("notify-send", "-a", "Scrawl", "Настройка мониторов", msg).Run()
 	})
 	if err != nil {
 		fatal("сессии: %v", err)
@@ -163,6 +163,6 @@ func where(m screencast.MonitorInfo, _ []screencast.MonitorInfo) string {
 func fatal(f string, a ...any) {
 	msg := fmt.Sprintf(f, a...)
 	fmt.Fprintln(os.Stderr, msg)
-	exec.Command("notify-send", "-a", "Screen Editor", "Не удалось сделать скриншот", msg).Run()
+	exec.Command("notify-send", "-a", "Scrawl", "Не удалось сделать скриншот", msg).Run()
 	os.Exit(1)
 }

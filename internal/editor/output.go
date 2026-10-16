@@ -139,5 +139,5 @@ func (m *monitor) inform(title, body string) {
 
 // notify показывает уведомление, если есть notify-send. Ошибки не важны.
 func notify(title, body string) {
-	exec.Command("notify-send", "-a", "Screen Editor", title, body).Run()
+	exec.Command("notify-send", "-a", "Scrawl", title, body).Run()
 }

@@ -242,7 +242,7 @@ func TestNotificationsDefaultOnAndToggles(t *testing.T) {
 func TestFilePrefix(t *testing.T) {
 	sandbox(t)
 	d := Default()
-	if got := d.FileName("20260101-120000"); got != "screen-editor-20260101-120000.png" {
+	if got := d.FileName("20260101-120000"); got != "scrawl-20260101-120000.png" {
 		t.Errorf("имя по умолчанию: %q", got)
 	}
 	d.FilePrefix = "Скрин"
@@ -526,10 +526,10 @@ func TestFileFormat(t *testing.T) {
 	if got.Format != FormatJPEG || got.JPEGQuality != 100 || got.Ext() != ".jpg" {
 		t.Errorf("JPEG, качество подрезается: %+v", got)
 	}
-	if name := got.FileName("20260101-120000"); name != "screen-editor-20260101-120000.jpg" {
+	if name := got.FileName("20260101-120000"); name != "scrawl-20260101-120000.jpg" {
 		t.Errorf("имя JPEG-файла: %q", name)
 	}
-	if name := got.NumberedFileName("20260101-120000", 2); name != "screen-editor-20260101-120000-2.jpg" {
+	if name := got.NumberedFileName("20260101-120000", 2); name != "scrawl-20260101-120000-2.jpg" {
 		t.Errorf("имя JPEG-файла набора: %q", name)
 	}
 	writeConfig(t, `{"format":"gif","jpeg_quality":0}`)
