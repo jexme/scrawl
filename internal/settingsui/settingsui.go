@@ -53,7 +53,13 @@ type state struct {
 	openDir  widget.Clickable
 	close    widget.Clickable
 	list     widget.List // прокрутка содержимого
+	sliders  []*slider   // все ползунки окна
 	dim      *slider     // затемнение вне области
+	bWidth   *slider     // рамка: толщина
+	bDash    *slider     // рамка: штрих
+	bGap     *slider     // рамка: пауза
+	bColor   widget.Editor
+	colorErr string
 
 	dirErr    string
 	prefixErr string
@@ -66,9 +72,25 @@ func newState(store *settings.Store) *state {
 
 	s := &state{th: th, store: store}
 	s.list.Axis = layout.Vertical
-	s.dim = newSlider(0, 100, 1, func(v float32) string { return fmt.Sprintf("%.0f%%", v) })
+	px := func(v float64) string { return fmt.Sprintf("%.1f px", v) }
+	s.dim = s.addSlider(0, 100, 1, func(v float64) string { return fmt.Sprintf("%.0f%%", v) },
+		func(c settings.Settings) float64 { return float64(c.DimPercent) },
+		func(c *settings.Settings, v float64) { c.DimPercent = int(v) })
+	s.bWidth = s.addSlider(settings.MinBorderWidth, settings.MaxBorderWidth, 0.5, px,
+		func(c settings.Settings) float64 { return c.BorderWidth },
+		func(c *settings.Settings, v float64) { c.BorderWidth = v })
+	s.bDash = s.addSlider(settings.MinBorderDash, 12, 0.2, px,
+		func(c settings.Settings) float64 { return c.BorderDash },
+		func(c *settings.Settings, v float64) { c.BorderDash = v })
+	s.bGap = s.addSlider(0, 12, 0.5, px,
+		func(c settings.Settings) float64 { return c.BorderGap },
+		func(c *settings.Settings, v float64) { c.BorderGap = v })
 	cur := store.Get()
-	s.dim.Set(float32(cur.DimPercent))
+	for _, sl := range s.sliders {
+		sl.Set(sl.get(cur))
+	}
+	s.bColor.SingleLine = true
+	s.bColor.SetText(cur.BorderColor)
 	s.choice.Value = string(cur.DoubleClick)
 	s.enter.Value = string(cur.Enter)
 	s.notify.Value = cur.Notifications
@@ -143,11 +165,16 @@ func (s *state) apply(gtx layout.Context) {
 		}
 	}
 
-	s.dim.Update(gtx)
-	if want := int(s.dim.Value()); want != s.store.Get().DimPercent {
-		if err := s.store.Update(func(c *settings.Settings) { c.DimPercent = want }); err != nil {
-			s.dirErr = "Не удалось сохранить: " + err.Error()
+	for _, sl := range s.sliders {
+		sl.Update(gtx)
+		if want := sl.Value(); want != sl.get(s.store.Get()) {
+			if err := s.store.Update(func(c *settings.Settings) { sl.set(c, want) }); err != nil {
+				s.dirErr = "Не удалось сохранить: " + err.Error()
+			}
 		}
+	}
+	if edited(gtx, &s.bColor) {
+		s.applyBorderColor(s.bColor.Text())
 	}
 
 	s.remember.Update(gtx)
@@ -171,6 +198,27 @@ func (s *state) apply(gtx layout.Context) {
 	}
 	if edited(gtx, &s.prefix) {
 		s.applyPrefix(s.prefix.Text())
+	}
+}
+
+// addSlider создаёт ползунок и записывает его в список окна.
+func (s *state) addSlider(min, max, step float64, format func(float64) string,
+	get func(settings.Settings) float64, set func(*settings.Settings, float64)) *slider {
+	sl := &slider{min: min, max: max, step: step, format: format, get: get, set: set}
+	s.sliders = append(s.sliders, sl)
+	return sl
+}
+
+// applyBorderColor проверяет и сохраняет цвет рамки; при ошибке настройка не меняется.
+func (s *state) applyBorderColor(txt string) {
+	c, err := settings.ParseColor(txt)
+	if err != nil {
+		s.colorErr = err.Error()
+		return
+	}
+	s.colorErr = ""
+	if err := s.store.Update(func(cfg *settings.Settings) { cfg.BorderColor = settings.FormatColor(c) }); err != nil {
+		s.colorErr = "Не удалось сохранить: " + err.Error()
 	}
 }
 
@@ -299,6 +347,57 @@ func (s *state) field(ed *widget.Editor, hint string) layout.Widget {
 	}
 }
 
+// borderControls — ползунки рамки и поле цвета с образцом.
+func (s *state) borderControls() layout.Widget {
+	labeled := func(name string, sl *slider) layout.FlexChild {
+		return layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					gtx.Constraints.Min.X = gtx.Dp(80)
+					return s.label(material.Body2, name, mutedColor)(gtx)
+				}),
+				layout.Flexed(1, s.slider(sl)),
+			)
+		})
+	}
+	return func(gtx layout.Context) layout.Dimensions {
+		cfg := s.store.Get()
+		swatch := func(gtx layout.Context) layout.Dimensions {
+			sz := gtx.Dp(36)
+			c := cfg.BorderNRGBA()
+			if parsed, err := settings.ParseColor(s.bColor.Text()); err == nil {
+				c = parsed
+			}
+			rr := clip.UniformRRect(image.Rect(0, 0, sz, sz), gtx.Dp(6))
+			paint.FillShape(gtx.Ops, borderColor, rr.Op(gtx.Ops))
+			inner := clip.UniformRRect(image.Rect(gtx.Dp(2), gtx.Dp(2), sz-gtx.Dp(2), sz-gtx.Dp(2)), gtx.Dp(4))
+			paint.FillShape(gtx.Ops, c, inner.Op(gtx.Ops))
+			return layout.Dimensions{Size: image.Pt(sz, sz)}
+		}
+		children := []layout.FlexChild{
+			labeled("Толщина", s.bWidth),
+			labeled("Штрих", s.bDash),
+			labeled("Пауза", s.bGap),
+			layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						gtx.Constraints.Min.X = gtx.Dp(80)
+						return s.label(material.Body2, "Цвет", mutedColor)(gtx)
+					}),
+					layout.Rigid(swatch),
+					layout.Rigid(layout.Spacer{Width: unit.Dp(10)}.Layout),
+					layout.Flexed(1, s.field(&s.bColor, "#FFFFFF")),
+				)
+			}),
+		}
+		if s.colorErr != "" {
+			children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout), layout.Rigid(s.label(material.Caption, s.colorErr, errorColor)))
+		}
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	}
+}
+
 func (s *state) checkbox(b *widget.Bool, label string) layout.Widget {
 	cb := material.CheckBox(s.th, b, label)
 	cb.Color = fgColor
@@ -378,6 +477,7 @@ func (s *state) items() []layout.Widget {
 		s.row("Прошлая область", "Показывается сразу при запуске и по клавише R. Без неё «было/стало» не подставит область само.",
 			s.checkbox(&s.remember, "Запоминать область снимка")),
 		s.section("Вид"),
+		s.row("Рамка выделения", "Пунктир вокруг выбранной области.", s.borderControls()),
 		s.row("Затемнение вне области", "0% не затемняет совсем, 100% закрашивает чёрным.", s.slider(s.dim)),
 		s.section("Сохранение"),
 		s.row("Папка для скриншотов", "Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь.", dirField),

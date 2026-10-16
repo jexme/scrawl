@@ -22,7 +22,9 @@ func TestDefaultsWithoutFile(t *testing.T) {
 
 func TestSaveLoadRoundTrip(t *testing.T) {
 	sandbox(t)
-	want := Settings{DoubleClick: DoubleClickCopySave, Enter: EnterSave, SaveDir: "/tmp/shots"}
+	want := Default()
+	want.DoubleClick, want.Enter, want.SaveDir = DoubleClickCopySave, EnterSave, "/tmp/shots"
+	want.Notifications, want.DimPercent, want.BorderColor = false, 40, "#FF8800"
 	if err := Save(want); err != nil {
 		t.Fatal(err)
 	}
@@ -229,7 +231,7 @@ func TestNotificationsDefaultOnAndToggles(t *testing.T) {
 	if !Load().Notifications {
 		t.Error("значение неверного типа должно дать значение по умолчанию (включено)")
 	}
-	if err := Save(Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: false}); err != nil {
+	if err := Save(func() Settings { d := Default(); d.Notifications = false; return d }()); err != nil {
 		t.Fatal(err)
 	}
 	if Load().Notifications {
@@ -281,5 +283,47 @@ func TestDimPercentClamped(t *testing.T) {
 		if got := Load().DimPercent; got != want {
 			t.Errorf("%s: получили %d, ожидали %d", body, got, want)
 		}
+	}
+}
+
+func TestBorderSettings(t *testing.T) {
+	sandbox(t)
+	d := Load()
+	if d.BorderWidth != 1 || d.BorderDash != 4.6 || d.BorderGap != 2 || d.BorderColor != "#FFFFFF" {
+		t.Errorf("рамка по умолчанию: %+v", d)
+	}
+	writeConfig(t, `{"border_width":99,"border_dash":0,"border_gap":-3,"border_color":"ff8800"}`)
+	got := Load()
+	if got.BorderWidth != MaxBorderWidth || got.BorderDash != MinBorderDash || got.BorderGap != 0 || got.BorderColor != "#FF8800" {
+		t.Errorf("числа подрезаются, цвет приводится к #RRGGBB: %+v", got)
+	}
+	if c := got.BorderNRGBA(); c.R != 255 || c.G != 0x88 || c.B != 0 || c.A != 255 {
+		t.Errorf("цвет рамки: %+v", c)
+	}
+	for _, bad := range []string{"", "#12345", "#GG0000", "red", "#1234567"} {
+		writeConfig(t, `{"border_color":"`+bad+`"}`)
+		if got := Load().BorderColor; got != "#FFFFFF" {
+			t.Errorf("цвет %q должен стать белым по умолчанию, а стал %q", bad, got)
+		}
+	}
+	if _, err := ParseColor("#abc"); err == nil {
+		t.Error("короткая запись #RGB не поддерживается")
+	}
+}
+
+func TestStoreUpdateWithoutChangeDoesNotWrite(t *testing.T) {
+	sandbox(t)
+	st := NewStore()
+	if err := st.Update(func(s *Settings) { s.DimPercent = Default().DimPercent }); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(Path()); !os.IsNotExist(err) {
+		t.Error("Update без изменений не должен создавать файл")
+	}
+	if err := st.Update(func(s *Settings) { s.DimPercent = 10 }); err != nil {
+		t.Fatal(err)
+	}
+	if Load().DimPercent != 10 {
+		t.Error("настоящее изменение должно записаться")
 	}
 }

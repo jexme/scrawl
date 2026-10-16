@@ -14,9 +14,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image/color"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"unicode"
@@ -59,13 +61,20 @@ type Settings struct {
 	FilePrefix string `json:"file_prefix,omitempty"`
 	// DimPercent — затемнение вне выделенной области, 0-100 %.
 	DimPercent int `json:"dim_percent"`
+	// Рамка выделения: толщина линии, длина штриха и пауза между штрихами в
+	// пикселях экрана, цвет в виде #RRGGBB.
+	BorderWidth float64 `json:"border_width"`
+	BorderDash  float64 `json:"border_dash"`
+	BorderGap   float64 `json:"border_gap"`
+	BorderColor string  `json:"border_color"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
 
 // Default возвращает настройки по умолчанию.
 func Default() Settings {
-	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86}
+	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
+		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF"}
 }
 
 // Path возвращает путь к файлу настроек.
@@ -94,6 +103,14 @@ func (s *Settings) normalize() {
 		s.Enter = def.Enter
 	}
 	s.DimPercent = min(max(s.DimPercent, 0), 100)
+	s.BorderWidth = min(max(s.BorderWidth, MinBorderWidth), MaxBorderWidth)
+	s.BorderDash = min(max(s.BorderDash, MinBorderDash), MaxBorderDash)
+	s.BorderGap = min(max(s.BorderGap, 0), MaxBorderGap)
+	if c, err := ParseColor(s.BorderColor); err == nil {
+		s.BorderColor = FormatColor(c)
+	} else {
+		s.BorderColor = def.BorderColor
+	}
 	if ValidateFilePrefix(s.FilePrefix) != nil {
 		s.FilePrefix = def.FilePrefix
 	}
@@ -219,14 +236,50 @@ func (st *Store) Get() Settings {
 	return st.s
 }
 
-// Update применяет изменение и сохраняет результат. Если запись на диск не
+// Update применяет изменение и сохраняет результат (если оно что-то изменило). Если запись на диск не
 // удалась, в памяти настройка всё равно меняется, а ошибка возвращается.
 func (st *Store) Update(change func(*Settings)) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
+	before := st.s
 	change(&st.s)
 	st.s.normalize()
+	if st.s == before {
+		return nil // ничего не изменилось: файл не трогаем
+	}
 	return Save(st.s)
+}
+
+// Границы значений рамки выделения.
+const (
+	MinBorderWidth, MaxBorderWidth = 0.5, 4
+	MinBorderDash, MaxBorderDash   = 1, 20
+	MaxBorderGap                   = 20
+)
+
+// ParseColor разбирает цвет вида #RRGGBB (решётка необязательна).
+func ParseColor(s string) (color.NRGBA, error) {
+	hex := strings.TrimPrefix(strings.TrimSpace(s), "#")
+	if len(hex) != 6 {
+		return color.NRGBA{}, errors.New("нужен цвет вида #RRGGBB")
+	}
+	v, err := strconv.ParseUint(hex, 16, 32)
+	if err != nil {
+		return color.NRGBA{}, errors.New("нужен цвет вида #RRGGBB")
+	}
+	return color.NRGBA{R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v), A: 255}, nil
+}
+
+// FormatColor записывает цвет как #RRGGBB.
+func FormatColor(c color.NRGBA) string { return fmt.Sprintf("#%02X%02X%02X", c.R, c.G, c.B) }
+
+// BorderNRGBA возвращает цвет рамки (после normalize он всегда верный).
+func (s Settings) BorderNRGBA() color.NRGBA {
+	c, err := ParseColor(s.BorderColor)
+	if err != nil {
+		c, _ = ParseColor(Default().BorderColor)
+	}
+	return c
 }
 
 // DefaultFilePrefix — начало имени файла, если своё не задано.

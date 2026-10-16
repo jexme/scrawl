@@ -43,7 +43,6 @@ type Config struct {
 }
 
 var (
-	selBorder = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
 	handleFg  = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
 	textFrame = color.NRGBA{R: 255, G: 255, B: 255, A: 160}
 	identity  = unit.Metric{PxPerDp: 1, PxPerSp: 1}
@@ -54,13 +53,8 @@ func shadeColor(percent int) color.NRGBA {
 	return color.NRGBA{A: uint8(math.Round(float64(min(max(percent, 0), 100)) * 255 / 100))}
 }
 
-// Вид рамки выделения, подобран на макете.
-const (
-	borderWidth  = 1.0 // толщина линии
-	borderDash   = 4.6 // длина штриха
-	borderGap    = 2.0 // пауза между штрихами
-	handleRadius = 3.0 // радиус угловой ручки
-)
+// handleRadius — радиус угловой ручки.
+const handleRadius = 3.0
 
 // Режимы правки готовой области.
 const (
@@ -327,7 +321,8 @@ func (m *monitor) layoutSizeLabel(gtx layout.Context, selWin image.Rectangle) {
 
 func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 	full := image.Rectangle{Max: fs}
-	shade := shadeColor(m.store.Get().DimPercent)
+	cfg := m.store.Get()
+	shade := shadeColor(cfg.DimPercent)
 
 	clipImg := clip.Rect(full).Push(gtx.Ops)
 	m.imageOp.Add(gtx.Ops)
@@ -359,7 +354,7 @@ func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 
 	// Рамка пунктиром: толщина, штрих и пауза в пикселях экрана, при любом масштабе
 	// окна остаются теми же.
-	dashedRect(gtx.Ops, r, selBorder, borderWidth/sx, borderDash/sx, borderGap/sx)
+	dashedRect(gtx.Ops, r, cfg.BorderNRGBA(), float32(cfg.BorderWidth)/sx, float32(cfg.BorderDash)/sx, float32(cfg.BorderGap)/sx)
 
 	// Ручки только в углах: за стороны рамку тянут инструментом «выделение».
 	hr := handleRadius / sx

@@ -71,7 +71,7 @@ func TestInitialStateReflectsFile(t *testing.T) {
 
 // TestRenderWindow рисует окно для просмотра глазами (SCREEN_EDITOR_TEST_OUT).
 func TestRenderWindow(t *testing.T) {
-	const W, H = 700, 650
+	const W, H = 700, 1500
 	s := testState(t)
 	s.choice.Value = string(settings.DoubleClickCopy)
 
@@ -213,5 +213,39 @@ func TestDimSliderSnapsAndSaves(t *testing.T) {
 	s.layout(frameContext(700, 650))
 	if got := settings.Load().DimPercent; got != 50 {
 		t.Errorf("в файле %d, ожидали 50", got)
+	}
+}
+
+// Простое открытие окна ничего не пишет в файл: значения ползунков после
+// округления совпадают с сохранёнными (например, 4.6 не становится 4.6000004).
+func TestOpeningWindowDoesNotRewriteConfig(t *testing.T) {
+	s := testState(t)
+	s.layout(frameContext(700, 650))
+	s.layout(frameContext(700, 650))
+	if _, err := os.Stat(settings.Path()); !os.IsNotExist(err) {
+		data, _ := os.ReadFile(settings.Path())
+		t.Errorf("окно без изменений не должно писать файл настроек, а там: %s", data)
+	}
+}
+
+func TestBorderControlsAreSavedToDisk(t *testing.T) {
+	s := testState(t)
+	s.bWidth.Set(2.5)
+	s.bDash.Set(6)
+	s.bGap.Set(0)
+	s.layout(frameContext(700, 650))
+	got := settings.Load()
+	if got.BorderWidth != 2.5 || got.BorderDash != 6 || got.BorderGap != 0 {
+		t.Errorf("ползунки рамки не дошли до файла: %+v", got)
+	}
+
+	s.applyBorderColor("#12")
+	if s.colorErr == "" || settings.Load().BorderColor != "#FFFFFF" {
+		t.Errorf("неверный цвет должен отклоняться: ошибка=%q, файл=%q", s.colorErr, settings.Load().BorderColor)
+	}
+	s.bColor.SetText("00ff80")
+	s.layout(frameContext(700, 650))
+	if s.colorErr != "" || settings.Load().BorderColor != "#00FF80" {
+		t.Errorf("верный цвет должен сохраниться как #RRGGBB: ошибка=%q, файл=%q", s.colorErr, settings.Load().BorderColor)
 	}
 }
