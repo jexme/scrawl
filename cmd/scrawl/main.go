@@ -19,6 +19,7 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 	"github.com/jexme/scrawl/internal/settingsui"
 	"github.com/jexme/scrawl/internal/singleton"
+	"github.com/jexme/scrawl/internal/tray"
 	"github.com/jexme/scrawl/internal/version"
 )
 
@@ -30,11 +31,17 @@ func main() {
 	openSettings := flag.Bool("settings", false, i18n.T("открыть окно настроек"))
 	grant := flag.Bool("grant-screenshot", false, i18n.T("разрешить приложению запасной снимок через Screenshot portal и выйти"))
 	exitAfter := flag.Duration("exit-after", 0, i18n.T("закрыться штатно через указанное время (для проверок)"))
+	trayMode := flag.Bool("tray", false, i18n.T("держать значок в области уведомлений (для запуска при входе в систему)"))
 	showVersion := flag.Bool("version", false, i18n.T("показать версию и выйти"))
 	flag.Parse()
 
 	if *showVersion {
 		fmt.Println("scrawl", version.String())
+		return
+	}
+
+	if *trayMode {
+		runTray(*exitAfter)
 		return
 	}
 
@@ -147,4 +154,36 @@ func fatal(f string, a ...any) {
 	fmt.Fprintln(os.Stderr, msg)
 	exec.Command("notify-send", "-a", "Scrawl", i18n.T("Не удалось сделать скриншот"), msg).Run()
 	os.Exit(1)
+}
+
+// runTray держит значок в области уведомлений: снимок и настройки запускаются
+// отдельными процессами, поэтому значок остаётся лёгким и не держит захват экрана.
+func runTray(exitAfter time.Duration) {
+	if ok, err := singleton.Acquire("scrawl-tray"); err == nil && !ok {
+		return
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		fatal("%v", err)
+	}
+	spawn := func(args ...string) {
+		cmd := exec.Command(exe, args...)
+		if err := cmd.Start(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
+		go cmd.Wait() // чтобы не оставлять зомби-процесс
+	}
+	var stop chan struct{}
+	if exitAfter > 0 {
+		stop = make(chan struct{})
+		time.AfterFunc(exitAfter, func() { close(stop) })
+	}
+	err = tray.Run(tray.Handlers{
+		Shot:     func() { spawn() },
+		Settings: func() { spawn("-settings") },
+	}, stop)
+	if err != nil {
+		fatal("%s: %v", i18n.T("значок"), err)
+	}
 }

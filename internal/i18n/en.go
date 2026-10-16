@@ -237,4 +237,12 @@ var en = map[string]string{
 	"Язык интерфейса":                 "Interface language",
 	"Окно настроек меняется сразу, оверлей и уведомления при следующем снимке.": "The settings window changes at once; the overlay and notifications change on the next shot.",
 	"Как в системе": "Same as the system",
+	"Снимок":        "Take screenshot",
+	"Выход":         "Quit",
+	"Левый клик: снимок экрана": "Left click: take a screenshot",
+	"нет пункта меню":           "no such menu item",
+	"имя %s уже занято":         "the name %s is already taken",
+	"значок не зарегистрирован (нет расширения AppIndicator?): %w":           "the icon is not registered (is the AppIndicator extension missing?): %w",
+	"держать значок в области уведомлений (для запуска при входе в систему)": "keep an icon in the notification area (for starting at login)",
+	"значок": "tray icon",
 }
