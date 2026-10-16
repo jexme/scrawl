@@ -1,6 +1,7 @@
 package settingsui
 
 import (
+	"context"
 	"sync"
 
 	"gioui.org/layout"
@@ -10,6 +11,8 @@ import (
 	"github.com/jexme/scrawl/internal/autostart"
 	"github.com/jexme/scrawl/internal/hotkey"
 	"github.com/jexme/scrawl/internal/screencast"
+	"github.com/jexme/scrawl/internal/update"
+	"github.com/jexme/scrawl/internal/version"
 )
 
 // Действия окна, которые вызывают внешние службы (portal, gsettings). Тесты
@@ -20,6 +23,7 @@ var (
 	assignHotkey    = hotkey.Assign
 	currentHotkey   = hotkey.Current
 	hotkeyBinary    = hotkey.PreferredBinary
+	checkUpdate     = func() (update.Result, error) { return update.Check(context.Background(), version.String()) }
 	autostartOn     = autostart.Enabled
 	autostartEnable = autostart.Enable
 	autostartOff    = autostart.Disable

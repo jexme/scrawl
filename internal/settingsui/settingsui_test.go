@@ -19,6 +19,7 @@ import (
 	"github.com/jexme/scrawl/internal/hotkey"
 	"github.com/jexme/scrawl/internal/i18n"
 	"github.com/jexme/scrawl/internal/settings"
+	"github.com/jexme/scrawl/internal/update"
 )
 
 func testState(t *testing.T) *state {
@@ -106,12 +107,12 @@ func TestRenderWindow(t *testing.T) {
 // прокручивается; в высоком влезает целиком.
 func TestContentScrollsInSmallWindow(t *testing.T) {
 	small := testState(t)
-	small.layout(frameContext(600, 380))
+	small.layout(frameContext(600, 560))
 	if !small.list.Position.BeforeEnd {
 		t.Error("в низком окне часть настроек должна быть ниже видимой области")
 	}
 	small.list.ScrollTo(len(small.items()) - 1)
-	small.layout(frameContext(600, 380))
+	small.layout(frameContext(600, 560))
 	if small.list.Position.BeforeEnd {
 		t.Errorf("после прокрутки к последнему разделу конец списка должен быть виден: %+v", small.list.Position)
 	}
@@ -721,5 +722,41 @@ func TestAutostartCheckbox(t *testing.T) {
 	s.layout(frameContext(700, 650))
 	if s.autostart.Value || !strings.Contains(s.autoErr, "диск только для чтения") {
 		t.Errorf("при ошибке галочка должна сняться: %v, %q", s.autostart.Value, s.autoErr)
+	}
+}
+
+func TestUpdateButtonAndSwitch(t *testing.T) {
+	s := testState(t)
+	old := checkUpdate
+	defer func() { checkUpdate = old }()
+
+	if s.checkUpd.Value {
+		t.Fatal("проверка обновлений по умолчанию выключена")
+	}
+	calls := 0
+	checkUpdate = func() (update.Result, error) {
+		calls++
+		return update.Result{Latest: "v9.9.9", URL: "https://example/r", Newer: true, Comparable: true}, nil
+	}
+	// Кнопка работает при выключенной проверке.
+	s.update.btn.Click()
+	s.layout(frameContext(700, 650))
+	waitDone(t, &s.update)
+	if msg, failed, _ := s.update.status(); calls != 1 || failed || !strings.Contains(msg, "v9.9.9") {
+		t.Errorf("вызовов %d, сообщение %q, ошибка %v", calls, msg, failed)
+	}
+
+	checkUpdate = func() (update.Result, error) { return update.Result{}, errors.New("нет связи") }
+	s.update.btn.Click()
+	s.layout(frameContext(700, 650))
+	waitDone(t, &s.update)
+	if msg, failed, _ := s.update.status(); !failed || !strings.Contains(msg, "нет связи") {
+		t.Errorf("ошибка сети должна показываться: %q %v", msg, failed)
+	}
+
+	s.checkUpd.Value = true
+	s.layout(frameContext(700, 650))
+	if !settings.Load().CheckUpdates {
+		t.Error("включённая проверка не дошла до файла")
 	}
 }

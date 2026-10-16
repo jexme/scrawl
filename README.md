@@ -125,6 +125,7 @@ application menu entry "Settings". Changes apply immediately. Settings are store
 | `jpeg_quality` | 1-100, `90` | JPEG quality |
 | `default_tool` | `select` (default), `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text` | tool switched on once an area is selected |
 | `tools` | object per tool: `{"arrow": {"color": "#E53935", "width": 6}}` | default colour (`#RRGGBB`) and thickness per tool; applies until you pick a colour in the toolbar |
+| `check_updates` | `false` (default), `true` | ask GitHub Releases for a new version when the settings window and the tray icon start; the only network access of the program (the "Check now" button works either way) |
 | `language` | `auto` (default), `ru`, `en` | interface language; `auto` follows the system locale |
 | `keys` | object: `confirm`, `cancel`, `restore`, `add`, `glue`, `send`, `undo`, `copy`, `save` | overlay keys as `Ctrl+Shift+S`, `R`, `Enter`, `F5`; empty means the default, two actions cannot share a key |
 | `palette` | list of 8 colours `#RRGGBB` | colours in the toolbar |

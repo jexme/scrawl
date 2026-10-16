@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -20,6 +21,7 @@ import (
 	"github.com/jexme/scrawl/internal/settingsui"
 	"github.com/jexme/scrawl/internal/singleton"
 	"github.com/jexme/scrawl/internal/tray"
+	"github.com/jexme/scrawl/internal/update"
 	"github.com/jexme/scrawl/internal/version"
 )
 
@@ -179,11 +181,29 @@ func runTray(exitAfter time.Duration) {
 		stop = make(chan struct{})
 		time.AfterFunc(exitAfter, func() { close(stop) })
 	}
+	if settings.Load().CheckUpdates {
+		go watchUpdates()
+	}
 	err = tray.Run(tray.Handlers{
 		Shot:     func() { spawn() },
 		Settings: func() { spawn("-settings") },
 	}, stop)
 	if err != nil {
 		fatal("%s: %v", i18n.T("значок"), err)
+	}
+}
+
+// watchUpdates проверяет новую версию при старте значка и потом раз в сутки; о
+// каждой новой версии сообщает один раз. Работает, только если проверка включена в настройках.
+func watchUpdates() {
+	for {
+		if res, err := update.Check(context.Background(), version.String()); err == nil && res.Newer && !update.AlreadyNotified(res.Latest) {
+			exec.Command("notify-send", "-a", "Scrawl", i18n.T("Доступна новая версия"), res.Message()).Run()
+			update.MarkNotified(res.Latest)
+		}
+		time.Sleep(24 * time.Hour)
+		if !settings.Load().CheckUpdates {
+			return // выключили в настройках
+		}
 	}
 }

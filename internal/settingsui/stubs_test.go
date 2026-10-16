@@ -1,6 +1,11 @@
 package settingsui
 
-import "github.com/jexme/scrawl/internal/hotkey"
+import (
+	"errors"
+
+	"github.com/jexme/scrawl/internal/hotkey"
+	"github.com/jexme/scrawl/internal/update"
+)
 
 // Тесты не должны трогать настройки GNOME и portal пользователя.
 func init() {
@@ -10,6 +15,9 @@ func init() {
 	autostartOn = func() bool { return false }
 	autostartEnable = func(string) error { return nil }
 	autostartOff = func() error { return nil }
+	checkUpdate = func() (update.Result, error) {
+		return update.Result{}, errors.New("тест не ходит в сеть")
+	}
 	grantPermission = func() error { return nil }
 	setupMonitors = func(func(string)) (string, error) { return "", nil }
 }

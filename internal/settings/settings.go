@@ -94,6 +94,9 @@ type Settings struct {
 	KeepOpen bool `json:"keep_open"`
 	// Language — язык интерфейса: "auto" (по системе), "ru" или "en".
 	Language string `json:"language"`
+	// CheckUpdates — спрашивать GitHub о новой версии при старте значка и окна
+	// настроек. Единственный выход программы в интернет; по умолчанию выключено.
+	CheckUpdates bool `json:"check_updates"`
 	// Keys — клавиши действий оверлея; пусто: по умолчанию.
 	Keys Keys `json:"keys"`
 	// IncludeCursor — рисовать курсор мыши в снимке (только при захвате через PipeWire).

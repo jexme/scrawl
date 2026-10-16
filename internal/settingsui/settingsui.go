@@ -90,6 +90,8 @@ type state struct {
 	hotkey     task   // назначение горячей клавиши
 	hotkeyEd   widget.Editor
 	lang       widget.Enum // язык интерфейса: auto, ru, en
+	checkUpd   widget.Bool // проверять обновления при старте
+	update     task        // проверка обновлений
 	autostart  widget.Bool // запуск значка при входе
 	autoErr    string
 	keyRows    []*keyRow
@@ -135,6 +137,7 @@ func newState(store *settings.Store) *state {
 		sl.Set(sl.get(cur))
 	}
 	s.initKeys()
+	s.checkUpd.Value = store.Get().CheckUpdates
 	s.autostart.Value = autostartOn()
 	s.lang.Value = store.Get().Language
 	s.hotkeyEd.SingleLine = true
@@ -189,7 +192,11 @@ func Run(store *settings.Store) {
 	i18n.SetLanguage(store.Get().Language)
 	app.ID = screencast.AppID
 	go func() {
-		loop(newState(store))
+		s := newState(store)
+		if store.Get().CheckUpdates {
+			s.checkNow()
+		}
+		loop(s)
 		os.Exit(0)
 	}()
 	app.Main()
@@ -232,6 +239,15 @@ func loop(s *state) {
 // apply приводит сохранённые настройки в соответствие с виджетами. Вызывается
 // на каждом кадре: ничего не пишет, пока значения не изменились.
 func (s *state) apply(gtx layout.Context) {
+	s.checkUpd.Update(gtx)
+	if want := s.checkUpd.Value; want != s.store.Get().CheckUpdates {
+		if err := s.store.Update(func(c *settings.Settings) { c.CheckUpdates = want }); err != nil {
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+		}
+	}
+	if s.update.btn.Clicked(gtx) {
+		s.checkNow()
+	}
 	s.autostart.Update(gtx)
 	if want := s.autostart.Value; want != autostartOn() {
 		s.autoErr = ""
@@ -481,6 +497,18 @@ func edited(gtx layout.Context, ed *widget.Editor) bool {
 			changed = true
 		}
 	}
+}
+
+// checkNow запрашивает у GitHub последнюю версию в фоне.
+func (s *state) checkNow() {
+	s.start(&s.update, func(progress func(string)) (string, error) {
+		progress(i18n.T("Проверяем…"))
+		res, err := checkUpdate()
+		if err != nil {
+			return "", err
+		}
+		return res.Message(), nil
+	})
 }
 
 // applyPrefix проверяет и сохраняет начало имени файла; при ошибке настройка не меняется.
@@ -854,6 +882,17 @@ func (s *state) autostartControl() layout.Widget {
 	}
 }
 
+// updateControl — переключатель проверки при старте и кнопка «Проверить сейчас».
+func (s *state) updateControl() layout.Widget {
+	return func(gtx layout.Context) layout.Dimensions {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(s.checkbox(&s.checkUpd, i18n.T("Проверять при запуске окна настроек и значка"))),
+			layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout),
+			layout.Rigid(s.taskControl(&s.update, i18n.T("Проверить сейчас"))),
+		)
+	}
+}
+
 // hotkeyControl — поле комбинации и кнопка назначения.
 func (s *state) hotkeyControl() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
@@ -1004,6 +1043,8 @@ func (s *state) items() []layout.Widget {
 		s.row(i18n.T("Имя файла"), i18n.T("Начало имени, дальше идут дата и время. Пусто: ")+settings.DefaultFilePrefix+".", prefixField),
 		s.section(i18n.T("О программе")),
 		s.row("Scrawl "+version.String(), version.Home, nil),
+		s.row(i18n.T("Обновления"), i18n.T("Единственное место, где программа выходит в интернет: запрос к GitHub Releases. По умолчанию выключено; кнопка работает и при выключенной проверке."),
+			s.updateControl()),
 	}
 }
 
