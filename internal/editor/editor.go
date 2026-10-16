@@ -43,12 +43,16 @@ type Config struct {
 }
 
 var (
-	shade     = color.NRGBA{A: 219} // затемнение вне области, 86%
 	selBorder = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
 	handleFg  = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
 	textFrame = color.NRGBA{R: 255, G: 255, B: 255, A: 160}
 	identity  = unit.Metric{PxPerDp: 1, PxPerSp: 1}
 )
+
+// shadeColor возвращает цвет затемнения вне области для процента 0-100.
+func shadeColor(percent int) color.NRGBA {
+	return color.NRGBA{A: uint8(math.Round(float64(min(max(percent, 0), 100)) * 255 / 100))}
+}
 
 // Вид рамки выделения, подобран на макете.
 const (
@@ -323,6 +327,7 @@ func (m *monitor) layoutSizeLabel(gtx layout.Context, selWin image.Rectangle) {
 
 func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 	full := image.Rectangle{Max: fs}
+	shade := shadeColor(m.store.Get().DimPercent)
 
 	clipImg := clip.Rect(full).Push(gtx.Ops)
 	m.imageOp.Add(gtx.Ops)

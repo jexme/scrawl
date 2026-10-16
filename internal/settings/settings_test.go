@@ -263,3 +263,23 @@ func TestFilePrefix(t *testing.T) {
 		t.Errorf("неверный префикс должен сброситься: %+v", got)
 	}
 }
+
+func TestDimPercentClamped(t *testing.T) {
+	sandbox(t)
+	if got := Load().DimPercent; got != 86 {
+		t.Errorf("затемнение по умолчанию 86%%, а не %d", got)
+	}
+	for body, want := range map[string]int{
+		`{"dim_percent":40}`:   40,
+		`{"dim_percent":0}`:    0,
+		`{"dim_percent":150}`:  100,
+		`{"dim_percent":-5}`:   0,
+		`{"dim_percent":"x"}`:  86,
+		`{"dim_percent":12.5}`: 86, // не целое: значение по умолчанию
+	} {
+		writeConfig(t, body)
+		if got := Load().DimPercent; got != want {
+			t.Errorf("%s: получили %d, ожидали %d", body, got, want)
+		}
+	}
+}

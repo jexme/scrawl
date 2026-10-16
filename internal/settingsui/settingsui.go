@@ -3,6 +3,7 @@
 package settingsui
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"os"
@@ -52,6 +53,7 @@ type state struct {
 	openDir  widget.Clickable
 	close    widget.Clickable
 	list     widget.List // прокрутка содержимого
+	dim      *slider     // затемнение вне области
 
 	dirErr    string
 	prefixErr string
@@ -64,7 +66,9 @@ func newState(store *settings.Store) *state {
 
 	s := &state{th: th, store: store}
 	s.list.Axis = layout.Vertical
+	s.dim = newSlider(0, 100, 1, func(v float32) string { return fmt.Sprintf("%.0f%%", v) })
 	cur := store.Get()
+	s.dim.Set(float32(cur.DimPercent))
 	s.choice.Value = string(cur.DoubleClick)
 	s.enter.Value = string(cur.Enter)
 	s.notify.Value = cur.Notifications
@@ -135,6 +139,13 @@ func (s *state) apply(gtx layout.Context) {
 	s.notify.Update(gtx)
 	if want := s.notify.Value; want != s.store.Get().Notifications {
 		if err := s.store.Update(func(c *settings.Settings) { c.Notifications = want }); err != nil {
+			s.dirErr = "Не удалось сохранить: " + err.Error()
+		}
+	}
+
+	s.dim.Update(gtx)
+	if want := int(s.dim.Value()); want != s.store.Get().DimPercent {
+		if err := s.store.Update(func(c *settings.Settings) { c.DimPercent = want }); err != nil {
 			s.dirErr = "Не удалось сохранить: " + err.Error()
 		}
 	}
@@ -366,6 +377,8 @@ func (s *state) items() []layout.Widget {
 			s.checkbox(&s.notify, "Показывать уведомления")),
 		s.row("Прошлая область", "Показывается сразу при запуске и по клавише R. Без неё «было/стало» не подставит область само.",
 			s.checkbox(&s.remember, "Запоминать область снимка")),
+		s.section("Вид"),
+		s.row("Затемнение вне области", "0% не затемняет совсем, 100% закрашивает чёрным.", s.slider(s.dim)),
 		s.section("Сохранение"),
 		s.row("Папка для скриншотов", "Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь.", dirField),
 		s.row("Имя файла", "Начало имени, дальше идут дата и время. Пусто: "+settings.DefaultFilePrefix+".", prefixField),

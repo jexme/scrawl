@@ -199,3 +199,19 @@ func TestOpenOutputDirCreatesAndOpensFolder(t *testing.T) {
 		t.Errorf("открыто %q, ошибка %q: ожидали свою папку и сообщение об ошибке", opened, s.dirErr)
 	}
 }
+
+func TestDimSliderSnapsAndSaves(t *testing.T) {
+	s := testState(t)
+	if got := s.dim.Value(); got != 86 {
+		t.Fatalf("ползунок должен показывать 86%%, а не %v", got)
+	}
+	s.dim.Set(33.4)
+	if got := s.dim.Value(); got != 33 {
+		t.Errorf("значение должно прижиматься к шагу: %v", got)
+	}
+	s.dim.f.Value = 0.5 // как если бы пользователь перетащил ползунок
+	s.layout(frameContext(700, 650))
+	if got := settings.Load().DimPercent; got != 50 {
+		t.Errorf("в файле %d, ожидали 50", got)
+	}
+}

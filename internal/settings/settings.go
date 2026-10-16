@@ -1,6 +1,7 @@
 // Package settings хранит пользовательские настройки в JSON-файле
 // ~/.config/screen-editor/config.json. Файл можно править руками; отсутствующие
-// и неверные значения заменяются значениями по умолчанию, а ключи, которых
+// и неверные значения заменяются значениями по умолчанию (числа вне допустимого
+// диапазона подрезаются до его границ), а ключи, которых
 // программа не знает (от новой версии или дописанные руками), при записи
 // сохраняются.
 //
@@ -56,13 +57,15 @@ type Settings struct {
 	RememberRegion bool `json:"remember_region"`
 	// FilePrefix — начало имени файла скриншота. Пусто: DefaultFilePrefix.
 	FilePrefix string `json:"file_prefix,omitempty"`
+	// DimPercent — затемнение вне выделенной области, 0-100 %.
+	DimPercent int `json:"dim_percent"`
 	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
 
 // Default возвращает настройки по умолчанию.
 func Default() Settings {
-	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true}
+	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86}
 }
 
 // Path возвращает путь к файлу настроек.
@@ -90,6 +93,7 @@ func (s *Settings) normalize() {
 	if !s.Enter.valid() {
 		s.Enter = def.Enter
 	}
+	s.DimPercent = min(max(s.DimPercent, 0), 100)
 	if ValidateFilePrefix(s.FilePrefix) != nil {
 		s.FilePrefix = def.FilePrefix
 	}

@@ -110,3 +110,11 @@ func TestRenderBlur(t *testing.T) {
 		os.WriteFile(path+".blur.png", data, 0o644)
 	}
 }
+
+func TestShadeColor(t *testing.T) {
+	for percent, want := range map[int]uint8{0: 0, 86: 219, 100: 255, -10: 0, 500: 255, 50: 128} {
+		if got := shadeColor(percent).A; got != want {
+			t.Errorf("затемнение %d%%: альфа %d, ожидали %d", percent, got, want)
+		}
+	}
+}
