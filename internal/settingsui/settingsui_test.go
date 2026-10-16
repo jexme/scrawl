@@ -692,3 +692,34 @@ func TestRenderEnglishPicture(t *testing.T) {
 	defer f.Close()
 	png.Encode(f, out)
 }
+
+func TestAutostartCheckbox(t *testing.T) {
+	s := testState(t)
+	oldOn, oldEnable, oldOff := autostartOn, autostartEnable, autostartOff
+	defer func() { autostartOn, autostartEnable, autostartOff = oldOn, oldEnable, oldOff }()
+
+	enabled := false
+	var gotBin string
+	autostartOn = func() bool { return enabled }
+	autostartEnable = func(bin string) error { gotBin, enabled = bin, true; return nil }
+	autostartOff = func() error { enabled = false; return nil }
+
+	s.autostart.Value = true
+	s.layout(frameContext(700, 650))
+	if !enabled || gotBin != "/test/bin/scrawl" || s.autoErr != "" {
+		t.Errorf("включение: файл %v, бинарник %q, ошибка %q", enabled, gotBin, s.autoErr)
+	}
+	s.autostart.Value = false
+	s.layout(frameContext(700, 650))
+	if enabled || s.autoErr != "" {
+		t.Errorf("выключение: файл %v, ошибка %q", enabled, s.autoErr)
+	}
+
+	// Ошибка записи: галочка возвращается в состояние файла, причина видна в окне.
+	autostartEnable = func(string) error { return errors.New("диск только для чтения") }
+	s.autostart.Value = true
+	s.layout(frameContext(700, 650))
+	if s.autostart.Value || !strings.Contains(s.autoErr, "диск только для чтения") {
+		t.Errorf("при ошибке галочка должна сняться: %v, %q", s.autostart.Value, s.autoErr)
+	}
+}

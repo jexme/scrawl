@@ -7,6 +7,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/jexme/scrawl/internal/autostart"
 	"github.com/jexme/scrawl/internal/hotkey"
 	"github.com/jexme/scrawl/internal/screencast"
 )
@@ -19,6 +20,9 @@ var (
 	assignHotkey    = hotkey.Assign
 	currentHotkey   = hotkey.Current
 	hotkeyBinary    = hotkey.PreferredBinary
+	autostartOn     = autostart.Enabled
+	autostartEnable = autostart.Enable
+	autostartOff    = autostart.Disable
 )
 
 // task — кнопка, запускающая действие в фоне, и строка с результатом под ней.

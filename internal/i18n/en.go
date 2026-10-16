@@ -245,4 +245,10 @@ var en = map[string]string{
 	"значок не зарегистрирован (нет расширения AppIndicator?): %w":           "the icon is not registered (is the AppIndicator extension missing?): %w",
 	"держать значок в области уведомлений (для запуска при входе в систему)": "keep an icon in the notification area (for starting at login)",
 	"значок": "tray icon",
+	"Не удалось изменить автозапуск: %v": "Could not change autostart: %v",
+	"Запуск":     "Startup",
+	"Автозапуск": "Autostart",
+	"При входе в систему запускается значок в области уведомлений (scrawl -tray): левый клик делает снимок. На GNOME нужно расширение AppIndicator.": "At login a notification-area icon is started (scrawl -tray): left click takes a screenshot. GNOME needs the AppIndicator extension.",
+	"Запускать значок при входе в систему":        "Start the icon at login",
+	"путь к программе должен быть абсолютным: %q": "the path to the program must be absolute: %q",
 }

@@ -90,6 +90,8 @@ type state struct {
 	hotkey     task   // назначение горячей клавиши
 	hotkeyEd   widget.Editor
 	lang       widget.Enum // язык интерфейса: auto, ru, en
+	autostart  widget.Bool // запуск значка при входе
+	autoErr    string
 	keyRows    []*keyRow
 	capturing  *keyRow // строка, для которой ждём нажатия клавиши
 	capTag     bool    // тег фокуса для записи клавиши
@@ -133,6 +135,7 @@ func newState(store *settings.Store) *state {
 		sl.Set(sl.get(cur))
 	}
 	s.initKeys()
+	s.autostart.Value = autostartOn()
 	s.lang.Value = store.Get().Language
 	s.hotkeyEd.SingleLine = true
 	s.hotkeyEd.SetText("Print")
@@ -229,6 +232,23 @@ func loop(s *state) {
 // apply приводит сохранённые настройки в соответствие с виджетами. Вызывается
 // на каждом кадре: ничего не пишет, пока значения не изменились.
 func (s *state) apply(gtx layout.Context) {
+	s.autostart.Update(gtx)
+	if want := s.autostart.Value; want != autostartOn() {
+		s.autoErr = ""
+		var err error
+		if want {
+			var bin string
+			if bin, err = hotkeyBinary(); err == nil {
+				err = autostartEnable(bin)
+			}
+		} else {
+			err = autostartOff()
+		}
+		if err != nil {
+			s.autoErr = fmt.Sprintf(i18n.T("Не удалось изменить автозапуск: %v"), err)
+			s.autostart.Value = autostartOn() // вернуть галочку в состояние файла
+		}
+	}
 	s.lang.Update(gtx)
 	if want := s.lang.Value; want != s.store.Get().Language {
 		if err := s.store.Update(func(c *settings.Settings) { c.Language = want }); err != nil {
@@ -823,6 +843,17 @@ func (s *state) glueControls() layout.Widget {
 	}
 }
 
+// autostartControl — переключатель автозапуска и сообщение об ошибке под ним.
+func (s *state) autostartControl() layout.Widget {
+	return func(gtx layout.Context) layout.Dimensions {
+		children := []layout.FlexChild{layout.Rigid(s.checkbox(&s.autostart, i18n.T("Запускать значок при входе в систему")))}
+		if s.autoErr != "" {
+			children = append(children, layout.Rigid(s.label(material.Caption, s.autoErr, errorColor)))
+		}
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	}
+}
+
 // hotkeyControl — поле комбинации и кнопка назначения.
 func (s *state) hotkeyControl() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
@@ -942,6 +973,9 @@ func (s *state) items() []layout.Widget {
 			s.taskControl(&s.monitors, i18n.T("Выбрать мониторы заново"))),
 		s.row(i18n.T("Разрешение на запасной снимок"), i18n.T("Нужно запасному способу захвата через Screenshot portal, когда PipeWire не отдал кадр. Раньше: scrawl -grant-screenshot."),
 			s.taskControl(&s.grant, i18n.T("Выдать разрешение"))),
+		s.section(i18n.T("Запуск")),
+		s.row(i18n.T("Автозапуск"), i18n.T("При входе в систему запускается значок в области уведомлений (scrawl -tray): левый клик делает снимок. На GNOME нужно расширение AppIndicator."),
+			s.autostartControl()),
 		s.section(i18n.T("Клавиши оверлея")),
 		s.row(i18n.T("Клавиши"), i18n.T("Нажмите кнопку и затем новую комбинацию. Esc отменяет запись. Применяются при следующем снимке."),
 			s.keyControls()),

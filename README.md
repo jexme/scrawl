@@ -89,7 +89,7 @@ Press the hotkey, drag to select. Keys:
 
 Every key below can be changed in the settings window ("Overlay keys") or in the `keys` setting.
 
-Flags: `-tray` keeps a notification-area icon (left click: screenshot; menu: screenshot, settings, quit; on GNOME it needs the AppIndicator extension, enabled by default in Ubuntu), `-v` prints timings, `-fresh` ignores the remembered area, `-setup` picks
+Flags: `-tray` keeps a notification-area icon (autostart at login is a switch in the settings window; left click: screenshot; menu: screenshot, settings, quit; on GNOME it needs the AppIndicator extension, enabled by default in Ubuntu), `-v` prints timings, `-fresh` ignores the remembered area, `-setup` picks
 monitors again, `-settings` opens the settings window.
 
 Files: images in `~/Pictures/Screenshots`; state (monitor tokens, last area,
