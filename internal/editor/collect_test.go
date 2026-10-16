@@ -23,6 +23,9 @@ func sandbox(t *testing.T) (home string) {
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(home, ".cache"))
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	// Тесты идут с поддельным wl-copy, поэтому сеанс считается Wayland, даже если
+	// их запустили под xvfb-run (там WAYLAND_DISPLAY пуст, и буфер пошёл бы через xclip).
+	t.Setenv("WAYLAND_DISPLAY", "wayland-0")
 
 	bin := t.TempDir()
 	script := func(name, body string) {
