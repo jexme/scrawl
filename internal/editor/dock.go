@@ -95,6 +95,7 @@ func (m *monitor) placeDock(gtx layout.Context, win image.Point, w, h int) image
 func (m *monitor) layoutRestoreDock(gtx layout.Context, win image.Point) {
 	if m.dock.restore.Clicked(gtx) {
 		m.applyLast()
+		gtx.Execute(op.InvalidateCmd{}) // панель уже не нужна: следующий кадр без неё не ждёт движения мыши
 		return
 	}
 	txt, size := m.label(gtx, m.withKey(i18n.T("Восстановить прошлую область"), settings.ActionRestore), 15, iconColor)
@@ -167,6 +168,7 @@ func (m *monitor) layoutCollectDock(gtx layout.Context, win image.Point) {
 	for _, it := range items {
 		if it.btn.Clicked(gtx) {
 			it.do()
+			gtx.Execute(op.InvalidateCmd{}) // этот кадр пропущен, панель с новым состоянием рисуем сразу следом
 			return
 		}
 	}

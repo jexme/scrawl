@@ -92,8 +92,80 @@ func (t *toolbar) width(btn, gap, sep, pad int) int {
 
 // layoutToolbar рисует панель рядом с выделением sel (в пикселях окна) и
 // применяет нажатия кнопок к состоянию m.
+// toolbarActions — кнопки действий справа на панели и что они делают.
+func (m *monitor) toolbarActions() []struct {
+	a  *actionButton
+	do func()
+} {
+	t := m.bar
+	return []struct {
+		a  *actionButton
+		do func()
+	}{
+		{&t.settings, m.openSettingsWindow},
+		{&t.add, m.addToCollection},
+		{&t.undo, m.undo},
+		{&t.copy, func() { m.export(true, false) }},
+		{&t.save, func() { m.export(false, true) }},
+		{&t.close, m.quit},
+	}
+}
+
+// toolbarClicks применяет нажатия на кнопки панели. Вызывается до того, как кнопки нарисованы:
+// иначе кнопки левее нажатой рисовались бы со старым состоянием (подсвечены оба инструмента), а
+// нового кадра никто бы не запросил, пока не придёт следующее событие мыши.
+func (m *monitor) toolbarClicks(gtx layout.Context) {
+	t := m.bar
+	var clicked bool
+	for _, tb := range t.tools {
+		if tb.btn.Clicked(gtx) {
+			m.setTool(tb.tool)
+			clicked = true
+		}
+	}
+	for i := range t.colors {
+		if t.colors[i].Clicked(gtx) {
+			m.color = m.palette[i]
+			m.colorPicked = true
+			clicked = true
+		}
+	}
+	// Свой цвет: нажатие выбирает его и открывает окошко с палитрой, второе нажатие закрывает.
+	if t.custom.Clicked(gtx) {
+		clicked = true
+		if m.pick.open {
+			m.pick.open = false
+		} else {
+			if !m.hasCustom {
+				m.customColor, m.hasCustom = m.color, true
+			}
+			m.pick.open, m.pick.hsv = true, hsvOf(m.customColor)
+			m.color, m.colorPicked = m.customColor, true
+		}
+	}
+	// Толщина: у «выделения» её нет.
+	if t.wMinus.btn.Clicked(gtx) {
+		m.bumpWidth(-1)
+		clicked = true
+	}
+	if t.wPlus.btn.Clicked(gtx) {
+		m.bumpWidth(1)
+		clicked = true
+	}
+	for _, act := range m.toolbarActions() {
+		if act.a.btn.Clicked(gtx) {
+			act.do()
+			clicked = true
+		}
+	}
+	if clicked {
+		gtx.Execute(op.InvalidateCmd{}) // кадр с новым состоянием не ждёт следующего движения мыши
+	}
+}
+
 func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.Rectangle) {
 	t := m.bar
+	m.toolbarClicks(gtx)
 	btn := gtx.Dp(34)
 	gap := gtx.Dp(4)
 	sep := gtx.Dp(10)
@@ -141,14 +213,11 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	}
 
 	for i, tb := range t.tools {
-		if tb.btn.Clicked(gtx) {
-			m.setTool(tb.tool)
-		}
 		active := m.tool == tb.tool
 		x0 := cursor
 		place(func(g layout.Context) layout.Dimensions {
 			return tb.btn.Layout(g, func(g layout.Context) layout.Dimensions {
-				drawButton(g, active, tb.icon)
+				drawButton(g, active, tb.btn.Hovered(), tb.icon)
 				handCursor(g)
 				return layout.Dimensions{Size: g.Constraints.Min}
 			})
@@ -158,10 +227,6 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	cursor += sep - gap
 
 	for i := range t.colors {
-		if t.colors[i].Clicked(gtx) {
-			m.color = m.palette[i]
-			m.colorPicked = true
-		}
 		c := m.palette[i]
 		active := m.color == c
 		place(func(g layout.Context) layout.Dimensions {
@@ -173,18 +238,6 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 		})
 	}
 
-	// Свой цвет: нажатие выбирает его и открывает окошко с палитрой, второе нажатие закрывает.
-	if t.custom.Clicked(gtx) {
-		if m.pick.open {
-			m.pick.open = false
-		} else {
-			if !m.hasCustom {
-				m.customColor, m.hasCustom = m.color, true
-			}
-			m.pick.open, m.pick.hsv = true, hsvOf(m.customColor)
-			m.color, m.colorPicked = m.customColor, true
-		}
-	}
 	customActive := m.hasCustom && m.color == m.customColor
 	m.pickAnchor = x + cursor + btn/2
 	place(func(g layout.Context) layout.Dimensions {
@@ -202,9 +255,6 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	if !enabled {
 		ic.A = 90
 	}
-	if t.wMinus.btn.Clicked(gtx) && enabled {
-		m.bumpWidth(-1)
-	}
 	capKey := func(action string) string { return keyCaption(m.store.Get().Keys.Of(action)) }
 	x0 := cursor
 	capA := uint8(200)
@@ -214,7 +264,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	m.drawKeyCaptionA(gtx, image.Pt(x0+btn/2, pad+btn), capKey(settings.ActionWidthDown), capA)
 	place(func(g layout.Context) layout.Dimensions {
 		return t.wMinus.btn.Layout(g, func(g layout.Context) layout.Dimensions {
-			drawButtonColored(g, false, t.wMinus.icon, ic)
+			drawButtonColored(g, false, enabled && t.wMinus.btn.Hovered(), t.wMinus.icon, ic)
 			if enabled {
 				handCursor(g)
 			}
@@ -225,13 +275,10 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 		m.drawWidthValue(g, enabled)
 		return layout.Dimensions{Size: g.Constraints.Min}
 	})
-	if t.wPlus.btn.Clicked(gtx) && enabled {
-		m.bumpWidth(1)
-	}
 	m.drawKeyCaptionA(gtx, image.Pt(cursor+btn/2, pad+btn), capKey(settings.ActionWidthUp), capA)
 	place(func(g layout.Context) layout.Dimensions {
 		return t.wPlus.btn.Layout(g, func(g layout.Context) layout.Dimensions {
-			drawButtonColored(g, false, t.wPlus.icon, ic)
+			drawButtonColored(g, false, enabled && t.wPlus.btn.Hovered(), t.wPlus.icon, ic)
 			if enabled {
 				handCursor(g)
 			}
@@ -240,25 +287,11 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	})
 	cursor += sep - gap
 
-	actions := []struct {
-		a  *actionButton
-		do func()
-	}{
-		{&t.settings, m.openSettingsWindow},
-		{&t.add, m.addToCollection},
-		{&t.undo, m.undo},
-		{&t.copy, func() { m.export(true, false) }},
-		{&t.save, func() { m.export(false, true) }},
-		{&t.close, m.quit},
-	}
-	for _, act := range actions {
-		if act.a.btn.Clicked(gtx) {
-			act.do()
-		}
+	for _, act := range m.toolbarActions() {
 		x0 := cursor
 		place(func(g layout.Context) layout.Dimensions {
 			return act.a.btn.Layout(g, func(g layout.Context) layout.Dimensions {
-				drawButton(g, false, act.a.icon)
+				drawButton(g, false, act.a.btn.Hovered(), act.a.icon)
 				handCursor(g)
 				return layout.Dimensions{Size: g.Constraints.Min}
 			})
@@ -301,15 +334,21 @@ func (m *monitor) drawKeyCaptionA(gtx layout.Context, center image.Point, txt st
 	label.Add(gtx.Ops)
 }
 
-func drawButton(gtx layout.Context, active bool, icon iconFunc) {
-	drawButtonColored(gtx, active, icon, iconColor)
+func drawButton(gtx layout.Context, active, hovered bool, icon iconFunc) {
+	drawButtonColored(gtx, active, hovered, icon, iconColor)
 }
 
-func drawButtonColored(gtx layout.Context, active bool, icon iconFunc, c color.NRGBA) {
+// drawButtonColored рисует кнопку: нажатая (активный инструмент) закрашена акцентом, под мышью
+// слегка подсвечена, чтобы было видно, что на неё можно нажать.
+func drawButtonColored(gtx layout.Context, active, hovered bool, icon iconFunc, c color.NRGBA) {
 	s := gtx.Constraints.Min.X
-	if active {
+	switch {
+	case active:
 		rr := clip.UniformRRect(image.Rect(0, 0, s, s), gtx.Dp(6))
 		paint.FillShape(gtx.Ops, accent, rr.Op(gtx.Ops))
+	case hovered:
+		rr := clip.UniformRRect(image.Rect(0, 0, s, s), gtx.Dp(6))
+		paint.FillShape(gtx.Ops, color.NRGBA{R: 255, G: 255, B: 255, A: 30}, rr.Op(gtx.Ops))
 	}
 	icon(gtx.Ops, float32(s), c)
 }

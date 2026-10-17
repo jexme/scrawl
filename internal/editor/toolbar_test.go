@@ -5,7 +5,10 @@ import (
 	"os"
 	"testing"
 
+	"gioui.org/f32"
 	"gioui.org/gpu/headless"
+	"gioui.org/io/input"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
 
@@ -146,5 +149,118 @@ func TestWidthKeys(t *testing.T) {
 	run(settings.ActionWidthDown)
 	if m.curWidth() != before-1 {
 		t.Errorf("два минуса: %v -> %v", before, m.curWidth())
+	}
+}
+
+// TestToolbarClickRedrawsImmediately: клик по инструменту правее активного. Кнопки левее нажатой
+// не должны остаться подсвеченными (раньше клик обрабатывался посреди рисования, и подсвечены были
+// оба инструмента до следующего движения мыши), и должен запрашиваться ещё один кадр.
+func TestToolbarClickRedrawsImmediately(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	const W, H = 1200, 300
+	src := image.NewRGBA(image.Rect(0, 0, W, H))
+	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
+	m.sel, m.hasSel = image.Rect(100, 20, 1100, 120), true
+	m.tool = annotate.ToolPen // активно перо, нажмём стрелку, она правее
+
+	win, err := headless.NewWindow(W, H)
+	if err != nil {
+		t.Skipf("headless рендер недоступен: %v", err)
+	}
+	defer win.Release()
+	size := image.Pt(W, H)
+	var r input.Router
+	var ops op.Ops
+	frame := func() {
+		ops.Reset()
+		gtx := layout.Context{Ops: &ops, Metric: identity, Constraints: layout.Exact(size), Source: r.Source()}
+		m.layoutToolbar(gtx, size, m.sel)
+		r.Frame(&ops)
+	}
+	frame()
+	frame()
+
+	center := func(i int) f32.Point { // середина кнопки i-го инструмента
+		return f32.Pt(float32(m.barRect.Min.X+6+i*38+17), float32(m.barRect.Min.Y+6+17))
+	}
+	arrow := int(annotate.ToolArrow)
+	r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: center(arrow)})
+	r.Queue(pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Position: center(arrow), Buttons: pointer.ButtonPrimary})
+	frame()
+	r.Queue(pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: center(arrow)})
+	r.WakeupTime() // сбросить прежние запросы кадра
+	frame()        // в этом кадре клик обработан
+	if m.tool != annotate.ToolArrow {
+		t.Fatalf("после клика инструмент %v, ожидали стрелку", m.tool)
+	}
+
+	// Кадр после клика: подсвечена только стрелка.
+	if err := win.Frame(&ops); err != nil {
+		t.Skipf("headless рендер недоступен: %v", err)
+	}
+	out := image.NewRGBA(image.Rect(0, 0, W, H))
+	if err := win.Screenshot(out); err != nil {
+		t.Fatal(err)
+	}
+	highlighted := func(i int) bool { // угол кнопки закрашен акцентным цветом
+		c := out.RGBAAt(m.barRect.Min.X+6+i*38+4, m.barRect.Min.Y+6+17)
+		return c.B > 200 && c.R < 100
+	}
+	if !highlighted(arrow) {
+		t.Error("нажатая кнопка не подсвечена")
+	}
+	if highlighted(int(annotate.ToolPen)) {
+		t.Error("прежний инструмент остался подсвеченным в том же кадре")
+	}
+	if _, ok := r.WakeupTime(); !ok {
+		t.Error("после клика не запрошен новый кадр")
+	}
+}
+
+// TestToolbarHover: кнопка под мышью слегка подсвечена, остальные нет.
+func TestToolbarHover(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	const W, H = 1200, 300
+	src := image.NewRGBA(image.Rect(0, 0, W, H))
+	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
+	m.sel, m.hasSel = image.Rect(100, 20, 1100, 120), true
+	m.tool = annotate.ToolPen
+
+	win, err := headless.NewWindow(W, H)
+	if err != nil {
+		t.Skipf("headless рендер недоступен: %v", err)
+	}
+	defer win.Release()
+	size := image.Pt(W, H)
+	var r input.Router
+	var ops op.Ops
+	frame := func() {
+		ops.Reset()
+		gtx := layout.Context{Ops: &ops, Metric: identity, Constraints: layout.Exact(size), Source: r.Source()}
+		m.layoutToolbar(gtx, size, m.sel)
+		r.Frame(&ops)
+	}
+	frame()
+	frame()
+	line := int(annotate.ToolLine)
+	at := func(i int) (int, int) { return m.barRect.Min.X + 6 + i*38 + 4, m.barRect.Min.Y + 6 + 17 }
+	x, y := at(line)
+	r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(float32(x+13), float32(y))})
+	frame()
+	if err := win.Frame(&ops); err != nil {
+		t.Skipf("headless рендер недоступен: %v", err)
+	}
+	out := image.NewRGBA(image.Rect(0, 0, W, H))
+	if err := win.Screenshot(out); err != nil {
+		t.Fatal(err)
+	}
+	bg := out.RGBAAt(m.barRect.Min.X+2, m.barRect.Min.Y+2)
+	hov := out.RGBAAt(x, y)
+	other := out.RGBAAt(at(int(annotate.ToolRect)))
+	if hov.R <= bg.R+15 || hov.B > 150 {
+		t.Errorf("кнопка под мышью не подсвечена: %v на фоне %v", hov, bg)
+	}
+	if other.R > bg.R+5 {
+		t.Errorf("кнопка без мыши подсвечена: %v на фоне %v", other, bg)
 	}
 }
