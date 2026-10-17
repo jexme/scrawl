@@ -95,8 +95,11 @@ sha256sum -c --ignore-missing SHA256SUMS
 tar xzf scrawl-*-linux-amd64.tar.gz && cd scrawl-*-linux-amd64
 ./install.sh            # to ~/.local (PREFIX=/usr/local for system-wide)
 sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland-cursor0 \
-  libxkbcommon-x11-0 libegl1 libx11-6 libxcursor1
+  libxkbcommon-x11-0 libegl1 libx11-6 libxcursor1 wl-clipboard libnotify-bin
 ```
+
+`wl-clipboard` (the clipboard) and `libnotify-bin` (notifications) are needed at run time too: the
+installer checks them and prints what is missing. On X11 use `xclip` instead of `wl-clipboard`.
 
 Make sure `~/.local/bin` is in your `PATH`.
 
