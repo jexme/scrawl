@@ -358,6 +358,17 @@ func TestShowSizeDefaultOn(t *testing.T) {
 	}
 }
 
+func TestShowLoupeDefaultOn(t *testing.T) {
+	sandbox(t)
+	if !Load().ShowLoupe {
+		t.Error("лупа по умолчанию включена")
+	}
+	writeConfig(t, `{"show_loupe":false}`)
+	if Load().ShowLoupe {
+		t.Error("show_loupe=false должен выключать лупу")
+	}
+}
+
 func TestToolDefaults(t *testing.T) {
 	sandbox(t)
 	got := Load()

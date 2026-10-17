@@ -106,6 +106,9 @@ func (m *monitor) loupeAiming() bool {
 // loupeActive: лупа нужна, пока целятся в первую точку и пока тянут рамку (новую или
 // готовую), но не при перемещении области целиком и не при рисовании.
 func (m *monitor) loupeActive() bool {
+	if !m.store.Get().ShowLoupe {
+		return false
+	}
 	return m.loupeAiming() || m.adjust == adjustResize || m.dragging
 }
 

@@ -45,26 +45,27 @@ type state struct {
 	th    *material.Theme
 	store *settings.Store
 
-	choice   widget.Enum // двойной клик: off, copy, copy_save
-	enter    widget.Enum // Enter: copy_save, copy, save
-	notify   widget.Bool // уведомления после снимка
-	remember widget.Bool // запоминать прошлую область
-	showSize widget.Bool // подпись размера области
-	keepOpen widget.Bool // не закрывать оверлей после копирования
-	cursor   widget.Bool // курсор мыши в снимке
-	dir      widget.Editor
-	prefix   widget.Editor // начало имени файла
-	reset    widget.Clickable
-	openDir  widget.Clickable
-	close    widget.Clickable
-	list     widget.List // прокрутка содержимого
-	sliders  []*slider   // все ползунки окна
-	dim      *slider     // затемнение вне области
-	bWidth   *slider     // рамка: толщина
-	bDash    *slider     // рамка: штрих
-	bGap     *slider     // рамка: пауза
-	handle   *slider     // радиус угловых ручек
-	marker   *slider     // непрозрачность маркера
+	choice    widget.Enum // двойной клик: off, copy, copy_save
+	enter     widget.Enum // Enter: copy_save, copy, save
+	notify    widget.Bool // уведомления после снимка
+	remember  widget.Bool // запоминать прошлую область
+	showSize  widget.Bool // подпись размера области
+	showLoupe widget.Bool // лупа при выборе и изменении области
+	keepOpen  widget.Bool // не закрывать оверлей после копирования
+	cursor    widget.Bool // курсор мыши в снимке
+	dir       widget.Editor
+	prefix    widget.Editor // начало имени файла
+	reset     widget.Clickable
+	openDir   widget.Clickable
+	close     widget.Clickable
+	list      widget.List // прокрутка содержимого
+	sliders   []*slider   // все ползунки окна
+	dim       *slider     // затемнение вне области
+	bWidth    *slider     // рамка: толщина
+	bDash     *slider     // рамка: штрих
+	bGap      *slider     // рамка: пауза
+	handle    *slider     // радиус угловых ручек
+	marker    *slider     // непрозрачность маркера
 
 	palEd    [settings.PaletteSize]widget.Editor // цвета панели
 	palErr   string
@@ -190,6 +191,7 @@ func newState(store *settings.Store) *state {
 	s.notify.Value = cur.Notifications
 	s.remember.Value = cur.RememberRegion
 	s.showSize.Value = cur.ShowSize
+	s.showLoupe.Value = cur.ShowLoupe
 	s.keepOpen.Value = cur.KeepOpen
 	s.cursor.Value = cur.IncludeCursor
 	s.dir.SingleLine = true
@@ -433,6 +435,13 @@ func (s *state) apply(gtx layout.Context) {
 	s.showSize.Update(gtx)
 	if want := s.showSize.Value; want != s.store.Get().ShowSize {
 		if err := s.store.Update(func(c *settings.Settings) { c.ShowSize = want }); err != nil {
+			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+		}
+	}
+
+	s.showLoupe.Update(gtx)
+	if want := s.showLoupe.Value; want != s.store.Get().ShowLoupe {
+		if err := s.store.Update(func(c *settings.Settings) { c.ShowLoupe = want }); err != nil {
 			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
 		}
 	}
@@ -1066,6 +1075,8 @@ func (s *state) tabs() []settingsTab {
 		s.row(i18n.T("Рамка выделения"), i18n.T("Пунктир вокруг выбранной области."), s.borderControls()),
 		s.row(i18n.T("Размер области"), i18n.T("Подпись «ширина × высота» над левым верхним углом."),
 			s.checkbox(&s.showSize, i18n.T("Показывать размер"))),
+		s.row(i18n.T("Лупа"), i18n.T("Увеличенные пиксели рядом с курсором, пока выбирают область и тянут рамку."),
+			s.checkbox(&s.showLoupe, i18n.T("Показывать лупу"))),
 		s.row(i18n.T("Угловые ручки"), i18n.T("Кружки в углах рамки, за них меняют размер области. «нет» прячет их."), s.slider(s.handle)),
 		s.row(i18n.T("Затемнение вне области"), i18n.T("0% не затемняет совсем, 100% закрашивает чёрным."), s.slider(s.dim)),
 	}

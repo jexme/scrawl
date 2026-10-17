@@ -24,7 +24,7 @@ is one key press: the frozen screen appears in about 150 ms.
 - Selection with a dashed frame. Drag the corners to resize; with the *select*
   tool drag an edge to resize or drag inside to move.
 - While you drag a frame, a magnifier next to the cursor shows the pixels 6× larger, with the frame's
-  edge on the pixel grid, so you can line it up exactly.
+  edge on the pixel grid, so you can line it up exactly (it can be turned off in the settings).
 - Remembers the last area and brings it back with one key (`R`).
 - Optional mouse cursor in the shot (Wayland only for now).
 

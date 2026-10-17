@@ -74,6 +74,8 @@ type Settings struct {
 	HandleRadius float64 `json:"handle_radius"`
 	// ShowSize — показывать подпись «W × H» у выделенной области.
 	ShowSize bool `json:"show_size"`
+	// ShowLoupe — показывать лупу с увеличенными пикселями, пока выбирают область и тянут рамку.
+	ShowLoupe bool `json:"show_loupe"`
 	// DefaultTool — инструмент, который включается сразу после выбора области
 	// (одно из ToolNames).
 	DefaultTool string `json:"default_tool"`
@@ -108,7 +110,7 @@ type Settings struct {
 // Default возвращает настройки по умолчанию.
 func Default() Settings {
 	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
-		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, DefaultTool: "arrow", Palette: DefaultPalette, MarkerOpacity: 43, Glue: DefaultGlue(), Format: FormatPNG, JPEGQuality: 90, Language: i18n.Auto}
+		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, ShowLoupe: true, DefaultTool: "arrow", Palette: DefaultPalette, MarkerOpacity: 43, Glue: DefaultGlue(), Format: FormatPNG, JPEGQuality: 90, Language: i18n.Auto}
 }
 
 // Имена папки настроек: нынешняя и от прежнего названия программы (screen-editor).

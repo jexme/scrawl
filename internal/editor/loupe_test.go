@@ -60,6 +60,16 @@ func TestLoupeActive(t *testing.T) {
 			t.Errorf("%s: %v, ожидали %v", tc.name, got, tc.want)
 		}
 	}
+
+	// Выключенная в настройках лупа не показывается ни в одном режиме.
+	m := newM()
+	if err := m.store.Update(func(c *settings.Settings) { c.ShowLoupe = false }); err != nil {
+		t.Fatal(err)
+	}
+	m.hoverIn, m.dragging = true, true
+	if m.loupeActive() {
+		t.Error("show_loupe=false должен выключать лупу")
+	}
 }
 
 func TestLoupeDir(t *testing.T) {
