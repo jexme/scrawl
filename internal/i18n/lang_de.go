@@ -273,6 +273,7 @@ var de = map[string]string{
 	"PipeWire есть только в Linux": "PipeWire gibt es nur unter Linux",
 	"захват экрана пока есть только в Linux (GNOME, Wayland); окно настроек работает: scrawl -settings": "die Bildschirmaufnahme gibt es vorerst nur unter Linux (GNOME, Wayland); das Einstellungsfenster funktioniert: scrawl -settings",
 	"для буфера обмена в X11 нужен xclip: sudo apt install xclip":                                       "die X11-Zwischenablage braucht xclip: sudo apt install xclip",
+	"для буфера обмена в Wayland нужен wl-copy: sudo apt install wl-clipboard":                          "Die Zwischenablage unter Wayland braucht wl-copy: sudo apt install wl-clipboard",
 	"формат пикселей X11 не поддерживается (глубина %d, %d бит на пиксель)":                             "nicht unterstütztes X11-Pixelformat (Tiefe %d, %d Bit pro Pixel)",
 	"необычные маски цветов X11":                                                                        "ungewöhnliche X11-Farbmasken",
 	"не удалось подключиться к X-серверу: %w":                                                           "Verbindung zum X-Server nicht möglich: %w",

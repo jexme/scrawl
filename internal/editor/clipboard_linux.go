@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"errors"
 	"net/url"
+	"os"
 	"os/exec"
 
 	"github.com/jexme/scrawl/internal/i18n"
@@ -13,14 +14,25 @@ import (
 
 // clipboardTool выбирает программу буфера обмена по сеансу: в Wayland это
 // wl-copy, в X11 xclip. Возвращает имя команды и аргументы для типа данных.
+//
+// Если в Wayland нет wl-copy, но есть xclip и X-сервер (XWayland есть почти везде), берём
+// xclip: композитор сводит буфер X11 с буфером Wayland, и вставка работает в обоих мирах.
+// Без обоих программ возвращается ошибка с подсказкой, что поставить.
 func clipboardTool(mime string) (name string, args []string, err error) {
-	if isX11() {
-		if _, err := exec.LookPath("xclip"); err != nil {
-			return "", nil, errors.New(i18n.T("для буфера обмена в X11 нужен xclip: sudo apt install xclip"))
+	xclip := []string{"-selection", "clipboard", "-t", mime}
+	if !isX11() {
+		if _, err := exec.LookPath("wl-copy"); err == nil {
+			return "wl-copy", []string{"--type", mime}, nil
 		}
-		return "xclip", []string{"-selection", "clipboard", "-t", mime}, nil
+		if _, err := exec.LookPath("xclip"); err == nil && os.Getenv("DISPLAY") != "" {
+			return "xclip", xclip, nil
+		}
+		return "", nil, errors.New(i18n.T("для буфера обмена в Wayland нужен wl-copy: sudo apt install wl-clipboard"))
 	}
-	return "wl-copy", []string{"--type", mime}, nil
+	if _, err := exec.LookPath("xclip"); err != nil {
+		return "", nil, errors.New(i18n.T("для буфера обмена в X11 нужен xclip: sudo apt install xclip"))
+	}
+	return "xclip", xclip, nil
 }
 
 // clipboardCopy кладёт данные в буфер обмена. И wl-copy, и xclip сами уходят в
