@@ -15,7 +15,17 @@ var ToolNames = []string{"select", "pen", "line", "arrow", "rect", "marker", "bl
 const (
 	MinToolWidth = 1
 	MaxToolWidth = 30
+	// MaxBlurLevel — наибольший уровень силы у размытия (зеркало annotate.MaxBlurLevel): 1-3 размытие, 4-6 мозаика.
+	MaxBlurLevel = 6
 )
+
+// MaxWidthOf возвращает наибольшую толщину инструмента с именем name.
+func MaxWidthOf(name string) float64 {
+	if name == "blur" {
+		return MaxBlurLevel
+	}
+	return MaxToolWidth
+}
 
 // ToolStyle — вид одного инструмента по умолчанию. Пустое значение: не задано.
 type ToolStyle struct {
@@ -84,7 +94,7 @@ func (t *ToolStyles) normalize() {
 			st.Color = ""
 		}
 		if st.Width != 0 {
-			st.Width = min(max(st.Width, MinToolWidth), MaxToolWidth)
+			st.Width = min(max(st.Width, MinToolWidth), MaxWidthOf(name))
 		}
 	}
 }

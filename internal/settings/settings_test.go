@@ -741,3 +741,16 @@ func TestLanguageSetting(t *testing.T) {
 		}
 	}
 }
+
+// У размытия «толщина» это уровень 1-6: большее значение из файла подрезается до последнего уровня.
+func TestBlurWidthIsLevel(t *testing.T) {
+	sandbox(t)
+	writeConfig(t, `{"tools":{"blur":{"width":30},"arrow":{"width":30},"text":{"width":3}}}`)
+	got := Load().Tools
+	if got.Blur.Width != MaxBlurLevel || got.Arrow.Width != MaxToolWidth || got.Text.Width != 3 {
+		t.Errorf("толщина инструментов: размытие %v, стрелка %v, текст %v", got.Blur.Width, got.Arrow.Width, got.Text.Width)
+	}
+	if MaxWidthOf("blur") != MaxBlurLevel || MaxWidthOf("pen") != MaxToolWidth {
+		t.Error("MaxWidthOf: размытие шесть уровней, остальные 30")
+	}
+}

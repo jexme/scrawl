@@ -2,7 +2,6 @@ package annotate
 
 import (
 	"image"
-	"image/color"
 	"math"
 	"runtime"
 	"sync"
@@ -22,63 +21,56 @@ type Env struct {
 	Blur   *Blurrer
 }
 
-// BlurMode — способ размытия. Он зависит от силы (толщины инструмента): с ростом силы
-// размытие не просто сильнее, а меняет вид, чтобы слабое оставляло картинку узнаваемой,
-// а сильное надёжно прятало текст.
+// BlurMode — способ размытия. Он зависит от уровня силы: слабые уровни размывают по Гауссу и
+// оставляют картинку узнаваемой, сильные превращают область в мозаику, из которой текст не
+// восстановить.
 type BlurMode int
 
 const (
-	BlurSoft   BlurMode = iota // сила 1-10: гауссово размытие, чем сильнее, тем дальше расплывается
-	BlurMosaic                 // сила 11-20: мозаика из крупных квадратов, цифры и буквы не восстановить
-	BlurFrost                  // сила 21-30: сильное размытие с матовым налётом и тонкой рамкой, как стекло
+	BlurSoft   BlurMode = iota // уровни 1-3: гауссово размытие
+	BlurMosaic                 // уровни 4-6: мозаика из квадратов
 )
 
-// Границы режимов по силе.
+// Уровни силы: у размытия «толщина» это уровень от 1 до MaxBlurLevel, а не пиксели.
 const (
-	softMax   = 10
-	mosaicMax = 20
+	DefaultBlurLevel = 2 // мягкое размытие, после которого обычный текст не прочитать
+	MaxBlurLevel     = 6
+	softLevels       = 3 // уровни до этого размывают по Гауссу, остальные это мозаика
 )
 
-// ModeOf возвращает режим размытия для силы width.
+// Сигма гауссова размытия по уровням 1-3 и сторона квадрата мозаики по уровням 4-6, в пикселях.
+var (
+	softSigma   = [softLevels]float64{3, 6, 10}
+	mosaicSizes = [MaxBlurLevel - softLevels]int{8, 14, 24}
+)
+
+// ModeOf возвращает режим размытия для уровня силы width.
 func ModeOf(width float32) BlurMode {
-	switch w := blurStrength(width); {
-	case w <= softMax:
+	if blurLevel(width) <= softLevels {
 		return BlurSoft
-	case w <= mosaicMax:
-		return BlurMosaic
 	}
-	return BlurFrost
+	return BlurMosaic
 }
 
 // Label возвращает название режима для плашки со значением силы.
 func (m BlurMode) Label() string {
-	switch m {
-	case BlurMosaic:
+	if m == BlurMosaic {
 		return i18n.T("Мозаика")
-	case BlurFrost:
-		return i18n.T("Матовое стекло")
 	}
 	return i18n.T("Размытие")
 }
 
-func blurStrength(width float32) int {
-	return min(max(int(math.Round(float64(width))), MinWidth), MaxWidth)
+// blurLevel округляет силу до уровня 1..MaxBlurLevel.
+func blurLevel(width float32) int {
+	return min(max(int(math.Round(float64(width))), 1), MaxBlurLevel)
 }
 
-// gaussSigma возвращает сигму гауссова размытия для силы width: от 2 px на слабом размытии
-// до 11 px на 10, а матовое стекло ещё сильнее (от 14 до 27 px). На силе по умолчанию (4)
-// это 5 px: обычный текст нечитаем, картинка узнаваема.
-func gaussSigma(width float32) float64 {
-	w := blurStrength(width)
-	if w > mosaicMax {
-		return 14 + float64(w-mosaicMax-1)*1.5
-	}
-	return 1.2 + float64(w)
-}
+// gaussSigma возвращает сигму гауссова размытия для уровня width.
+func gaussSigma(width float32) float64 { return softSigma[min(blurLevel(width), softLevels)-1] }
 
-// mosaicBlock возвращает сторону квадрата мозаики в пикселях: от 6 до 24.
+// mosaicBlock возвращает сторону квадрата мозаики в пикселях для уровня width.
 func mosaicBlock(width float32) int {
-	return 6 + (blurStrength(width)-softMax-1)*2
+	return mosaicSizes[max(blurLevel(width), softLevels+1)-softLevels-1]
 }
 
 // Blurrer готовит обработанные копии кадра: размытые и мозаичные. Копия считается один раз на
@@ -95,8 +87,8 @@ type blurKey struct {
 	rect  image.Rectangle // область мозаики: клетки отсчитываются от её угла; у размытия пусто
 }
 
-// maxCached — сколько обработанных копий держать: размытая копия это кадр целиком в памяти и на GPU,
-// мозаика только своя область, но при перетаскивании рамки их каждый кадр новая.
+// maxCached — сколько обработанных копий держать: размытая копия это кадр целиком в памяти и на GPU
+// (их всего три), мозаика только своя область, но при перетаскивании рамки новая появляется каждый кадр.
 const maxCached = 24
 
 // NewBlurrer создаёт размыватель для кадра src.
@@ -309,7 +301,7 @@ func (s Shape) drawBlur(ops *op.Ops, env Env) {
 	if r.Empty() {
 		return
 	}
-	switch mode := ModeOf(s.Width); mode {
+	switch ModeOf(s.Width) {
 	case BlurMosaic:
 		block := mosaicBlock(s.Width)
 		img := env.Blur.mosaic(r, block)
@@ -320,21 +312,9 @@ func (s Shape) drawBlur(ops *op.Ops, env Env) {
 		paint.PaintOp{}.Add(ops)
 	default:
 		img := env.Blur.gauss(gaussSigma(s.Width))
-		func() {
-			defer clip.Rect(r).Push(ops).Pop()
-			img.Add(ops)
-			paint.PaintOp{}.Add(ops)
-			if mode == BlurFrost {
-				// Матовый налёт: белая дымка поверх размытия.
-				paint.FillShape(ops, color.NRGBA{R: 255, G: 255, B: 255, A: 44}, clip.Rect(r).Op())
-			}
-		}()
-		if mode == BlurFrost {
-			// Тонкая светлая рамка по краю, как у стеклянной пластины.
-			in := f32.Pt(0.5, 0.5)
-			a, b := f32.Pt(float32(r.Min.X), float32(r.Min.Y)).Add(in), f32.Pt(float32(r.Max.X), float32(r.Max.Y)).Sub(in)
-			strokeClosed(ops, color.NRGBA{R: 255, G: 255, B: 255, A: 110}, 1, a, f32.Pt(b.X, a.Y), b, f32.Pt(a.X, b.Y))
-		}
+		defer clip.Rect(r).Push(ops).Pop()
+		img.Add(ops)
+		paint.PaintOp{}.Add(ops)
 	}
 }
 

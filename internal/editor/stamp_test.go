@@ -175,3 +175,33 @@ func TestStampDigitsCentered(t *testing.T) {
 		}
 	}
 }
+
+// TestBlurLevelsInEditor: у размытия «−» и «+» двигают уровень 1-6 и упираются в его границы, по
+// умолчанию уровень 2, а плашка называет режим.
+func TestBlurLevelsInEditor(t *testing.T) {
+	m := newStampMonitor(t)
+	m.tool = annotate.ToolBlur
+	if got := m.curWidth(); got != annotate.DefaultBlurLevel {
+		t.Errorf("уровень по умолчанию %v, ожидали %d", got, annotate.DefaultBlurLevel)
+	}
+	for i := 0; i < 20; i++ {
+		m.bumpWidth(1)
+	}
+	if got := m.curWidth(); got != annotate.MaxBlurLevel {
+		t.Errorf("после множества «+» уровень %v, ожидали %d", got, annotate.MaxBlurLevel)
+	}
+	for i := 0; i < 20; i++ {
+		m.bumpWidth(-1)
+	}
+	if got := m.curWidth(); got != annotate.MinWidth {
+		t.Errorf("после множества «−» уровень %v, ожидали %d", got, annotate.MinWidth)
+	}
+	// Остальные инструменты по-прежнему доходят до 30.
+	m.tool = annotate.ToolPen
+	for i := 0; i < 50; i++ {
+		m.bumpWidth(1)
+	}
+	if got := m.curWidth(); got != annotate.MaxWidth {
+		t.Errorf("перо: %v, ожидали %d", got, annotate.MaxWidth)
+	}
+}

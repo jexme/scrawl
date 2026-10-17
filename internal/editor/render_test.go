@@ -78,7 +78,7 @@ func TestRenderBlur(t *testing.T) {
 		}
 	}
 	shapes := []annotate.Shape{
-		{Tool: annotate.ToolBlur, Width: annotate.DefaultWidth, Pts: []f32.Point{{X: 100, Y: 60}, {X: 300, Y: 180}}},
+		{Tool: annotate.ToolBlur, Width: annotate.DefaultBlurLevel, Pts: []f32.Point{{X: 100, Y: 60}, {X: 300, Y: 180}}},
 	}
 	sel := image.Rect(0, 0, 400, 240)
 	out, err := render(src, sel, shapes, annotate.NewShaper())

@@ -99,7 +99,7 @@ Two shots in the same second never overwrite each other: `-2`, `-3` is added to 
 | Key | Values (default first) | Meaning |
 | --- | --- | --- |
 | `palette` | list of 8 colours `#RRGGBB` | the colours on the toolbar (default: red, orange, yellow, green, blue, purple, white, black) |
-| `tools` | object per tool | default colour and thickness of each tool: `{"arrow": {"color": "#E53935", "width": 6}}`. Tools: `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text`, `stamp`. Thickness 1-30; for text it is the size, for the number stamp the size of the circle, for blur the strength: 1-10 soft Gaussian blur, 11-20 mosaic, 21-30 frosted glass (the default 4 is a soft blur that makes normal text unreadable). The colour applies until you pick one on the toolbar yourself |
+| `tools` | object per tool | default colour and thickness of each tool: `{"arrow": {"color": "#E53935", "width": 6}}`. Tools: `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text`, `stamp`. Thickness 1-30; for text it is the size, for the number stamp the size of the circle, for blur the level 1-6: 1-3 soft Gaussian blur, 4-6 mosaic (the default 2 is a soft blur that makes normal text unreadable). The colour applies until you pick one on the toolbar yourself |
 | `marker_opacity` | `43` (5-100) | marker opacity, % |
 
 ## Appearance of the selection

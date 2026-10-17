@@ -9,44 +9,42 @@ import (
 )
 
 func TestBlurModes(t *testing.T) {
-	for w := float32(1); w <= 30; w++ {
-		want := BlurSoft
-		switch {
-		case w > mosaicMax:
-			want = BlurFrost
-		case w > softMax:
-			want = BlurMosaic
-		}
-		if got := ModeOf(w); got != want {
-			t.Errorf("сила %v: режим %v, ожидали %v", w, got, want)
+	want := []BlurMode{BlurSoft, BlurSoft, BlurSoft, BlurMosaic, BlurMosaic, BlurMosaic}
+	for level := 1; level <= MaxBlurLevel; level++ {
+		if got := ModeOf(float32(level)); got != want[level-1] {
+			t.Errorf("уровень %d: режим %v, ожидали %v", level, got, want[level-1])
 		}
 	}
-	if ModeOf(DefaultWidth) != BlurSoft {
-		t.Error("по умолчанию размытие мягкое")
+	if ModeOf(DefaultBlurLevel) != BlurSoft || DefaultWidthOf(ToolBlur) != DefaultBlurLevel || DefaultWidthOf(ToolPen) != DefaultWidth {
+		t.Error("по умолчанию размытие мягкое, а у остальных инструментов прежняя толщина")
 	}
-	// Вне границ сила подрезается, а не ломает режимы.
-	if ModeOf(-5) != BlurSoft || ModeOf(500) != BlurFrost {
-		t.Error("сила вне 1-30 должна подрезаться")
+	// Вне границ уровень подрезается, а не ломает режимы и не выходит за таблицы.
+	if ModeOf(-5) != BlurSoft || ModeOf(500) != BlurMosaic {
+		t.Error("уровень вне 1-6 должен подрезаться")
+	}
+	if gaussSigma(-5) != softSigma[0] || gaussSigma(500) != softSigma[softLevels-1] || mosaicBlock(-5) != mosaicSizes[0] || mosaicBlock(500) != mosaicSizes[len(mosaicSizes)-1] {
+		t.Error("параметры за границами уровней должны подрезаться")
+	}
+	if MaxWidthOf(ToolBlur) != MaxBlurLevel || MaxWidthOf(ToolText) != MaxWidth {
+		t.Error("наибольшая толщина: у размытия последний уровень, у остальных MaxWidth")
 	}
 
-	// Сигма растёт с силой внутри режима, сторона мозаики растёт и умещается в 6-24.
-	for w := float32(2); w <= softMax; w++ {
-		if gaussSigma(w) <= gaussSigma(w-1) {
-			t.Errorf("сигма не растёт: сила %v", w)
+	// Внутри режима сила растёт с уровнем: сигма и сторона квадрата строго возрастают, а мозаика
+	// крупнее самого слабого размытия по размеру деталей (сторона больше сигмы).
+	for l := float32(2); l <= softLevels; l++ {
+		if gaussSigma(l) <= gaussSigma(l-1) {
+			t.Errorf("сигма не растёт на уровне %v", l)
 		}
 	}
-	for w := float32(mosaicMax + 2); w <= 30; w++ {
-		if gaussSigma(w) <= gaussSigma(w-1) {
-			t.Errorf("сигма матового стекла не растёт: сила %v", w)
+	for l := float32(softLevels + 2); l <= MaxBlurLevel; l++ {
+		if mosaicBlock(l) <= mosaicBlock(l-1) {
+			t.Errorf("сторона мозаики не растёт на уровне %v", l)
 		}
 	}
-	if gaussSigma(21) <= gaussSigma(10) {
-		t.Error("матовое стекло должно быть размыто сильнее самого сильного мягкого размытия")
+	if mosaicBlock(softLevels+1) < 8 {
+		t.Error("клетки мозаики мельче 8 px не прячут обычный текст")
 	}
-	if mosaicBlock(softMax+1) != 6 || mosaicBlock(mosaicMax) != 24 {
-		t.Errorf("стороны мозаики: %d и %d, ожидали 6 и 24", mosaicBlock(softMax+1), mosaicBlock(mosaicMax))
-	}
-	for _, m := range []BlurMode{BlurSoft, BlurMosaic, BlurFrost} {
+	for _, m := range []BlurMode{BlurSoft, BlurMosaic} {
 		if m.Label() == "" {
 			t.Errorf("у режима %d нет названия", m)
 		}

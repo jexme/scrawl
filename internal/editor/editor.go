@@ -755,9 +755,9 @@ func (m *monitor) widthOf(t annotate.Tool) float32 {
 		return w
 	}
 	if st := m.toolStyle(t); st != nil && st.Width > 0 {
-		return float32(st.Width)
+		return min(float32(st.Width), annotate.MaxWidthOf(t))
 	}
-	return annotate.DefaultWidth
+	return annotate.DefaultWidthOf(t)
 }
 
 // bumpWidth меняет толщину текущего инструмента. Фигура, которую рисуют
@@ -766,7 +766,7 @@ func (m *monitor) bumpWidth(delta float32) {
 	if m.tool == annotate.ToolSelect {
 		return
 	}
-	w := float32(math.Min(math.Max(float64(m.curWidth()+delta), annotate.MinWidth), annotate.MaxWidth))
+	w := float32(math.Min(math.Max(float64(m.curWidth()+delta), annotate.MinWidth), float64(annotate.MaxWidthOf(m.tool))))
 	m.widths[m.tool] = w
 	if m.cur != nil {
 		m.cur.Width = w

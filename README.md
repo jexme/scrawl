@@ -31,7 +31,7 @@ is one key press: the frozen screen appears in about 150 ms.
 **Annotate**
 - Pen, line, arrow, box, marker, **blur**, text and **numbered stamps** (a click puts a circle with 1, 2, 3 and so on, like in flameshot); eight colours.
 - Mouse wheel (or the `−` / `+` buttons) changes the thickness, the text size or the blur strength.
-- The **blur** changes its look with the strength: 1-10 soft Gaussian blur, 11-20 mosaic, 21-30 frosted glass (a heavy blur with a white haze and a thin edge). The mosaic cells start at the corner of the area, and the note that pops up when you change the strength names the mode.
+- The **blur** has six levels (wheel or `−` / `+`): 1-3 soft Gaussian blur, 4-6 mosaic with growing squares. The mosaic cells start at the corner of the area, and the note that pops up when you change the level names the mode.
 - Undo with `Ctrl+Z`.
 
 **Save and share**
