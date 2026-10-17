@@ -136,3 +136,42 @@ func TestRenderStamps(t *testing.T) {
 }
 
 func annotateRadius(w float32) int { return int(annotate.StampRadius(w)) }
+
+// TestStampDigitsCentered: цифры стоят в середине круга: середина их габарита не дальше двух пикселей от центра.
+func TestStampDigitsCentered(t *testing.T) {
+	src := image.NewRGBA(image.Rect(0, 0, 200, 200))
+	for i := 0; i < len(src.Pix); i += 4 {
+		src.Pix[i], src.Pix[i+1], src.Pix[i+2], src.Pix[i+3] = 128, 128, 128, 255
+	}
+	blue := annotate.Palette[4]
+	for _, num := range []string{"1", "2", "7", "8", "10", "42", "123"} {
+		for _, w := range []float32{2, 4, 8, 16} {
+			shape := annotate.Shape{Tool: annotate.ToolStamp, Color: blue, Width: w, Pts: []f32.Point{{X: 100, Y: 100}}, Text: num}
+			out, err := render(src, src.Bounds(), []annotate.Shape{shape}, annotate.NewShaper())
+			if err != nil {
+				t.Skipf("headless рендер недоступен: %v", err)
+			}
+			r := annotate.StampRadius(w)
+			minX, minY, maxX, maxY := 1<<20, 1<<20, -1, -1
+			for y := 0; y < 200; y++ {
+				for x := 0; x < 200; x++ {
+					dx, dy := float32(x-100), float32(y-100)
+					if inner := r*0.84 - 2; dx*dx+dy*dy > inner*inner { // внутри цветного круга, без ободка
+						continue
+					}
+					if c := out.RGBAAt(x, y); c.R > 200 && c.G > 200 && c.B > 200 {
+						minX, minY, maxX, maxY = min(minX, x), min(minY, y), max(maxX, x), max(maxY, y)
+					}
+				}
+			}
+			if maxX < 0 {
+				t.Errorf("номер %q, толщина %v: цифр не видно", num, w)
+				continue
+			}
+			cx, cy := float32(minX+maxX+1)/2, float32(minY+maxY+1)/2
+			if dx, dy := cx-100, cy-100; dx < -2 || dx > 2 || dy < -2 || dy > 2 {
+				t.Errorf("номер %q, толщина %v: середина цифр (%.1f, %.1f), а центр круга (100, 100)", num, w, cx, cy)
+			}
+		}
+	}
+}

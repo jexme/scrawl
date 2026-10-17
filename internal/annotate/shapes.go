@@ -11,6 +11,7 @@ import (
 	"math"
 
 	"gioui.org/f32"
+	"gioui.org/font"
 	"gioui.org/font/gofont"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -75,7 +76,7 @@ const DefaultMarkerAlpha = 110
 func TextSize(width float32) float32 { return 12 + width*3 }
 
 // StampRadius возвращает радиус штампа с номером по «толщине» инструмента.
-func StampRadius(width float32) float32 { return 9 + width*2 }
+func StampRadius(width float32) float32 { return 12 + width*2.5 }
 
 // NewShaper создаёт шрифтовой шейпер для текстовых аннотаций.
 func NewShaper() *text.Shaper {
@@ -242,31 +243,38 @@ func onColor(c color.NRGBA) color.NRGBA {
 func stampTextSize(r float32, digits int) float32 {
 	switch {
 	case digits <= 1:
-		return r * 1.3
+		return r * 1.25
 	case digits == 2:
-		return r * 1.05
+		return r * 1.0
 	case digits == 3:
-		return r * 0.85
+		return r * 0.8
 	}
-	return r * 0.68
+	return r * 0.64
 }
 
-// drawStamp рисует штамп: закрашенный круг с номером в середине и тонким кольцом того же
-// цвета, что и цифры, чтобы штамп был виден на фоне одного с ним цвета.
+// stampFont — шрифт цифр штампа: жирный, чтобы цифры читались на любом фоне.
+var stampFont = font.Font{Typeface: Font.Typeface, Weight: font.Bold}
+
+// drawStamp рисует штамп: цветной круг в ободке цвета цифр (светлом на тёмном, тёмном на
+// светлом), мягкая тень снизу и жирный номер строго в середине.
 func drawStamp(ops *op.Ops, shaper *text.Shaper, c color.NRGBA, width float32, at f32.Point, num string) {
 	r := StampRadius(width)
-	disc := image.Rect(int(at.X-r), int(at.Y-r), int(at.X+r), int(at.Y+r))
 	fg := onColor(c)
-	paint.FillShape(ops, c, clip.Ellipse(disc).Op(ops))
 
-	ringR := r - float32(math.Max(1.5, float64(r)*0.14))
-	var p clip.Path
-	p.Begin(ops)
-	p.MoveTo(f32.Pt(at.X+ringR, at.Y))
-	p.ArcTo(at, at, 2*math.Pi)
-	ring := fg
-	ring.A = 150
-	paint.FillShape(ops, ring, clip.Stroke{Path: p.End(), Width: float32(math.Max(1, float64(r)*0.07))}.Op())
+	circle := func(radius, dy float32) clip.Op {
+		return clip.Ellipse(image.Rect(
+			int(math.Round(float64(at.X-radius))), int(math.Round(float64(at.Y+dy-radius))),
+			int(math.Round(float64(at.X+radius))), int(math.Round(float64(at.Y+dy+radius))))).Op(ops)
+	}
+	// Тень: несколько прозрачных кругов друг в друге, чуть сдвинутых вниз.
+	for _, sh := range []struct {
+		grow float32
+		a    uint8
+	}{{0.16, 14}, {0.10, 18}, {0.05, 22}} {
+		paint.FillShape(ops, color.NRGBA{A: sh.a}, circle(r*(1+sh.grow), r*0.08))
+	}
+	paint.FillShape(ops, fg, circle(r, 0))
+	paint.FillShape(ops, c, circle(r*0.84, 0))
 
 	if num == "" || shaper == nil {
 		return
@@ -276,12 +284,19 @@ func drawStamp(ops *op.Ops, shaper *text.Shaper, c color.NRGBA, width float32, a
 		Constraints: layout.Constraints{Max: image.Pt(1<<14, 1<<14)},
 		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
 	}
+	size := stampTextSize(r, len(num))
 	rec := op.Record(ops)
 	paint.ColorOp{Color: fg}.Add(ops)
 	mat := rec.Stop()
 	rec = op.Record(ops)
-	dims := widget.Label{MaxLines: 1}.Layout(gtx, shaper, Font, unit.Sp(stampTextSize(r, len(num))), num, mat)
+	dims := widget.Label{MaxLines: 1}.Layout(gtx, shaper, stampFont, unit.Sp(size), num, mat)
 	label := rec.Stop()
-	defer op.Offset(image.Pt(int(at.X)-dims.Size.X/2, int(at.Y)-dims.Size.Y/2)).Push(ops).Pop()
+	// Цифра стоит на базовой линии: середину цифр (половина её высоты над линией) ставим в центр круга.
+	baseline := float32(dims.Size.Y - dims.Baseline)
+	top := at.Y - baseline + size*digitHeight/2
+	defer op.Offset(image.Pt(int(math.Round(float64(at.X)))-dims.Size.X/2, int(math.Round(float64(top))))).Push(ops).Pop()
 	label.Add(ops)
 }
+
+// digitHeight — высота цифры шрифта Go в долях размера шрифта.
+const digitHeight = 0.72
