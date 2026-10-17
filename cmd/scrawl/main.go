@@ -131,7 +131,12 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	if err != nil {
 		fatal("portal: %v", err)
 	}
-	if !p.Registered {
+	if p.OldPortal {
+		// Старый portal узнаёт приложение по systemd-scope: без него токены не работают.
+		if err := p.EnterAppScope(); err != nil {
+			fmt.Fprintln(os.Stderr, i18n.T("portal не принял app_id: restore_token работать не будет, диалоги покажутся при каждом запуске"))
+		}
+	} else if !p.Registered {
 		fmt.Fprintln(os.Stderr, i18n.T("portal не принял app_id: restore_token работать не будет, диалоги покажутся при каждом запуске"))
 	}
 
@@ -143,7 +148,9 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	}
 	// Без регистрации portal не примет сохранённые токены и покажет диалоги, которых
 	// при запуске по хоткею никто не ждёт. Чаще всего это зависший portal.
-	if !p.Registered && len(tokens) > 0 {
+	// У portal старше 1.21 Registry нет вовсе: это не зависание, токены он принимает
+	// по app_id из systemd-scope, поэтому идём дальше.
+	if !p.Registered && !p.OldPortal && len(tokens) > 0 {
 		fatal("%s", i18n.T("xdg-desktop-portal не отвечает. Перезапустите его: systemctl --user restart xdg-desktop-portal"))
 	}
 
