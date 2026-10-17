@@ -285,7 +285,7 @@ func TestShowSizeCheckboxIsSavedToDisk(t *testing.T) {
 
 func TestToolDefaultsAreSavedToDisk(t *testing.T) {
 	s := testState(t)
-	if s.toolChoice.Value != "arrow" || len(s.toolRows) != len(settings.ToolNames)-1 {
+	if s.toolChoice.Value != "select" || len(s.toolRows) != len(settings.ToolNames)-1 {
 		t.Fatalf("выбор инструмента %q, строк инструментов %d", s.toolChoice.Value, len(s.toolRows))
 	}
 	s.toolChoice.Value = "marker"
