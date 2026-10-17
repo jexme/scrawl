@@ -93,8 +93,11 @@ sha256sum -c --ignore-missing SHA256SUMS
 tar xzf scrawl-*-linux-amd64.tar.gz && cd scrawl-*-linux-amd64
 ./install.sh            # в ~/.local (PREFIX=/usr/local для всей системы)
 sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland-cursor0 \
-  libxkbcommon-x11-0 libegl1 libx11-6 libxcursor1
+  libxkbcommon-x11-0 libegl1 libx11-6 libxcursor1 wl-clipboard libnotify-bin
 ```
+
+`wl-clipboard` (буфер обмена) и `libnotify-bin` (уведомления) нужны и при работе: установщик их
+проверяет и пишет, чего не хватает. В X11 вместо `wl-clipboard` нужен `xclip`.
 
 Проверьте, что `~/.local/bin` есть в `PATH`.
 
