@@ -222,6 +222,7 @@ var pt = map[string]string{
 	"Рамка":         "Caixa",
 	"Маркер":        "Marca-texto",
 	"Размытие":      "Desfoque",
+	"Мозаика":       "Mosaico",
 	"Текст":         "Texto",
 	"Номер":         "Número",
 	"Размер штампа": "Tamanho do número",

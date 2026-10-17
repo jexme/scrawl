@@ -222,6 +222,7 @@ var es = map[string]string{
 	"Рамка":         "Recuadro",
 	"Маркер":        "Marcador",
 	"Размытие":      "Desenfoque",
+	"Мозаика":       "Mosaico",
 	"Текст":         "Texto",
 	"Номер":         "Número",
 	"Размер штампа": "Tamaño del número",

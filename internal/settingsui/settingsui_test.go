@@ -300,14 +300,14 @@ func TestToolDefaultsAreSavedToDisk(t *testing.T) {
 	}
 	arrow.ed.SetText("1e88e5")
 	arrow.sl.Set(8)
-	blur.sl.Set(12)
+	blur.sl.Set(5)
 	s.layout(frameContext(700, 650))
 
 	got := settings.Load()
 	if got.DefaultTool != "marker" {
 		t.Errorf("инструмент по умолчанию: %q", got.DefaultTool)
 	}
-	if got.Tools.Arrow != (settings.ToolStyle{Color: "#1E88E5", Width: 8}) || got.Tools.Blur.Width != 12 {
+	if got.Tools.Arrow != (settings.ToolStyle{Color: "#1E88E5", Width: 8}) || got.Tools.Blur.Width != 5 {
 		t.Errorf("стили инструментов не дошли до файла: %+v", got.Tools)
 	}
 

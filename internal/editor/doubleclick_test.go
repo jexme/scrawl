@@ -189,7 +189,7 @@ func TestToolNamesMatchEditorTools(t *testing.T) {
 			t.Errorf("инструмент %q: номер %d, ожидали %d", settings.ToolNames[i], tool, i)
 		}
 	}
-	if settings.MinToolWidth != annotate.MinWidth || settings.MaxToolWidth != annotate.MaxWidth {
+	if settings.MinToolWidth != annotate.MinWidth || settings.MaxToolWidth != annotate.MaxWidth || settings.MaxBlurLevel != annotate.MaxBlurLevel {
 		t.Error("границы толщины в настройках и редакторе разошлись")
 	}
 }

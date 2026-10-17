@@ -123,7 +123,13 @@ type monitor struct {
 	adjStartSel image.Rectangle
 	adjStartPt  f32.Point
 	hover       f32.Point // последнее положение курсора, пиксели кадра
-	hoverIn     bool      // курсор сейчас над этим окном (на другом мониторе лупа не нужна)
+
+	// Накопленная прокрутка колеса или тачпада и время последнего шага толщины.
+	scrollAcc  float32
+	scrollSeen time.Time
+	scrollStep time.Time
+	clock      func() time.Time // подмена времени в тестах
+	hoverIn    bool             // курсор сейчас над этим окном (на другом мониторе лупа не нужна)
 
 	// Настройки (общие для окон) и двойной клик.
 	store        *settings.Store
@@ -737,13 +743,56 @@ func (m *monitor) release(p f32.Point) {
 	}
 }
 
+// Прокрутка меняет толщину порциями. Колесо шлёт по одному событию на щелчок, а тачпад десятки
+// мелких в секунду и ещё инерцию после того, как палец поднят: если менять толщину на каждое
+// событие, она улетает с 1 до 6 за один жест.
+const (
+	scrollNotch     = 8                      // событие не меньше этого считается щелчком колеса: шаг сразу
+	scrollUnit      = 40                     // порция мелких событий (тачпад), на которую делается шаг
+	scrollIdle      = 300 * time.Millisecond // после такой паузы накопленное забывается
+	scrollGapFine   = 50 * time.Millisecond  // наименьший промежуток между шагами у инструментов с тонкой шкалой
+	scrollGapCoarse = 250 * time.Millisecond // то же у размытия: у него всего шесть уровней
+)
+
+// scroll копит прокрутку dy и по порции двигает толщину на один шаг. Щелчок колеса (одно крупное
+// событие) это целая порция, мелкие события тачпада копятся до порции. Между шагами пауза, избыток
+// за паузу не копится, а остаток после шага отбрасывается: инерция тачпада не делает лишних шагов.
 func (m *monitor) scroll(dy float32) {
-	switch {
-	case dy < 0:
+	now := m.now()
+	if now.Sub(m.scrollSeen) > scrollIdle || m.scrollAcc*dy < 0 { // пауза или смена направления
+		m.scrollAcc = 0
+	}
+	m.scrollSeen = now
+	if dy <= -scrollNotch || dy >= scrollNotch {
+		m.scrollAcc = float32(math.Copysign(scrollUnit, float64(dy)))
+	} else {
+		m.scrollAcc += dy
+	}
+	if m.scrollAcc > -scrollUnit && m.scrollAcc < scrollUnit {
+		return
+	}
+	gap := scrollGapFine
+	if annotate.MaxWidthOf(m.tool) <= annotate.MaxBlurLevel {
+		gap = scrollGapCoarse
+	}
+	if now.Sub(m.scrollStep) < gap {
+		m.scrollAcc = float32(math.Copysign(scrollUnit, float64(m.scrollAcc))) // порция готова, ждёт паузы
+		return
+	}
+	if m.scrollAcc < 0 {
 		m.bumpWidth(1)
-	case dy > 0:
+	} else {
 		m.bumpWidth(-1)
 	}
+	m.scrollAcc, m.scrollStep = 0, now
+}
+
+// now возвращает текущее время; в тестах подменяется.
+func (m *monitor) now() time.Time {
+	if m.clock != nil {
+		return m.clock()
+	}
+	return time.Now()
 }
 
 // curWidth возвращает толщину (для размытия силу) текущего инструмента.
@@ -755,9 +804,9 @@ func (m *monitor) widthOf(t annotate.Tool) float32 {
 		return w
 	}
 	if st := m.toolStyle(t); st != nil && st.Width > 0 {
-		return float32(st.Width)
+		return min(float32(st.Width), annotate.MaxWidthOf(t))
 	}
-	return annotate.DefaultWidth
+	return annotate.DefaultWidthOf(t)
 }
 
 // bumpWidth меняет толщину текущего инструмента. Фигура, которую рисуют
@@ -766,7 +815,7 @@ func (m *monitor) bumpWidth(delta float32) {
 	if m.tool == annotate.ToolSelect {
 		return
 	}
-	w := float32(math.Min(math.Max(float64(m.curWidth()+delta), annotate.MinWidth), annotate.MaxWidth))
+	w := float32(math.Min(math.Max(float64(m.curWidth()+delta), annotate.MinWidth), float64(annotate.MaxWidthOf(m.tool))))
 	m.widths[m.tool] = w
 	if m.cur != nil {
 		m.cur.Width = w

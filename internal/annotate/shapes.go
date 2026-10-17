@@ -58,6 +58,22 @@ const (
 	MaxWidth     = 30
 )
 
+// DefaultWidthOf возвращает толщину инструмента по умолчанию: у размытия это уровень.
+func DefaultWidthOf(t Tool) float32 {
+	if t == ToolBlur {
+		return DefaultBlurLevel
+	}
+	return DefaultWidth
+}
+
+// MaxWidthOf возвращает наибольшую толщину инструмента: у размытия это последний уровень.
+func MaxWidthOf(t Tool) float32 {
+	if t == ToolBlur {
+		return MaxBlurLevel
+	}
+	return MaxWidth
+}
+
 // Shape — одна аннотация.
 type Shape struct {
 	Tool  Tool

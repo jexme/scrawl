@@ -75,6 +75,9 @@ func (m *monitor) layoutToast(gtx layout.Context, win image.Point, selWin image.
 	txt := fmt.Sprintf("%s: %d", widthLabel(m.toastTool), m.toastValue)
 	if m.toastMsg != "" {
 		txt = m.toastMsg
+	} else if m.toastTool == annotate.ToolBlur {
+		// У размытия сила меняет не только степень, но и вид: мягкое, мозаика, матовое стекло.
+		txt += "  ·  " + annotate.ModeOf(float32(m.toastValue)).Label()
 	}
 	rec := op.Record(gtx.Ops)
 	paint.ColorOp{Color: scale(iconColor)}.Add(gtx.Ops)

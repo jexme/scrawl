@@ -661,7 +661,7 @@ func (s *state) initTools(cur settings.Settings) {
 		row := &toolRow{name: name, label: toolLabels[i]} // русский ключ: переводится при показе
 		row.ed.SingleLine = true
 		row.ed.SetText(cur.Tools.Of(name).Color)
-		row.sl = s.addSlider(0, settings.MaxToolWidth, 1, func(v float64) string {
+		row.sl = s.addSlider(0, settings.MaxWidthOf(name), 1, func(v float64) string {
 			if v == 0 {
 				return i18n.T("станд.")
 			}

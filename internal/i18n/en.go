@@ -223,6 +223,7 @@ var en = map[string]string{
 	"Рамка":         "Box",
 	"Маркер":        "Marker",
 	"Размытие":      "Blur",
+	"Мозаика":       "Mosaic",
 	"Текст":         "Text",
 	"Номер":         "Number",
 	"Размер штампа": "Stamp size",

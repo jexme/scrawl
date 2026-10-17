@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"os"
 	"testing"
+	"time"
 
 	"gioui.org/f32"
 
@@ -173,5 +174,149 @@ func TestStampDigitsCentered(t *testing.T) {
 				t.Errorf("номер %q, толщина %v: середина цифр (%.1f, %.1f), а центр круга (100, 100)", num, w, cx, cy)
 			}
 		}
+	}
+}
+
+// TestBlurLevelsInEditor: у размытия «−» и «+» двигают уровень 1-6 и упираются в его границы, по
+// умолчанию уровень 2, а плашка называет режим.
+func TestBlurLevelsInEditor(t *testing.T) {
+	m := newStampMonitor(t)
+	m.tool = annotate.ToolBlur
+	if got := m.curWidth(); got != annotate.DefaultBlurLevel {
+		t.Errorf("уровень по умолчанию %v, ожидали %d", got, annotate.DefaultBlurLevel)
+	}
+	for i := 0; i < 20; i++ {
+		m.bumpWidth(1)
+	}
+	if got := m.curWidth(); got != annotate.MaxBlurLevel {
+		t.Errorf("после множества «+» уровень %v, ожидали %d", got, annotate.MaxBlurLevel)
+	}
+	for i := 0; i < 20; i++ {
+		m.bumpWidth(-1)
+	}
+	if got := m.curWidth(); got != annotate.MinWidth {
+		t.Errorf("после множества «−» уровень %v, ожидали %d", got, annotate.MinWidth)
+	}
+	// Остальные инструменты по-прежнему доходят до 30.
+	m.tool = annotate.ToolPen
+	for i := 0; i < 50; i++ {
+		m.bumpWidth(1)
+	}
+	if got := m.curWidth(); got != annotate.MaxWidth {
+		t.Errorf("перо: %v, ожидали %d", got, annotate.MaxWidth)
+	}
+}
+
+// scrollMonitor делает монитор с ручными часами для проверки прокрутки.
+func scrollMonitor(t *testing.T, tool annotate.Tool) (*monitor, *time.Time) {
+	t.Helper()
+	m := newStampMonitor(t)
+	m.tool = tool
+	now := time.Unix(1000, 0)
+	m.clock = func() time.Time { return now }
+	return m, &now
+}
+
+// TestScrollTouchpad: тачпад шлёт мелкие события потоком, но толщина двигается порциями и не
+// перескакивает с 1 на 6 за один жест.
+func TestScrollTouchpad(t *testing.T) {
+	m, now := scrollMonitor(t, annotate.ToolBlur)
+	m.widths[annotate.ToolBlur] = 1
+
+	// Быстрый жест: двести мелких событий по 3 единицы (минус это прокрутка вверх, то есть «больше») за 0,4 с.
+	for i := 0; i < 200; i++ {
+		*now = now.Add(2 * time.Millisecond)
+		m.scroll(-3)
+	}
+	// 0,4 с между шагами не меньше четверти секунды: не больше двух шагов (раньше было пять).
+	if got := m.curWidth(); got < 2 || got > 3 {
+		t.Errorf("быстрый жест двинул уровень 1 -> %v, ожидали 2 или 3", got)
+	}
+
+	// Инерция после жеста: затухающий хвост (3, 2.85, 2.7... до нуля) уровень почти не двигает.
+	before := m.curWidth()
+	for v := float32(3); v > 0.05; v *= 0.95 {
+		*now = now.Add(8 * time.Millisecond)
+		m.scroll(-v)
+	}
+	if got := m.curWidth(); got > before+1 {
+		t.Errorf("инерция увела уровень %v -> %v", before, got)
+	}
+
+	// Медленный непрерывный жест (около 100 единиц в секунду) за секунду даёт не больше четырёх шагов.
+	m.widths[annotate.ToolBlur] = 1
+	*now = now.Add(time.Second)
+	for i := 0; i < 100; i++ {
+		*now = now.Add(10 * time.Millisecond)
+		m.scroll(-1)
+	}
+	if got := m.curWidth(); got < 2 || got > 5 {
+		t.Errorf("медленный жест за секунду: уровень 1 -> %v, ожидали от 2 до 5", got)
+	}
+}
+
+// TestScrollWheel: щелчок колеса (одно событие около 10 единиц) это ровно один шаг, как раньше.
+func TestScrollWheel(t *testing.T) {
+	m, now := scrollMonitor(t, annotate.ToolBlur)
+	m.widths[annotate.ToolBlur] = 1
+	for want := float32(2); want <= annotate.MaxBlurLevel; want++ {
+		*now = now.Add(400 * time.Millisecond)
+		m.scroll(-10)
+		if got := m.curWidth(); got != want {
+			t.Fatalf("щелчок вверх: уровень %v, ожидали %v", got, want)
+		}
+	}
+	*now = now.Add(400 * time.Millisecond)
+	m.scroll(-10)
+	if got := m.curWidth(); got != annotate.MaxBlurLevel {
+		t.Errorf("за последним уровнем: %v", got)
+	}
+	*now = now.Add(400 * time.Millisecond)
+	m.scroll(10)
+	if got := m.curWidth(); got != annotate.MaxBlurLevel-1 {
+		t.Errorf("щелчок вниз: %v", got)
+	}
+	// Крупное событие (колесо с высоким разрешением даёт и 120) тоже один шаг.
+	*now = now.Add(400 * time.Millisecond)
+	m.scroll(-120)
+	if got := m.curWidth(); got != annotate.MaxBlurLevel {
+		t.Errorf("крупное событие: %v, ожидали один шаг до %d", got, annotate.MaxBlurLevel)
+	}
+
+	// У инструментов с тонкой шкалой щелчки идут чаще.
+	m.tool = annotate.ToolPen
+	m.widths[annotate.ToolPen] = 4
+	for i := 0; i < 5; i++ {
+		*now = now.Add(60 * time.Millisecond)
+		m.scroll(-10)
+	}
+	if got := m.curWidth(); got != 9 {
+		t.Errorf("пять быстрых щелчков пером: %v, ожидали 9", got)
+	}
+}
+
+// TestScrollResets: пауза и смена направления сбрасывают накопленное, так что случайное касание
+// не двигает толщину.
+func TestScrollResets(t *testing.T) {
+	m, now := scrollMonitor(t, annotate.ToolBlur)
+	m.widths[annotate.ToolBlur] = 3
+	for i := 0; i < 3; i++ {
+		m.scroll(-7)
+	}
+	m.scroll(7)  // назад: накопленное обнуляется
+	m.scroll(-7) // и снова вперёд
+	if got := m.curWidth(); got != 3 {
+		t.Errorf("туда-обратно двинуло толщину: %v", got)
+	}
+	*now = now.Add(time.Second) // долгая пауза: накопленное забыто
+	for i := 0; i < 5; i++ {
+		m.scroll(-7) // 35 единиц: меньше порции
+	}
+	if got := m.curWidth(); got != 3 {
+		t.Errorf("после паузы накопленное не забылось: %v", got)
+	}
+	m.scroll(-7) // 42: порция набрана
+	if got := m.curWidth(); got != 4 {
+		t.Errorf("порция набрана, а уровень %v, ожидали 4", got)
 	}
 }

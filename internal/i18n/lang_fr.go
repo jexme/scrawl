@@ -222,6 +222,7 @@ var fr = map[string]string{
 	"Рамка":         "Cadre",
 	"Маркер":        "Surligneur",
 	"Размытие":      "Flou",
+	"Мозаика":       "Mosaïque",
 	"Текст":         "Texte",
 	"Номер":         "Numéro",
 	"Размер штампа": "Taille du numéro",

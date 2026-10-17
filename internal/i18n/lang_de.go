@@ -222,6 +222,7 @@ var de = map[string]string{
 	"Рамка":         "Rahmen",
 	"Маркер":        "Textmarker",
 	"Размытие":      "Unschärfe",
+	"Мозаика":       "Mosaik",
 	"Текст":         "Text",
 	"Номер":         "Nummer",
 	"Размер штампа": "Größe der Nummer",
