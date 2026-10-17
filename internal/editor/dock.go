@@ -80,7 +80,7 @@ func (m *monitor) placeDock(gtx layout.Context, win image.Point, w, h int) image
 	margin := gtx.Dp(10)
 	free := func(p image.Point) bool {
 		r := image.Rectangle{Min: p, Max: p.Add(image.Pt(w, h))}.Inset(-margin)
-		return !r.Overlaps(m.selWin) && !r.Overlaps(m.barRect)
+		return !r.Overlaps(m.selWin) && !r.Overlaps(m.barSpace)
 	}
 	switch {
 	case free(bottom):

@@ -133,8 +133,15 @@ type monitor struct {
 	dock   dock
 
 	// Положение элементов в пикселях окна: нужно, чтобы док не перекрывал выделение и панель.
-	selWin  image.Rectangle
-	barRect image.Rectangle
+	selWin   image.Rectangle
+	barRect  image.Rectangle // панель целиком (оба ряда, если виден второй)
+	mainRow  image.Rectangle // основной ряд
+	barSpace image.Rectangle // место под оба ряда, даже если второй скрыт: док его не перекрывает
+	barBelow bool            // панель под выделением (второй ряд ниже основного), иначе над ним
+
+	// Меню «⋯» на панели.
+	menuOpen   bool
+	menuAnchor int // середина кнопки «⋯» в пикселях окна
 
 	// Плашка с новым значением силы инструмента.
 	toastUntil time.Time
@@ -275,7 +282,7 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 	m.layoutEditor(gtx)
 	scale.Pop()
 
-	m.selWin, m.barRect = image.Rectangle{}, image.Rectangle{}
+	m.selWin, m.barRect, m.mainRow, m.barSpace = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}, image.Rectangle{}
 	if m.hasSel {
 		m.selWin = image.Rect(
 			int(float32(m.sel.Min.X)*sx), int(float32(m.sel.Min.Y)*sy),
@@ -578,7 +585,7 @@ func (m *monitor) claim() {
 
 // resetState убирает выделение, рисунки и редактирование текста.
 func (m *monitor) resetState() {
-	m.pick.open = false
+	m.pick.open, m.menuOpen = false, false
 	m.dragging = false
 	m.adjust = adjustNone
 	m.hasSel = false
@@ -631,8 +638,8 @@ func (m *monitor) useDefaultTool() {
 }
 
 func (m *monitor) press(p f32.Point) {
-	if m.pick.open {
-		m.pick.open = false // клик мимо окошка цвета закрывает его
+	if m.pick.open || m.menuOpen {
+		m.pick.open, m.menuOpen = false, false // клик мимо окошка цвета или меню закрывает его
 		return
 	}
 	if m.editing {

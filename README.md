@@ -151,9 +151,13 @@ Every key can be changed in the settings window (the "Keys" tab).
 
 ### Toolbar
 
-From left to right: select, pen, line, arrow, box, marker, blur, text, number stamp · eight
-colours · a rainbow button for your own colour (opens a palette; the colour is remembered) · `−` thickness `+` · settings (closes the overlay and opens the settings
-window) · add to collection · undo · copy · save · close.
+The main row, from left to right: select, pen, line, arrow, box, marker, blur, text, number
+stamp · undo · copy · save · the `⋯` menu (settings, which closes the overlay and opens the settings
+window, and add to collection) · close.
+
+While a drawing tool is on, a second row appears under it: eight colours, a rainbow button for
+your own colour (opens a palette; the colour is remembered) and `−` thickness `+`. The "select"
+tool has neither, so the row is hidden.
 
 The buttons that have a key show it under the icon (the keys come from the settings).
 
