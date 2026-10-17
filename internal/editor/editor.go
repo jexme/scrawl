@@ -108,7 +108,8 @@ type monitor struct {
 	reset atomic.Bool // другое окно забрало выделение, нужно сбросить своё
 
 	imageOp paint.ImageOp
-	canvas  int // тег холста
+	loupeOp paint.ImageOp // тот же кадр с выборкой по ближайшему пикселю, создаётся при первом показе лупы
+	canvas  int           // тег холста
 
 	// Выделение в пикселях кадра.
 	sel      image.Rectangle
@@ -122,6 +123,7 @@ type monitor struct {
 	adjStartSel image.Rectangle
 	adjStartPt  f32.Point
 	hover       f32.Point // последнее положение курсора, пиксели кадра
+	hoverIn     bool      // курсор сейчас над этим окном (на другом мониторе лупа не нужна)
 
 	// Настройки (общие для окон) и двойной клик.
 	store        *settings.Store
@@ -296,6 +298,7 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 		m.layoutToast(gtx, win, m.selWin)
 	}
 	m.layoutDock(gtx, win)
+	m.layoutLoupe(gtx, win, sx, sy)
 }
 
 // cursor выбирает курсор по положению мыши: ручки рамки, перемещение, прицел.
@@ -542,7 +545,7 @@ func (m *monitor) keyFilters() []event.Filter {
 func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.Point) {
 	for {
 		ev, ok := gtx.Event(
-			pointer.Filter{Target: &m.canvas, Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Move},
+			pointer.Filter{Target: &m.canvas, Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Move | pointer.Enter | pointer.Leave},
 			pointer.Filter{Target: &m.canvas, Kinds: pointer.Scroll, ScrollY: pointer.ScrollRange{Min: -100, Max: 100}},
 		)
 		if !ok {
@@ -554,6 +557,7 @@ func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.
 		}
 		p := toFrame(e.Position)
 		m.hover = p
+		m.hoverIn = e.Kind != pointer.Leave && e.Kind != pointer.Cancel
 		switch e.Kind {
 		case pointer.Press:
 			if e.Buttons.Contain(pointer.ButtonPrimary) {

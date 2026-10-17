@@ -113,6 +113,7 @@ Two shots in the same second never overwrite each other: `-2`, `-3` is added to 
 | `border_color` | `#FFFFFF` | frame colour, `#RRGGBB` |
 | `handle_radius` | `3` (0-10) | radius of the corner handles, px; `0` hides them |
 | `show_size` | `true`, `false` | show the "width × height" label above the area |
+| `show_loupe` | `true`, `false` | show a magnifier next to the cursor while you pick the start point and drag a frame |
 
 ## Before/after collage (`glue`)
 
