@@ -143,7 +143,9 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	}
 	// Без регистрации portal не примет сохранённые токены и покажет диалоги, которых
 	// при запуске по хоткею никто не ждёт. Чаще всего это зависший portal.
-	if !p.Registered && len(tokens) > 0 {
+	// У portal старше 1.21 Registry нет вовсе: это не зависание, токены он принимает
+	// по app_id из systemd-scope, поэтому идём дальше.
+	if !p.Registered && !p.OldPortal && len(tokens) > 0 {
 		fatal("%s", i18n.T("xdg-desktop-portal не отвечает. Перезапустите его: systemctl --user restart xdg-desktop-portal"))
 	}
 

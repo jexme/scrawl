@@ -50,6 +50,10 @@ type Portal struct {
 	// Если нет (старый portal), restore_token работать не будет.
 	Registered bool
 
+	// OldPortal — portal старше 1.21: интерфейса Registry в нём нет вовсе. Это не
+	// сбой, а особенность версии: app_id такой portal берёт из systemd-scope процесса.
+	OldPortal bool
+
 	// IncludeCursor просит portal рисовать курсор мыши прямо в кадре. Задаётся
 	// до OpenAll: режим курсора выбирается при создании сессии.
 	IncludeCursor bool
@@ -112,9 +116,26 @@ func New() (*Portal, error) {
 		sender:     sender,
 		waiters:    make(map[dbus.ObjectPath]chan *dbus.Signal),
 		Registered: regErr == nil,
+		OldPortal:  isMissingRegistry(regErr),
 	}
 	go p.dispatch(ch)
 	return p, nil
+}
+
+// isMissingRegistry сообщает, что portal ответил «такого метода нет», то есть он
+// старше 1.21 и Registry не знает, а не завис.
+func isMissingRegistry(err error) bool {
+	var derr dbus.Error
+	if !errors.As(err, &derr) {
+		return false
+	}
+	switch derr.Name {
+	case "org.freedesktop.DBus.Error.UnknownMethod",
+		"org.freedesktop.DBus.Error.UnknownInterface",
+		"org.freedesktop.DBus.Error.UnknownObject":
+		return true
+	}
+	return false
 }
 
 // dispatch раздаёт сигналы Response по ожидающим запросам. Это позволяет
