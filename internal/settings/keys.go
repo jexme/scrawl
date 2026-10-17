@@ -19,10 +19,26 @@ const (
 	ActionUndo    = "undo"    // отменить последнюю аннотацию
 	ActionCopy    = "copy"    // только копировать
 	ActionSave    = "save"    // только сохранить
+
+	// Выбор инструмента: действие называется «tool_» и имя из ToolNames.
+	ActionToolSelect = "tool_select"
+	ActionToolPen    = "tool_pen"
+	ActionToolLine   = "tool_line"
+	ActionToolArrow  = "tool_arrow"
+	ActionToolRect   = "tool_rect"
+	ActionToolMarker = "tool_marker"
+	ActionToolBlur   = "tool_blur"
+	ActionToolText   = "tool_text"
 )
 
+// ToolAction возвращает действие, которое включает инструмент с именем из ToolNames.
+func ToolAction(tool string) string { return "tool_" + tool }
+
 // KeyActions — все действия в порядке показа в окне настроек.
-var KeyActions = []string{ActionConfirm, ActionCancel, ActionRestore, ActionAdd, ActionGlue, ActionSend, ActionUndo, ActionCopy, ActionSave}
+var KeyActions = []string{
+	ActionConfirm, ActionCancel, ActionRestore, ActionAdd, ActionGlue, ActionSend, ActionUndo, ActionCopy, ActionSave,
+	ActionToolSelect, ActionToolPen, ActionToolLine, ActionToolArrow, ActionToolRect, ActionToolMarker, ActionToolBlur, ActionToolText,
+}
 
 // Keys — клавиши действий в виде «Ctrl+Shift+S», «R», «Enter». Пусто: по умолчанию.
 type Keys struct {
@@ -35,12 +51,24 @@ type Keys struct {
 	Undo    string `json:"undo,omitempty"`
 	Copy    string `json:"copy,omitempty"`
 	Save    string `json:"save,omitempty"`
+
+	ToolSelect string `json:"tool_select,omitempty"`
+	ToolPen    string `json:"tool_pen,omitempty"`
+	ToolLine   string `json:"tool_line,omitempty"`
+	ToolArrow  string `json:"tool_arrow,omitempty"`
+	ToolRect   string `json:"tool_rect,omitempty"`
+	ToolMarker string `json:"tool_marker,omitempty"`
+	ToolBlur   string `json:"tool_blur,omitempty"`
+	ToolText   string `json:"tool_text,omitempty"`
 }
 
 // DefaultKeys — клавиши, с которыми программа поставляется.
 var DefaultKeys = map[string]string{
 	ActionConfirm: "Enter", ActionCancel: "Escape", ActionRestore: "R", ActionAdd: "A",
 	ActionGlue: "G", ActionSend: "D", ActionUndo: "Ctrl+Z", ActionCopy: "Ctrl+C", ActionSave: "Ctrl+S",
+	// Инструменты: W от «arroW», B от «Box», U от «blUr»; A, R, D, G заняты действиями выше.
+	ActionToolSelect: "V", ActionToolPen: "P", ActionToolLine: "L", ActionToolArrow: "W",
+	ActionToolRect: "B", ActionToolMarker: "M", ActionToolBlur: "U", ActionToolText: "T",
 }
 
 func (k *Keys) ptr(action string) *string {
@@ -63,6 +91,22 @@ func (k *Keys) ptr(action string) *string {
 		return &k.Copy
 	case ActionSave:
 		return &k.Save
+	case ActionToolSelect:
+		return &k.ToolSelect
+	case ActionToolPen:
+		return &k.ToolPen
+	case ActionToolLine:
+		return &k.ToolLine
+	case ActionToolArrow:
+		return &k.ToolArrow
+	case ActionToolRect:
+		return &k.ToolRect
+	case ActionToolMarker:
+		return &k.ToolMarker
+	case ActionToolBlur:
+		return &k.ToolBlur
+	case ActionToolText:
+		return &k.ToolText
 	}
 	return nil
 }

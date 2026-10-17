@@ -230,6 +230,7 @@ var en = map[string]string{
 	"Отменить последнюю аннотацию":    "Undo the last annotation",
 	"Только копировать":               "Copy only",
 	"Только сохранить":                "Save only",
+	"Инструмент «%s»":                 "Tool “%s”",
 	"Общие":                           "General",
 	"Язык интерфейса":                 "Interface language",
 	"Окно настроек меняется сразу, оверлей и уведомления при следующем снимке.": "The settings window changes at once; the overlay and notifications change on the next shot.",

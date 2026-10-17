@@ -229,6 +229,7 @@ var fr = map[string]string{
 	"Отменить последнюю аннотацию":    "Annuler la dernière annotation",
 	"Только копировать":               "Copier seulement",
 	"Только сохранить":                "Enregistrer seulement",
+	"Инструмент «%s»":                 "Outil « %s »",
 	"Общие":                           "Général",
 	"Язык интерфейса":                 "Langue de l'interface",
 	"Окно настроек меняется сразу, оверлей и уведомления при следующем снимке.": "La fenêtre de réglages change tout de suite ; la surcouche et les notifications, à la prochaine capture.",

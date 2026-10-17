@@ -138,11 +138,12 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 		cursor += btn + gap
 	}
 
-	for _, tb := range t.tools {
+	for i, tb := range t.tools {
 		if tb.btn.Clicked(gtx) {
 			m.setTool(tb.tool)
 		}
 		active := m.tool == tb.tool
+		x0 := cursor
 		place(func(g layout.Context) layout.Dimensions {
 			return tb.btn.Layout(g, func(g layout.Context) layout.Dimensions {
 				drawButton(g, active, tb.icon)
@@ -150,6 +151,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 				return layout.Dimensions{Size: g.Constraints.Min}
 			})
 		})
+		m.drawKeyCaption(gtx, image.Pt(x0+btn/2, pad+btn), keyCaption(m.store.Get().Keys.Of(settings.ToolAction(settings.ToolNames[i]))))
 	}
 	cursor += sep - gap
 

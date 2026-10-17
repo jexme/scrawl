@@ -678,6 +678,27 @@ func TestKeys(t *testing.T) {
 	}
 }
 
+// У каждого инструмента есть клавиша, и ключ в файле называется «tool_» + имя инструмента.
+func TestToolKeys(t *testing.T) {
+	sandbox(t)
+	for _, name := range ToolNames {
+		a := ToolAction(name)
+		if DefaultKeys[a] == "" {
+			t.Errorf("у инструмента %s нет клавиши по умолчанию", name)
+		}
+	}
+	writeConfig(t, `{"keys":{"tool_pen":"q","tool_text":"ctrl+t"}}`)
+	k := Load().Keys
+	if k.Of(ActionToolPen) != "Q" || k.Of(ActionToolText) != "Ctrl+T" || k.Of(ActionToolLine) != "L" {
+		t.Errorf("свои клавиши инструментов: %+v", k)
+	}
+	// Клавиша инструмента совпала с умолчанием действия: конфликт, всё по умолчанию.
+	writeConfig(t, `{"keys":{"tool_pen":"A"}}`)
+	if k := Load().Keys; k != (Keys{}) {
+		t.Errorf("P -> A конфликтует с добавлением в подборку: %+v", k)
+	}
+}
+
 func TestLanguageSetting(t *testing.T) {
 	sandbox(t)
 	if got := Load().Language; got != "auto" {

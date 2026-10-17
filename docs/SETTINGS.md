@@ -68,6 +68,16 @@ go back to the defaults.
 | `undo` | `Ctrl+Z` | undo the last annotation |
 | `copy` | `Ctrl+C` | only copy |
 | `save` | `Ctrl+S` | only save |
+| `tool_select` | `V` | switch on the select tool (move the area) |
+| `tool_pen` | `P` | switch on the pen |
+| `tool_line` | `L` | switch on the line |
+| `tool_arrow` | `W` | switch on the arrow (arro**w**) |
+| `tool_rect` | `B` | switch on the box |
+| `tool_marker` | `M` | switch on the marker |
+| `tool_blur` | `U` | switch on the blur (bl**u**r) |
+| `tool_text` | `T` | switch on the text |
+
+The tool keys work once an area is selected.
 
 ## Files
 

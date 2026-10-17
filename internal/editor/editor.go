@@ -487,6 +487,16 @@ func (m *monitor) initKeys() {
 		settings.ActionCopy: func() { m.export(true, false) },
 		settings.ActionSave: func() { m.export(false, true) },
 	}
+	// Клавиши инструментов работают, когда область выбрана: иначе выбор сбросился бы на
+	// инструмент по умолчанию в момент выделения.
+	for t, name := range settings.ToolNames {
+		tool := annotate.Tool(t)
+		actions[settings.ToolAction(name)] = func() {
+			if m.hasSel {
+				m.setTool(tool)
+			}
+		}
+	}
 	m.keys = nil
 	for _, action := range settings.KeyActions {
 		b, ok := keymap.Parse(keys.Of(action))

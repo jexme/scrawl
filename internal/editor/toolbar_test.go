@@ -9,11 +9,13 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
+	"github.com/jexme/scrawl/internal/annotate"
 	"github.com/jexme/scrawl/internal/screencast"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
-// TestToolbarKeyCaptions рисует панель и проверяет, что клавиши написаны только под кнопками
-// с быстрым вызовом, а у инструментов подписей нет. С SCRAWL_TEST_OUT=путь.png результат сохраняется.
+// TestToolbarKeyCaptions рисует панель и проверяет, что клавиши написаны под кнопками
+// с быстрым вызовом (инструменты и действия), а под цветами подписей нет. С SCRAWL_TEST_OUT=путь.png результат сохраняется.
 func TestToolbarKeyCaptions(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	const W, H = 1000, 300
@@ -58,9 +60,13 @@ func TestToolbarKeyCaptions(t *testing.T) {
 		}
 		return n
 	}
-	toolsCaps := light(image.Rect(capRow.Min.X, capRow.Min.Y, capRow.Min.X+8*38, capRow.Max.Y))
-	if toolsCaps != 0 {
-		t.Errorf("под инструментами не должно быть подписей: найдено %d светлых пикселей", toolsCaps)
+	// Под инструментами подписи есть (у каждого своя клавиша), под цветами нет.
+	toolsEnd := bar.Min.X + 6 + 8*38
+	if n := light(image.Rect(bar.Min.X, capRow.Min.Y, toolsEnd, capRow.Max.Y)); n < 60 {
+		t.Errorf("под инструментами нет подписей клавиш: найдено %d светлых пикселей", n)
+	}
+	if n := light(image.Rect(toolsEnd+12, capRow.Min.Y, toolsEnd+12+7*38, capRow.Max.Y)); n != 0 {
+		t.Errorf("под цветами не должно быть подписей: найдено %d светлых пикселей", n)
 	}
 	rightCaps := light(image.Rect(capRow.Max.X-6*38, capRow.Min.Y, capRow.Max.X, capRow.Max.Y))
 	if rightCaps < 40 {
@@ -74,6 +80,36 @@ func TestToolbarKeyCaptions(t *testing.T) {
 		}
 		if err := os.WriteFile(path, data, 0o644); err != nil {
 			t.Fatal(err)
+		}
+	}
+}
+
+// TestToolKeys: клавиша инструмента включает его, но только когда область выбрана.
+func TestToolKeys(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	src := image.NewRGBA(image.Rect(0, 0, 100, 100))
+	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
+	run := func(action string) {
+		t.Helper()
+		for _, kb := range m.keys {
+			if kb.action == action {
+				kb.run()
+				return
+			}
+		}
+		t.Fatalf("действия %q нет среди клавиш", action)
+	}
+
+	m.tool = annotate.ToolSelect
+	run(settings.ToolAction("pen"))
+	if m.tool != annotate.ToolSelect {
+		t.Errorf("без области клавиша инструмента не должна его включать: %v", m.tool)
+	}
+	m.sel, m.hasSel = image.Rect(10, 10, 50, 50), true
+	for t2, name := range settings.ToolNames {
+		run(settings.ToolAction(name))
+		if m.tool != annotate.Tool(t2) {
+			t.Errorf("клавиша %q: инструмент %v, ожидали %v", name, m.tool, annotate.Tool(t2))
 		}
 	}
 }

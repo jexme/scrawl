@@ -140,6 +140,7 @@ at `scrawl`. The last area and the collection start fresh.
 | `Ctrl+Z` | undo the last annotation |
 | `Esc` | cancel |
 | `R` | restore the area of the previous shot |
+| `V` `P` `L` `W` `B` `M` `U` `T` | tools: select, pen, line, arrow, box, marker, blur, text (when an area is selected) |
 | `A` | add the shot to the collection |
 | `G` | glue the collection (and the current area) into one image |
 | `D` | save the collection as separate files and put the file list in the clipboard |
