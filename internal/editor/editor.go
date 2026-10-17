@@ -238,8 +238,9 @@ func (m *monitor) loop() {
 			if !m.reported {
 				m.reported = true
 				if m.cfg.Verbose {
-					fmt.Printf("монитор (%d,%d) %dx%d: картинка на экране через %s от «хоткея»\n",
-						m.frame.X, m.frame.Y, e.Size.X, e.Size.Y, time.Since(m.cfg.T0).Round(time.Millisecond))
+					fs := m.frameSize()
+					fmt.Printf("монитор (%d,%d) окно %dx%d, кадр %dx%d: картинка на экране через %s от «хоткея»\n",
+						m.frame.X, m.frame.Y, e.Size.X, e.Size.Y, fs.X, fs.Y, time.Since(m.cfg.T0).Round(time.Millisecond))
 				}
 			}
 		}
