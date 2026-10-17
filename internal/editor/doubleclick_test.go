@@ -180,7 +180,7 @@ func TestToolDefaultsFromSettings(t *testing.T) {
 
 func TestToolNamesMatchEditorTools(t *testing.T) {
 	order := []annotate.Tool{annotate.ToolSelect, annotate.ToolPen, annotate.ToolLine, annotate.ToolArrow,
-		annotate.ToolRect, annotate.ToolMarker, annotate.ToolBlur, annotate.ToolText}
+		annotate.ToolRect, annotate.ToolMarker, annotate.ToolBlur, annotate.ToolText, annotate.ToolStamp}
 	if len(order) != len(settings.ToolNames) {
 		t.Fatalf("инструментов %d, имён в настройках %d", len(order), len(settings.ToolNames))
 	}

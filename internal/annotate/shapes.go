@@ -36,6 +36,7 @@ const (
 	ToolMarker
 	ToolBlur
 	ToolText
+	ToolStamp // штамп с номером: кружок с цифрой, номера идут по порядку
 )
 
 // Palette — цвета в панели инструментов.
@@ -62,7 +63,7 @@ type Shape struct {
 	Color color.NRGBA
 	Width float32     // толщина линии, пиксели кадра
 	Pts   []f32.Point // ключевые точки
-	Text  string      // только для ToolText
+	Text  string      // только для ToolText и ToolStamp (номер)
 	// Alpha — непрозрачность маркера, 1-255; 0 означает DefaultMarkerAlpha.
 	Alpha uint8
 }
@@ -72,6 +73,9 @@ const DefaultMarkerAlpha = 110
 
 // TextSize возвращает размер шрифта текстовой аннотации в пикселях кадра.
 func TextSize(width float32) float32 { return 12 + width*3 }
+
+// StampRadius возвращает радиус штампа с номером по «толщине» инструмента.
+func StampRadius(width float32) float32 { return 9 + width*2 }
 
 // NewShaper создаёт шрифтовой шейпер для текстовых аннотаций.
 func NewShaper() *text.Shaper {
@@ -92,7 +96,7 @@ func (s Shape) Degenerate() bool {
 		}
 		r := RectOf(s.Pts[0], s.Pts[1])
 		return r.Dx() < 4 || r.Dy() < 4
-	case ToolPen:
+	case ToolPen, ToolStamp:
 		return len(s.Pts) < 1
 	default:
 		if len(s.Pts) < 2 {
@@ -135,6 +139,8 @@ func (s Shape) Draw(ops *op.Ops, env Env) {
 		s.drawBlur(ops, env)
 	case ToolText:
 		drawText(ops, env.Shaper, s.Color, s.Width, s.Pts[0], s.Text)
+	case ToolStamp:
+		drawStamp(ops, env.Shaper, s.Color, s.Width, s.Pts[0], s.Text)
 	}
 }
 
@@ -222,4 +228,60 @@ func drawText(ops *op.Ops, shaper *text.Shaper, c color.NRGBA, width float32, at
 	paint.ColorOp{Color: c}.Add(ops)
 	mat := rec.Stop()
 	widget.Label{}.Layout(gtx, shaper, Font, unit.Sp(TextSize(width)), txt, mat)
+}
+
+// onColor возвращает цвет текста, читаемый на фоне c: тёмный на светлом, белый на тёмном.
+func onColor(c color.NRGBA) color.NRGBA {
+	if lum := 0.299*float32(c.R) + 0.587*float32(c.G) + 0.114*float32(c.B); lum > 150 {
+		return color.NRGBA{R: 20, G: 20, B: 20, A: 255}
+	}
+	return color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+}
+
+// stampTextSize подбирает размер цифр в штампе: чем длиннее номер, тем мельче.
+func stampTextSize(r float32, digits int) float32 {
+	switch {
+	case digits <= 1:
+		return r * 1.3
+	case digits == 2:
+		return r * 1.05
+	case digits == 3:
+		return r * 0.85
+	}
+	return r * 0.68
+}
+
+// drawStamp рисует штамп: закрашенный круг с номером в середине и тонким кольцом того же
+// цвета, что и цифры, чтобы штамп был виден на фоне одного с ним цвета.
+func drawStamp(ops *op.Ops, shaper *text.Shaper, c color.NRGBA, width float32, at f32.Point, num string) {
+	r := StampRadius(width)
+	disc := image.Rect(int(at.X-r), int(at.Y-r), int(at.X+r), int(at.Y+r))
+	fg := onColor(c)
+	paint.FillShape(ops, c, clip.Ellipse(disc).Op(ops))
+
+	ringR := r - float32(math.Max(1.5, float64(r)*0.14))
+	var p clip.Path
+	p.Begin(ops)
+	p.MoveTo(f32.Pt(at.X+ringR, at.Y))
+	p.ArcTo(at, at, 2*math.Pi)
+	ring := fg
+	ring.A = 150
+	paint.FillShape(ops, ring, clip.Stroke{Path: p.End(), Width: float32(math.Max(1, float64(r)*0.07))}.Op())
+
+	if num == "" || shaper == nil {
+		return
+	}
+	gtx := layout.Context{
+		Ops:         ops,
+		Constraints: layout.Constraints{Max: image.Pt(1<<14, 1<<14)},
+		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
+	}
+	rec := op.Record(ops)
+	paint.ColorOp{Color: fg}.Add(ops)
+	mat := rec.Stop()
+	rec = op.Record(ops)
+	dims := widget.Label{MaxLines: 1}.Layout(gtx, shaper, Font, unit.Sp(stampTextSize(r, len(num))), num, mat)
+	label := rec.Stop()
+	defer op.Offset(image.Pt(int(at.X)-dims.Size.X/2, int(at.Y)-dims.Size.Y/2)).Push(ops).Pop()
+	label.Add(ops)
 }

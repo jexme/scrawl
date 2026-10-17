@@ -69,6 +69,7 @@ func newToolbar() *toolbar {
 			{tool: annotate.ToolMarker, icon: iconMarker},
 			{tool: annotate.ToolBlur, icon: iconBlur},
 			{tool: annotate.ToolText, icon: iconText},
+			{tool: annotate.ToolStamp, icon: iconStamp},
 		},
 		colors:   make([]widget.Clickable, len(annotate.Palette)),
 		wMinus:   actionButton{icon: iconMinus},
@@ -445,6 +446,11 @@ func iconPlus(ops *op.Ops, s float32, c color.NRGBA) {
 
 func iconText(ops *op.Ops, s float32, c color.NRGBA) {
 	tabler(ops, s, c, "M4 20l3 0", "M14 20l7 0", "M6.8 15l7.4 0", "M5 20l5.5 -16", "M16 20l-5.5 -16")
+}
+
+// iconStamp: кружок с единицей (Tabler circle-number-1), штамп с номером.
+func iconStamp(ops *op.Ops, s float32, c color.NRGBA) {
+	tabler(ops, s, c, "M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0", "M10 10l2 -2v8")
 }
 
 func iconUndo(ops *op.Ops, s float32, c color.NRGBA) {

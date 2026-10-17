@@ -61,7 +61,7 @@ func TestToolbarKeyCaptions(t *testing.T) {
 		return n
 	}
 	// Под инструментами подписи есть (у каждого своя клавиша), под цветами нет.
-	toolsEnd := bar.Min.X + 6 + 8*38
+	toolsEnd := bar.Min.X + 6 + len(m.bar.tools)*38
 	if n := light(image.Rect(bar.Min.X, capRow.Min.Y, toolsEnd, capRow.Max.Y)); n < 60 {
 		t.Errorf("под инструментами нет подписей клавиш: найдено %d светлых пикселей", n)
 	}

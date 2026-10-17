@@ -32,6 +32,7 @@ const (
 	ActionToolMarker = "tool_marker"
 	ActionToolBlur   = "tool_blur"
 	ActionToolText   = "tool_text"
+	ActionToolStamp  = "tool_stamp"
 )
 
 // ToolAction возвращает действие, которое включает инструмент с именем из ToolNames.
@@ -41,7 +42,7 @@ func ToolAction(tool string) string { return "tool_" + tool }
 var KeyActions = []string{
 	ActionConfirm, ActionCancel, ActionRestore, ActionAdd, ActionGlue, ActionSend, ActionUndo, ActionCopy, ActionSave,
 	ActionWidthUp, ActionWidthDown,
-	ActionToolSelect, ActionToolPen, ActionToolLine, ActionToolArrow, ActionToolRect, ActionToolMarker, ActionToolBlur, ActionToolText,
+	ActionToolSelect, ActionToolPen, ActionToolLine, ActionToolArrow, ActionToolRect, ActionToolMarker, ActionToolBlur, ActionToolText, ActionToolStamp,
 }
 
 // Keys — клавиши действий в виде «Ctrl+Shift+S», «R», «Enter». Пусто: по умолчанию.
@@ -67,6 +68,7 @@ type Keys struct {
 	ToolMarker string `json:"tool_marker,omitempty"`
 	ToolBlur   string `json:"tool_blur,omitempty"`
 	ToolText   string `json:"tool_text,omitempty"`
+	ToolStamp  string `json:"tool_stamp,omitempty"`
 }
 
 // DefaultKeys — клавиши, с которыми программа поставляется.
@@ -77,7 +79,7 @@ var DefaultKeys = map[string]string{
 	ActionWidthUp: "Plus", ActionWidthDown: "Minus",
 	// Инструменты: W от «arroW», B от «Box», U от «blUr»; A, R, D, G заняты действиями выше.
 	ActionToolSelect: "V", ActionToolPen: "P", ActionToolLine: "L", ActionToolArrow: "W",
-	ActionToolRect: "B", ActionToolMarker: "M", ActionToolBlur: "U", ActionToolText: "T",
+	ActionToolRect: "B", ActionToolMarker: "M", ActionToolBlur: "U", ActionToolText: "T", ActionToolStamp: "N",
 }
 
 func (k *Keys) ptr(action string) *string {
@@ -120,6 +122,8 @@ func (k *Keys) ptr(action string) *string {
 		return &k.ToolBlur
 	case ActionToolText:
 		return &k.ToolText
+	case ActionToolStamp:
+		return &k.ToolStamp
 	}
 	return nil
 }

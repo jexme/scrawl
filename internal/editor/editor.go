@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -673,6 +674,9 @@ func (m *monitor) press(p f32.Point) {
 		m.focusEditor = true
 	case annotate.ToolPen, annotate.ToolMarker:
 		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p}, Alpha: m.store.Get().MarkerAlpha()}
+	case annotate.ToolStamp:
+		// Штамп встаёт под курсор сразу; пока кнопка зажата, его можно подвинуть.
+		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p}, Text: strconv.Itoa(m.nextStamp())}
 	default:
 		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p, p}}
 	}
@@ -691,6 +695,8 @@ func (m *monitor) drag(p f32.Point) {
 		switch m.cur.Tool {
 		case annotate.ToolPen, annotate.ToolMarker:
 			m.cur.Pts = append(m.cur.Pts, p)
+		case annotate.ToolStamp:
+			m.cur.Pts[0] = p
 		default:
 			m.cur.Pts[1] = p
 		}
@@ -761,6 +767,18 @@ func (m *monitor) clamp(p f32.Point) f32.Point {
 	p.X = float32(math.Min(math.Max(float64(p.X), float64(r.Min.X)), float64(r.Max.X)))
 	p.Y = float32(math.Min(math.Max(float64(p.Y), float64(r.Min.Y)), float64(r.Max.Y)))
 	return p
+}
+
+// nextStamp возвращает номер нового штампа: на единицу больше, чем уже поставлено. После
+// отмены последнего штампа его номер освобождается.
+func (m *monitor) nextStamp() int {
+	n := 1
+	for _, s := range m.shapes {
+		if s.Tool == annotate.ToolStamp {
+			n++
+		}
+	}
+	return n
 }
 
 func (m *monitor) undo() {

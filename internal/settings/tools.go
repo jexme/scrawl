@@ -8,8 +8,8 @@ import (
 
 // ToolNames — имена инструментов в файле настроек, в порядке инструментов
 // редактора (annotate.Tool): выделение, перо, линия, стрелка, рамка, маркер,
-// размытие, текст.
-var ToolNames = []string{"select", "pen", "line", "arrow", "rect", "marker", "blur", "text"}
+// размытие, текст, штамп с номером.
+var ToolNames = []string{"select", "pen", "line", "arrow", "rect", "marker", "blur", "text", "stamp"}
 
 // Границы толщины инструмента (зеркало annotate.MinWidth/MaxWidth, сверяется тестом).
 const (
@@ -34,6 +34,7 @@ type ToolStyles struct {
 	Marker ToolStyle `json:"marker"`
 	Blur   ToolStyle `json:"blur"`
 	Text   ToolStyle `json:"text"`
+	Stamp  ToolStyle `json:"stamp"`
 }
 
 // Of возвращает указатель на вид инструмента по имени (nil для неизвестного и «select»).
@@ -53,6 +54,8 @@ func (t *ToolStyles) Of(name string) *ToolStyle {
 		return &t.Blur
 	case "text":
 		return &t.Text
+	case "stamp":
+		return &t.Stamp
 	}
 	return nil
 }

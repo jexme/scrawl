@@ -44,7 +44,7 @@ Example:
 | `remember_region` | `true`, `false` | remember the last area, show it at launch, `R` restores it |
 | `include_cursor` | `false`, `true` | draw the mouse cursor into the shot (normal PipeWire capture only: not the Screenshot-portal fallback and not X11) |
 | `custom_color` | empty | your own colour from the rainbow button in the toolbar, `#RRGGBB`; Scrawl writes it when you pick a colour in the overlay, so there is no need to edit it |
-| `default_tool` | `arrow`, `select`, `pen`, `line`, `rect`, `marker`, `blur`, `text` | tool switched on as soon as an area is selected; `select` means switch no tool on (then you can move the area by dragging inside it) |
+| `default_tool` | `arrow`, `select`, `pen`, `line`, `rect`, `marker`, `blur`, `text`, `stamp` | tool switched on as soon as an area is selected; `select` means switch no tool on (then you can move the area by dragging inside it) |
 | `keys` | object | overlay keys, see below |
 | `language` | `auto`, `ru`, `en`, `zh`, `es`, `pt`, `ja`, `de`, `fr`, `ko` | interface language (Russian, English, Chinese, Spanish, Portuguese, Japanese, German, French, Korean); `auto` follows the system locale. Regional forms such as `zh-CN` or `pt_BR` are accepted |
 | `check_updates` | `false`, `true` | ask GitHub Releases for a new version when the settings window and the tray icon start. This is the only network access of the program; the "Check now" button works either way |
@@ -79,6 +79,7 @@ go back to the defaults.
 | `tool_marker` | `M` | switch on the marker |
 | `tool_blur` | `U` | switch on the blur (bl**u**r) |
 | `tool_text` | `T` | switch on the text |
+| `tool_stamp` | `N` | switch on the number stamp (**n**umber): a click puts a circle with the next number, 1, 2, 3 and so on |
 
 The tool keys work once an area is selected.
 
@@ -98,7 +99,7 @@ Two shots in the same second never overwrite each other: `-2`, `-3` is added to 
 | Key | Values (default first) | Meaning |
 | --- | --- | --- |
 | `palette` | list of 8 colours `#RRGGBB` | the colours on the toolbar (default: red, orange, yellow, green, blue, purple, white, black) |
-| `tools` | object per tool | default colour and thickness of each tool: `{"arrow": {"color": "#E53935", "width": 6}}`. Tools: `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text`. Thickness 1-30; for text it is the size, for blur the strength. The colour applies until you pick one on the toolbar yourself |
+| `tools` | object per tool | default colour and thickness of each tool: `{"arrow": {"color": "#E53935", "width": 6}}`. Tools: `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text`, `stamp`. Thickness 1-30; for text it is the size, for blur the strength, for the number stamp the size of the circle. The colour applies until you pick one on the toolbar yourself |
 | `marker_opacity` | `43` (5-100) | marker opacity, % |
 
 ## Appearance of the selection
