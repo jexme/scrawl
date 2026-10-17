@@ -46,6 +46,7 @@ type actionButton struct {
 type toolbar struct {
 	tools    []*toolButton
 	colors   []widget.Clickable
+	custom   widget.Clickable // свой цвет: открывает окошко выбора
 	wMinus   actionButton
 	wPlus    actionButton
 	settings actionButton
@@ -83,8 +84,8 @@ func newToolbar() *toolbar {
 
 // width возвращает ширину панели в пикселях окна.
 func (t *toolbar) width(btn, gap, sep, pad int) int {
-	// Кнопки: инструменты, цвета, «−», значение, «+», шесть действий. Три разделителя.
-	n := len(t.tools) + len(t.colors) + 3 + 6
+	// Кнопки: инструменты, цвета и свой цвет, «−», значение, «+», шесть действий. Три разделителя.
+	n := len(t.tools) + len(t.colors) + 1 + 3 + 6
 	return 2*pad + n*btn + (n-4)*gap + 3*sep
 }
 
@@ -170,6 +171,28 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 			})
 		})
 	}
+
+	// Свой цвет: нажатие выбирает его и открывает окошко с палитрой, второе нажатие закрывает.
+	if t.custom.Clicked(gtx) {
+		if m.pick.open {
+			m.pick.open = false
+		} else {
+			if !m.hasCustom {
+				m.customColor, m.hasCustom = m.color, true
+			}
+			m.pick.open, m.pick.hsv = true, hsvOf(m.customColor)
+			m.color, m.colorPicked = m.customColor, true
+		}
+	}
+	customActive := m.hasCustom && m.color == m.customColor
+	m.pickAnchor = x + cursor + btn/2
+	place(func(g layout.Context) layout.Dimensions {
+		return t.custom.Layout(g, func(g layout.Context) layout.Dimensions {
+			drawCustomSwatch(g, m.customColor, m.hasCustom, customActive || m.pick.open)
+			handCursor(g)
+			return layout.Dimensions{Size: g.Constraints.Min}
+		})
+	})
 	cursor += sep - gap
 
 	// Толщина линии, размер текста, сила размытия: «−», текущее значение, «+».
@@ -313,6 +336,35 @@ func (m *monitor) drawWidthValue(gtx layout.Context, enabled bool) {
 	st := op.Offset(image.Pt(0, (s-dims.Size.Y)/2)).Push(gtx.Ops)
 	label.Add(gtx.Ops)
 	st.Pop()
+}
+
+// drawCustomSwatch рисует кнопку своего цвета: радужное кольцо, а в середине выбранный цвет
+// (пока он не выбран, тёмная точка).
+func drawCustomSwatch(gtx layout.Context, c color.NRGBA, has, active bool) {
+	s := gtx.Constraints.Min.X
+	inset := int(float32(s) * 0.22)
+	if active {
+		ring := clip.Ellipse(image.Rect(inset-3, inset-3, s-inset+3, s-inset+3))
+		paint.FillShape(gtx.Ops, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, ring.Op(gtx.Ops))
+	}
+	outer := image.Rect(inset, inset, s-inset, s-inset)
+	func() {
+		defer clip.Ellipse(outer).Push(gtx.Ops).Pop()
+		seg := float32(outer.Dx()) / 6
+		for i := 0; i < 6; i++ {
+			x0 := float32(outer.Min.X) + float32(i)*seg
+			part := clip.Rect(image.Rect(int(x0), outer.Min.Y, int(x0+seg)+1, outer.Max.Y)).Push(gtx.Ops)
+			paint.LinearGradientOp{Stop1: f32.Pt(x0, 0), Color1: hueStops[i], Stop2: f32.Pt(x0+seg, 0), Color2: hueStops[i+1]}.Add(gtx.Ops)
+			paint.PaintOp{}.Add(gtx.Ops)
+			part.Pop()
+		}
+	}()
+	dot := int(float32(outer.Dx()) * 0.28)
+	fill := barBG
+	if has {
+		fill = c
+	}
+	paint.FillShape(gtx.Ops, fill, clip.Ellipse(image.Rect(outer.Min.X+dot, outer.Min.Y+dot, outer.Max.X-dot, outer.Max.Y-dot)).Op(gtx.Ops))
 }
 
 func drawSwatch(gtx layout.Context, c color.NRGBA, active bool) {

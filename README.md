@@ -152,7 +152,7 @@ Every key can be changed in the settings window (the "Keys" tab).
 ### Toolbar
 
 From left to right: select, pen, line, arrow, box, marker, blur, text · eight
-colours · `−` thickness `+` · settings (closes the overlay and opens the settings
+colours · a rainbow button for your own colour (opens a palette; the colour is remembered) · `−` thickness `+` · settings (closes the overlay and opens the settings
 window) · add to collection · undo · copy · save · close.
 
 The buttons that have a key show it under the icon (the keys come from the settings).

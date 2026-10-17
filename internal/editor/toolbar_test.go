@@ -18,7 +18,7 @@ import (
 // с быстрым вызовом (инструменты и действия), а под цветами подписей нет. С SCRAWL_TEST_OUT=путь.png результат сохраняется.
 func TestToolbarKeyCaptions(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	const W, H = 1000, 300
+	const W, H = 1100, 300
 	src := image.NewRGBA(image.Rect(0, 0, W, H))
 	for i := 0; i < len(src.Pix); i += 4 {
 		src.Pix[i], src.Pix[i+1], src.Pix[i+2], src.Pix[i+3] = 60, 70, 90, 255

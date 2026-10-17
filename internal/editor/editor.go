@@ -147,10 +147,15 @@ type monitor struct {
 	lastBtn widget.Clickable
 	tol     float32 // допуск попадания в ручку, пиксели кадра
 
-	tool    annotate.Tool
-	color   color.NRGBA
-	keys    []keyBinding                      // клавиши оверлея по настройкам
-	palette [settings.PaletteSize]color.NRGBA // цвета панели из настроек
+	tool  annotate.Tool
+	color color.NRGBA
+	// Свой цвет из палитры панели: запоминается в настройках. pick — окошко его выбора.
+	customColor color.NRGBA
+	hasCustom   bool
+	pick        picker
+	pickAnchor  int                               // середина кнопки своего цвета в пикселях окна
+	keys        []keyBinding                      // клавиши оверлея по настройкам
+	palette     [settings.PaletteSize]color.NRGBA // цвета панели из настроек
 	// colorPicked: цвет выбран в панели вручную, цвета инструментов из настроек больше не применяются.
 	colorPicked bool
 	widths      map[annotate.Tool]float32 // толщина или сила для каждого инструмента отдельно
@@ -184,6 +189,9 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 	m.initKeys()
 	m.palette = m.store.Get().PaletteColors()
 	m.color = m.palette[0]
+	if c, err := settings.ParseColor(m.store.Get().CustomColor); err == nil {
+		m.customColor, m.hasCustom = c, true
+	}
 	if !cfg.Fresh && m.store.Get().RememberRegion {
 		m.last, m.hasLast = loadLastRegion(f)
 		// Если собирают подборку («было/стало»), снимать «стало» нужно в том же
@@ -273,6 +281,7 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 			int(float32(m.sel.Max.X)*sx), int(float32(m.sel.Max.Y)*sy),
 		)
 		m.layoutToolbar(gtx, win, m.selWin)
+		m.layoutPicker(gtx, win, m.barRect, m.pickAnchor)
 		if m.store.Get().ShowSize {
 			m.layoutSizeLabel(gtx, m.selWin)
 		}
@@ -568,6 +577,7 @@ func (m *monitor) claim() {
 
 // resetState убирает выделение, рисунки и редактирование текста.
 func (m *monitor) resetState() {
+	m.pick.open = false
 	m.dragging = false
 	m.adjust = adjustNone
 	m.hasSel = false
@@ -620,6 +630,10 @@ func (m *monitor) useDefaultTool() {
 }
 
 func (m *monitor) press(p f32.Point) {
+	if m.pick.open {
+		m.pick.open = false // клик мимо окошка цвета закрывает его
+		return
+	}
 	if m.editing {
 		m.commitText()
 	}
