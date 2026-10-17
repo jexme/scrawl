@@ -53,6 +53,29 @@ func TestParseAndMatch(t *testing.T) {
 	}
 }
 
+func TestPlusMinus(t *testing.T) {
+	plus, ok := Parse("Plus")
+	if !ok || !plus.IgnoreShift {
+		t.Fatalf("Plus: %+v %v", plus, ok)
+	}
+	for _, e := range []key.Event{press("+", 0), press("+", key.ModShift), press("=", 0), press("=", key.ModShift)} {
+		if !plus.Matches(e) {
+			t.Errorf("Plus должен совпасть с %+v", e)
+		}
+	}
+	if plus.Matches(press("+", key.ModCtrl)) || plus.Matches(press("-", 0)) {
+		t.Error("Ctrl+«+» и «-» не плюс")
+	}
+	minus, _ := Parse("Minus")
+	if !minus.Matches(press("-", 0)) || !minus.Matches(press("_", key.ModShift)) || minus.Matches(press("=", 0)) {
+		t.Error("Minus совпадает с «-» и «_», но не с «=»")
+	}
+	ctrlPlus, _ := Parse("Ctrl+Plus")
+	if !ctrlPlus.Matches(press("+", key.ModCtrl|key.ModShift)) || ctrlPlus.Matches(press("+", 0)) {
+		t.Error("Ctrl+Plus: Ctrl обязателен, Shift нет")
+	}
+}
+
 func TestChordFromEvent(t *testing.T) {
 	cases := []struct {
 		e    key.Event
@@ -68,7 +91,13 @@ func TestChordFromEvent(t *testing.T) {
 		{press("F5", 0), "F5", true},
 		{press("F12", key.ModCtrl), "Ctrl+F12", true},
 		{press(key.NameCtrl, key.ModCtrl), "", false}, // нажали только модификатор
-		{press("-", 0), "", false},
+		{press("+", key.ModShift), "Plus", true},      // «+» набирают с Shift: это просто плюс
+		{press("=", 0), "Plus", true},
+		{press("+", 0), "Plus", true}, // цифровая клавиатура
+		{press("-", 0), "Minus", true},
+		{press("_", key.ModShift), "Minus", true},
+		{press("+", key.ModCtrl|key.ModShift), "Ctrl+Plus", true},
+		{press("*", 0), "", false},
 		{key.Event{Name: "R", State: key.Release}, "", false},
 	}
 	for _, c := range cases {
@@ -96,7 +125,7 @@ func TestAgreesWithSettings(t *testing.T) {
 			t.Errorf("%s: настройки не принимают %q: %v", action, back, err)
 		}
 	}
-	for _, name := range []string{"Enter", "Escape", "Space", "Tab", "Backspace", "Delete", "Home", "End", "PageUp", "PageDown", "Up", "Down", "Left", "Right", "F1", "F9", "F10", "F12", "A", "0"} {
+	for _, name := range []string{"Enter", "Escape", "Space", "Tab", "Backspace", "Delete", "Home", "End", "PageUp", "PageDown", "Up", "Down", "Left", "Right", "Plus", "Minus", "F1", "F9", "F10", "F12", "A", "0"} {
 		b, ok := Parse(name)
 		if !ok {
 			t.Errorf("%s не разбирается", name)

@@ -27,7 +27,7 @@ is one key press: the frozen screen appears in about 150 ms.
 - Optional mouse cursor in the shot (Wayland only for now).
 
 **Annotate**
-- Pen, line, arrow, box, marker, **blur** and text; eight colours.
+- Pen, line, arrow, box, marker, **blur**, text and **numbered stamps** (a click puts a circle with 1, 2, 3 and so on, like in flameshot); eight colours.
 - Mouse wheel (or the `−` / `+` buttons) changes the thickness, the text size or the blur strength.
 - Undo with `Ctrl+Z`.
 
@@ -140,6 +140,8 @@ at `scrawl`. The last area and the collection start fresh.
 | `Ctrl+Z` | undo the last annotation |
 | `Esc` | cancel |
 | `R` | restore the area of the previous shot |
+| `V` `P` `L` `W` `B` `M` `U` `T` `N` | tools: select, pen, line, arrow, box, marker, blur, text, number stamp (when an area is selected) |
+| `+` / `-` | thickness, text size or blur strength of the current tool (like the mouse wheel) |
 | `A` | add the shot to the collection |
 | `G` | glue the collection (and the current area) into one image |
 | `D` | save the collection as separate files and put the file list in the clipboard |
@@ -149,9 +151,15 @@ Every key can be changed in the settings window (the "Keys" tab).
 
 ### Toolbar
 
-From left to right: select, pen, line, arrow, box, marker, blur, text · eight
-colours · `−` thickness `+` · settings (closes the overlay and opens the settings
-window) · add to collection · undo · copy · save · close.
+The main row, from left to right: select, pen, line, arrow, box, marker, blur, text, number
+stamp · undo · copy · save · the `⋯` menu (settings, which closes the overlay and opens the settings
+window, and add to collection) · close.
+
+While a drawing tool is on, a second row appears under it: eight colours, a rainbow button for
+your own colour (opens a palette; the colour is remembered) and `−` thickness `+`. The "select"
+tool has neither, so the row is hidden.
+
+The buttons that have a key show it under the icon (the keys come from the settings).
 
 ### Before/after collections
 

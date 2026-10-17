@@ -11,6 +11,7 @@ import (
 	"math"
 
 	"gioui.org/f32"
+	"gioui.org/font"
 	"gioui.org/font/gofont"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -36,6 +37,7 @@ const (
 	ToolMarker
 	ToolBlur
 	ToolText
+	ToolStamp // штамп с номером: кружок с цифрой, номера идут по порядку
 )
 
 // Palette — цвета в панели инструментов.
@@ -62,7 +64,7 @@ type Shape struct {
 	Color color.NRGBA
 	Width float32     // толщина линии, пиксели кадра
 	Pts   []f32.Point // ключевые точки
-	Text  string      // только для ToolText
+	Text  string      // только для ToolText и ToolStamp (номер)
 	// Alpha — непрозрачность маркера, 1-255; 0 означает DefaultMarkerAlpha.
 	Alpha uint8
 }
@@ -72,6 +74,9 @@ const DefaultMarkerAlpha = 110
 
 // TextSize возвращает размер шрифта текстовой аннотации в пикселях кадра.
 func TextSize(width float32) float32 { return 12 + width*3 }
+
+// StampRadius возвращает радиус штампа с номером по «толщине» инструмента.
+func StampRadius(width float32) float32 { return 12 + width*2.5 }
 
 // NewShaper создаёт шрифтовой шейпер для текстовых аннотаций.
 func NewShaper() *text.Shaper {
@@ -92,7 +97,7 @@ func (s Shape) Degenerate() bool {
 		}
 		r := RectOf(s.Pts[0], s.Pts[1])
 		return r.Dx() < 4 || r.Dy() < 4
-	case ToolPen:
+	case ToolPen, ToolStamp:
 		return len(s.Pts) < 1
 	default:
 		if len(s.Pts) < 2 {
@@ -135,6 +140,8 @@ func (s Shape) Draw(ops *op.Ops, env Env) {
 		s.drawBlur(ops, env)
 	case ToolText:
 		drawText(ops, env.Shaper, s.Color, s.Width, s.Pts[0], s.Text)
+	case ToolStamp:
+		drawStamp(ops, env.Shaper, s.Color, s.Width, s.Pts[0], s.Text)
 	}
 }
 
@@ -223,3 +230,73 @@ func drawText(ops *op.Ops, shaper *text.Shaper, c color.NRGBA, width float32, at
 	mat := rec.Stop()
 	widget.Label{}.Layout(gtx, shaper, Font, unit.Sp(TextSize(width)), txt, mat)
 }
+
+// onColor возвращает цвет текста, читаемый на фоне c: тёмный на светлом, белый на тёмном.
+func onColor(c color.NRGBA) color.NRGBA {
+	if lum := 0.299*float32(c.R) + 0.587*float32(c.G) + 0.114*float32(c.B); lum > 150 {
+		return color.NRGBA{R: 20, G: 20, B: 20, A: 255}
+	}
+	return color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+}
+
+// stampTextSize подбирает размер цифр в штампе: чем длиннее номер, тем мельче.
+func stampTextSize(r float32, digits int) float32 {
+	switch {
+	case digits <= 1:
+		return r * 1.25
+	case digits == 2:
+		return r * 1.0
+	case digits == 3:
+		return r * 0.8
+	}
+	return r * 0.64
+}
+
+// stampFont — шрифт цифр штампа: жирный, чтобы цифры читались на любом фоне.
+var stampFont = font.Font{Typeface: Font.Typeface, Weight: font.Bold}
+
+// drawStamp рисует штамп: цветной круг в ободке цвета цифр (светлом на тёмном, тёмном на
+// светлом), мягкая тень снизу и жирный номер строго в середине.
+func drawStamp(ops *op.Ops, shaper *text.Shaper, c color.NRGBA, width float32, at f32.Point, num string) {
+	r := StampRadius(width)
+	fg := onColor(c)
+
+	circle := func(radius, dy float32) clip.Op {
+		return clip.Ellipse(image.Rect(
+			int(math.Round(float64(at.X-radius))), int(math.Round(float64(at.Y+dy-radius))),
+			int(math.Round(float64(at.X+radius))), int(math.Round(float64(at.Y+dy+radius))))).Op(ops)
+	}
+	// Тень: несколько прозрачных кругов друг в друге, чуть сдвинутых вниз.
+	for _, sh := range []struct {
+		grow float32
+		a    uint8
+	}{{0.16, 14}, {0.10, 18}, {0.05, 22}} {
+		paint.FillShape(ops, color.NRGBA{A: sh.a}, circle(r*(1+sh.grow), r*0.08))
+	}
+	paint.FillShape(ops, fg, circle(r, 0))
+	paint.FillShape(ops, c, circle(r*0.84, 0))
+
+	if num == "" || shaper == nil {
+		return
+	}
+	gtx := layout.Context{
+		Ops:         ops,
+		Constraints: layout.Constraints{Max: image.Pt(1<<14, 1<<14)},
+		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
+	}
+	size := stampTextSize(r, len(num))
+	rec := op.Record(ops)
+	paint.ColorOp{Color: fg}.Add(ops)
+	mat := rec.Stop()
+	rec = op.Record(ops)
+	dims := widget.Label{MaxLines: 1}.Layout(gtx, shaper, stampFont, unit.Sp(size), num, mat)
+	label := rec.Stop()
+	// Цифра стоит на базовой линии: середину цифр (половина её высоты над линией) ставим в центр круга.
+	baseline := float32(dims.Size.Y - dims.Baseline)
+	top := at.Y - baseline + size*digitHeight/2
+	defer op.Offset(image.Pt(int(math.Round(float64(at.X)))-dims.Size.X/2, int(math.Round(float64(top))))).Push(ops).Pop()
+	label.Add(ops)
+}
+
+// digitHeight — высота цифры шрифта Go в долях размера шрифта.
+const digitHeight = 0.72

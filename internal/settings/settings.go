@@ -74,6 +74,9 @@ type Settings struct {
 	HandleRadius float64 `json:"handle_radius"`
 	// ShowSize — показывать подпись «W × H» у выделенной области.
 	ShowSize bool `json:"show_size"`
+	// CustomColor — свой цвет из палитры на панели инструментов, #RRGGBB; пусто: не выбран.
+	// Записывается самой программой, когда цвет выбрали в оверлее.
+	CustomColor string `json:"custom_color,omitempty"`
 	// DefaultTool — инструмент, который включается сразу после выбора области
 	// (одно из ToolNames).
 	DefaultTool string `json:"default_tool"`
@@ -164,6 +167,11 @@ func (s *Settings) normalize() {
 		s.Language = def.Language
 	}
 	s.Keys.normalize()
+	if c, err := ParseColor(s.CustomColor); err == nil {
+		s.CustomColor = FormatColor(c)
+	} else {
+		s.CustomColor = ""
+	}
 	if s.Format != FormatPNG && s.Format != FormatJPEG {
 		s.Format = def.Format
 	}

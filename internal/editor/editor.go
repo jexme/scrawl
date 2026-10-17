@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -132,8 +133,15 @@ type monitor struct {
 	dock   dock
 
 	// Положение элементов в пикселях окна: нужно, чтобы док не перекрывал выделение и панель.
-	selWin  image.Rectangle
-	barRect image.Rectangle
+	selWin   image.Rectangle
+	barRect  image.Rectangle // панель целиком (оба ряда, если виден второй)
+	mainRow  image.Rectangle // основной ряд
+	barSpace image.Rectangle // место под оба ряда, даже если второй скрыт: док его не перекрывает
+	barBelow bool            // панель под выделением (второй ряд ниже основного), иначе над ним
+
+	// Меню «⋯» на панели.
+	menuOpen   bool
+	menuAnchor int // середина кнопки «⋯» в пикселях окна
 
 	// Плашка с новым значением силы инструмента.
 	toastUntil time.Time
@@ -147,10 +155,15 @@ type monitor struct {
 	lastBtn widget.Clickable
 	tol     float32 // допуск попадания в ручку, пиксели кадра
 
-	tool    annotate.Tool
-	color   color.NRGBA
-	keys    []keyBinding                      // клавиши оверлея по настройкам
-	palette [settings.PaletteSize]color.NRGBA // цвета панели из настроек
+	tool  annotate.Tool
+	color color.NRGBA
+	// Свой цвет из палитры панели: запоминается в настройках. pick — окошко его выбора.
+	customColor color.NRGBA
+	hasCustom   bool
+	pick        picker
+	pickAnchor  int                               // середина кнопки своего цвета в пикселях окна
+	keys        []keyBinding                      // клавиши оверлея по настройкам
+	palette     [settings.PaletteSize]color.NRGBA // цвета панели из настроек
 	// colorPicked: цвет выбран в панели вручную, цвета инструментов из настроек больше не применяются.
 	colorPicked bool
 	widths      map[annotate.Tool]float32 // толщина или сила для каждого инструмента отдельно
@@ -184,6 +197,9 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 	m.initKeys()
 	m.palette = m.store.Get().PaletteColors()
 	m.color = m.palette[0]
+	if c, err := settings.ParseColor(m.store.Get().CustomColor); err == nil {
+		m.customColor, m.hasCustom = c, true
+	}
 	if !cfg.Fresh && m.store.Get().RememberRegion {
 		m.last, m.hasLast = loadLastRegion(f)
 		// Если собирают подборку («было/стало»), снимать «стало» нужно в том же
@@ -266,13 +282,14 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 	m.layoutEditor(gtx)
 	scale.Pop()
 
-	m.selWin, m.barRect = image.Rectangle{}, image.Rectangle{}
+	m.selWin, m.barRect, m.mainRow, m.barSpace = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}, image.Rectangle{}
 	if m.hasSel {
 		m.selWin = image.Rect(
 			int(float32(m.sel.Min.X)*sx), int(float32(m.sel.Min.Y)*sy),
 			int(float32(m.sel.Max.X)*sx), int(float32(m.sel.Max.Y)*sy),
 		)
 		m.layoutToolbar(gtx, win, m.selWin)
+		m.layoutPicker(gtx, win, m.barRect, m.pickAnchor)
 		if m.store.Get().ShowSize {
 			m.layoutSizeLabel(gtx, m.selWin)
 		}
@@ -487,6 +504,18 @@ func (m *monitor) initKeys() {
 		settings.ActionCopy: func() { m.export(true, false) },
 		settings.ActionSave: func() { m.export(false, true) },
 	}
+	actions[settings.ActionWidthUp] = func() { m.bumpWidth(1) }
+	actions[settings.ActionWidthDown] = func() { m.bumpWidth(-1) }
+	// Клавиши инструментов работают, когда область выбрана: иначе выбор сбросился бы на
+	// инструмент по умолчанию в момент выделения.
+	for t, name := range settings.ToolNames {
+		tool := annotate.Tool(t)
+		actions[settings.ToolAction(name)] = func() {
+			if m.hasSel {
+				m.setTool(tool)
+			}
+		}
+	}
 	m.keys = nil
 	for _, action := range settings.KeyActions {
 		b, ok := keymap.Parse(keys.Of(action))
@@ -556,6 +585,7 @@ func (m *monitor) claim() {
 
 // resetState убирает выделение, рисунки и редактирование текста.
 func (m *monitor) resetState() {
+	m.pick.open, m.menuOpen = false, false
 	m.dragging = false
 	m.adjust = adjustNone
 	m.hasSel = false
@@ -608,6 +638,10 @@ func (m *monitor) useDefaultTool() {
 }
 
 func (m *monitor) press(p f32.Point) {
+	if m.pick.open || m.menuOpen {
+		m.pick.open, m.menuOpen = false, false // клик мимо окошка цвета или меню закрывает его
+		return
+	}
 	if m.editing {
 		m.commitText()
 	}
@@ -647,6 +681,9 @@ func (m *monitor) press(p f32.Point) {
 		m.focusEditor = true
 	case annotate.ToolPen, annotate.ToolMarker:
 		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p}, Alpha: m.store.Get().MarkerAlpha()}
+	case annotate.ToolStamp:
+		// Штамп встаёт под курсор сразу; пока кнопка зажата, его можно подвинуть.
+		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p}, Text: strconv.Itoa(m.nextStamp())}
 	default:
 		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p, p}}
 	}
@@ -665,6 +702,8 @@ func (m *monitor) drag(p f32.Point) {
 		switch m.cur.Tool {
 		case annotate.ToolPen, annotate.ToolMarker:
 			m.cur.Pts = append(m.cur.Pts, p)
+		case annotate.ToolStamp:
+			m.cur.Pts[0] = p
 		default:
 			m.cur.Pts[1] = p
 		}
@@ -735,6 +774,18 @@ func (m *monitor) clamp(p f32.Point) f32.Point {
 	p.X = float32(math.Min(math.Max(float64(p.X), float64(r.Min.X)), float64(r.Max.X)))
 	p.Y = float32(math.Min(math.Max(float64(p.Y), float64(r.Min.Y)), float64(r.Max.Y)))
 	return p
+}
+
+// nextStamp возвращает номер нового штампа: на единицу больше, чем уже поставлено. После
+// отмены последнего штампа его номер освобождается.
+func (m *monitor) nextStamp() int {
+	n := 1
+	for _, s := range m.shapes {
+		if s.Tool == annotate.ToolStamp {
+			n++
+		}
+	}
+	return n
 }
 
 func (m *monitor) undo() {

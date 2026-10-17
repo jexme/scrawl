@@ -19,10 +19,31 @@ const (
 	ActionUndo    = "undo"    // отменить последнюю аннотацию
 	ActionCopy    = "copy"    // только копировать
 	ActionSave    = "save"    // только сохранить
+
+	ActionWidthUp   = "width_up"   // толще: толщина, размер текста или сила размытия
+	ActionWidthDown = "width_down" // тоньше
+
+	// Выбор инструмента: действие называется «tool_» и имя из ToolNames.
+	ActionToolSelect = "tool_select"
+	ActionToolPen    = "tool_pen"
+	ActionToolLine   = "tool_line"
+	ActionToolArrow  = "tool_arrow"
+	ActionToolRect   = "tool_rect"
+	ActionToolMarker = "tool_marker"
+	ActionToolBlur   = "tool_blur"
+	ActionToolText   = "tool_text"
+	ActionToolStamp  = "tool_stamp"
 )
 
+// ToolAction возвращает действие, которое включает инструмент с именем из ToolNames.
+func ToolAction(tool string) string { return "tool_" + tool }
+
 // KeyActions — все действия в порядке показа в окне настроек.
-var KeyActions = []string{ActionConfirm, ActionCancel, ActionRestore, ActionAdd, ActionGlue, ActionSend, ActionUndo, ActionCopy, ActionSave}
+var KeyActions = []string{
+	ActionConfirm, ActionCancel, ActionRestore, ActionAdd, ActionGlue, ActionSend, ActionUndo, ActionCopy, ActionSave,
+	ActionWidthUp, ActionWidthDown,
+	ActionToolSelect, ActionToolPen, ActionToolLine, ActionToolArrow, ActionToolRect, ActionToolMarker, ActionToolBlur, ActionToolText, ActionToolStamp,
+}
 
 // Keys — клавиши действий в виде «Ctrl+Shift+S», «R», «Enter». Пусто: по умолчанию.
 type Keys struct {
@@ -35,12 +56,30 @@ type Keys struct {
 	Undo    string `json:"undo,omitempty"`
 	Copy    string `json:"copy,omitempty"`
 	Save    string `json:"save,omitempty"`
+
+	WidthUp   string `json:"width_up,omitempty"`
+	WidthDown string `json:"width_down,omitempty"`
+
+	ToolSelect string `json:"tool_select,omitempty"`
+	ToolPen    string `json:"tool_pen,omitempty"`
+	ToolLine   string `json:"tool_line,omitempty"`
+	ToolArrow  string `json:"tool_arrow,omitempty"`
+	ToolRect   string `json:"tool_rect,omitempty"`
+	ToolMarker string `json:"tool_marker,omitempty"`
+	ToolBlur   string `json:"tool_blur,omitempty"`
+	ToolText   string `json:"tool_text,omitempty"`
+	ToolStamp  string `json:"tool_stamp,omitempty"`
 }
 
 // DefaultKeys — клавиши, с которыми программа поставляется.
 var DefaultKeys = map[string]string{
 	ActionConfirm: "Enter", ActionCancel: "Escape", ActionRestore: "R", ActionAdd: "A",
 	ActionGlue: "G", ActionSend: "D", ActionUndo: "Ctrl+Z", ActionCopy: "Ctrl+C", ActionSave: "Ctrl+S",
+	// Плюс и минус: Shift у «+» на обычной раскладке не нужен, программа его игнорирует.
+	ActionWidthUp: "Plus", ActionWidthDown: "Minus",
+	// Инструменты: W от «arroW», B от «Box», U от «blUr»; A, R, D, G заняты действиями выше.
+	ActionToolSelect: "V", ActionToolPen: "P", ActionToolLine: "L", ActionToolArrow: "W",
+	ActionToolRect: "B", ActionToolMarker: "M", ActionToolBlur: "U", ActionToolText: "T", ActionToolStamp: "N",
 }
 
 func (k *Keys) ptr(action string) *string {
@@ -63,6 +102,28 @@ func (k *Keys) ptr(action string) *string {
 		return &k.Copy
 	case ActionSave:
 		return &k.Save
+	case ActionWidthUp:
+		return &k.WidthUp
+	case ActionWidthDown:
+		return &k.WidthDown
+	case ActionToolSelect:
+		return &k.ToolSelect
+	case ActionToolPen:
+		return &k.ToolPen
+	case ActionToolLine:
+		return &k.ToolLine
+	case ActionToolArrow:
+		return &k.ToolArrow
+	case ActionToolRect:
+		return &k.ToolRect
+	case ActionToolMarker:
+		return &k.ToolMarker
+	case ActionToolBlur:
+		return &k.ToolBlur
+	case ActionToolText:
+		return &k.ToolText
+	case ActionToolStamp:
+		return &k.ToolStamp
 	}
 	return nil
 }
@@ -86,7 +147,7 @@ func (k *Keys) Set(action, chord string) {
 }
 
 // Допустимые клавиши кроме букв, цифр и F1-F12.
-var namedKeys = []string{"Enter", "Escape", "Space", "Tab", "Backspace", "Delete", "Home", "End", "PageUp", "PageDown", "Up", "Down", "Left", "Right"}
+var namedKeys = []string{"Enter", "Escape", "Space", "Tab", "Backspace", "Delete", "Home", "End", "PageUp", "PageDown", "Up", "Down", "Left", "Right", "Plus", "Minus"}
 
 func validKeyName(k string) bool {
 	if len(k) == 1 && (k[0] >= 'A' && k[0] <= 'Z' || k[0] >= '0' && k[0] <= '9') {

@@ -678,6 +678,43 @@ func TestKeys(t *testing.T) {
 	}
 }
 
+// У каждого инструмента есть клавиша, и ключ в файле называется «tool_» + имя инструмента.
+func TestToolKeys(t *testing.T) {
+	sandbox(t)
+	for _, name := range ToolNames {
+		a := ToolAction(name)
+		if DefaultKeys[a] == "" {
+			t.Errorf("у инструмента %s нет клавиши по умолчанию", name)
+		}
+	}
+	writeConfig(t, `{"keys":{"tool_pen":"q","tool_text":"ctrl+t"}}`)
+	k := Load().Keys
+	if k.Of(ActionToolPen) != "Q" || k.Of(ActionToolText) != "Ctrl+T" || k.Of(ActionToolLine) != "L" {
+		t.Errorf("свои клавиши инструментов: %+v", k)
+	}
+	// Клавиша инструмента совпала с умолчанием действия: конфликт, всё по умолчанию.
+	writeConfig(t, `{"keys":{"tool_pen":"A"}}`)
+	if k := Load().Keys; k != (Keys{}) {
+		t.Errorf("P -> A конфликтует с добавлением в подборку: %+v", k)
+	}
+}
+
+func TestStampTool(t *testing.T) {
+	sandbox(t)
+	if DefaultKeys[ActionToolStamp] != "N" {
+		t.Errorf("штамп: клавиша по умолчанию %q", DefaultKeys[ActionToolStamp])
+	}
+	tools := Load().Tools
+	if ToolNames[len(ToolNames)-1] != "stamp" || tools.Of("stamp") == nil {
+		t.Error("штамп должен быть последним инструментом и иметь вид по умолчанию")
+	}
+	writeConfig(t, `{"default_tool":"stamp","tools":{"stamp":{"color":"#1e88e5","width":8}}}`)
+	got := Load()
+	if got.DefaultTool != "stamp" || got.Tools.Stamp.Color != "#1E88E5" || got.Tools.Stamp.Width != 8 {
+		t.Errorf("настройки штампа: %q %+v", got.DefaultTool, got.Tools.Stamp)
+	}
+}
+
 func TestLanguageSetting(t *testing.T) {
 	sandbox(t)
 	if got := Load().Language; got != "auto" {

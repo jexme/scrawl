@@ -29,6 +29,8 @@ func widthLabel(t annotate.Tool) string {
 		return i18n.T("Размер текста")
 	case annotate.ToolBlur:
 		return i18n.T("Сила размытия")
+	case annotate.ToolStamp:
+		return i18n.T("Размер штампа")
 	case annotate.ToolMarker:
 		return i18n.T("Толщина маркера")
 	default:
@@ -84,7 +86,7 @@ func (m *monitor) layoutToast(gtx layout.Context, win image.Point, selWin image.
 	label := rec.Stop()
 
 	// Образец: отрезок нужной толщины тем же цветом. Для текста и размытия образца нет.
-	sample := m.toastMsg == "" && m.toastTool != annotate.ToolText && m.toastTool != annotate.ToolBlur
+	sample := m.toastMsg == "" && m.toastTool != annotate.ToolText && m.toastTool != annotate.ToolBlur && m.toastTool != annotate.ToolStamp
 	sampleW := 0
 	lineW := float32(m.toastValue)
 	if m.toastTool == annotate.ToolMarker {

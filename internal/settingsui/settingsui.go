@@ -639,7 +639,7 @@ type toolRow struct {
 }
 
 // toolLabels — названия инструментов в окне, в порядке settings.ToolNames.
-var toolLabels = []string{"Выделение", "Перо", "Линия", "Стрелка", "Рамка", "Маркер", "Размытие", "Текст"}
+var toolLabels = []string{"Выделение", "Перо", "Линия", "Стрелка", "Рамка", "Маркер", "Размытие", "Текст", "Номер"}
 
 // initTools создаёт строки инструментов и выбор инструмента по умолчанию.
 func (s *state) initTools(cur settings.Settings) {

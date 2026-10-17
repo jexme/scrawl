@@ -43,7 +43,8 @@ Example:
 | `notifications` | `true`, `false` | notifications after a shot; errors are always shown |
 | `remember_region` | `true`, `false` | remember the last area, show it at launch, `R` restores it |
 | `include_cursor` | `false`, `true` | draw the mouse cursor into the shot (normal PipeWire capture only: not the Screenshot-portal fallback and not X11) |
-| `default_tool` | `arrow`, `select`, `pen`, `line`, `rect`, `marker`, `blur`, `text` | tool switched on as soon as an area is selected; `select` means switch no tool on (then you can move the area by dragging inside it) |
+| `custom_color` | empty | your own colour from the rainbow button in the toolbar, `#RRGGBB`; Scrawl writes it when you pick a colour in the overlay, so there is no need to edit it |
+| `default_tool` | `arrow`, `select`, `pen`, `line`, `rect`, `marker`, `blur`, `text`, `stamp` | tool switched on as soon as an area is selected; `select` means switch no tool on (then you can move the area by dragging inside it) |
 | `keys` | object | overlay keys, see below |
 | `language` | `auto`, `ru`, `en`, `zh`, `es`, `pt`, `ja`, `de`, `fr`, `ko` | interface language (Russian, English, Chinese, Spanish, Portuguese, Japanese, German, French, Korean); `auto` follows the system locale. Regional forms such as `zh-CN` or `pt_BR` are accepted |
 | `check_updates` | `false`, `true` | ask GitHub Releases for a new version when the settings window and the tray icon start. This is the only network access of the program; the "Check now" button works either way |
@@ -53,7 +54,7 @@ Example:
 `keys` maps an action to a key. A key is written like `R`, `Enter`, `F5`,
 `Ctrl+Z` or `Ctrl+Shift+S` (modifiers: `Ctrl`, `Shift`, `Alt`; keys: letters,
 digits, `F1`-`F12`, `Enter`, `Escape`, `Space`, `Tab`, `Backspace`, `Delete`,
-`Home`, `End`, `PageUp`, `PageDown`, `Up`, `Down`, `Left`, `Right`). An empty
+`Home`, `End`, `PageUp`, `PageDown`, `Up`, `Down`, `Left`, `Right`, `Plus`, `Minus`). An empty
 value means the default. Two actions cannot share a key: if they do, all keys
 go back to the defaults.
 
@@ -68,6 +69,19 @@ go back to the defaults.
 | `undo` | `Ctrl+Z` | undo the last annotation |
 | `copy` | `Ctrl+C` | only copy |
 | `save` | `Ctrl+S` | only save |
+| `width_up` | `Plus` | thicker line, bigger text or stronger blur (like the mouse wheel up); `Shift` is ignored, so `+` and `=` both work |
+| `width_down` | `Minus` | thinner line, smaller text or weaker blur |
+| `tool_select` | `V` | switch on the select tool (move the area) |
+| `tool_pen` | `P` | switch on the pen |
+| `tool_line` | `L` | switch on the line |
+| `tool_arrow` | `W` | switch on the arrow (arro**w**) |
+| `tool_rect` | `B` | switch on the box |
+| `tool_marker` | `M` | switch on the marker |
+| `tool_blur` | `U` | switch on the blur (bl**u**r) |
+| `tool_text` | `T` | switch on the text |
+| `tool_stamp` | `N` | switch on the number stamp (**n**umber): a click puts a circle with the next number, 1, 2, 3 and so on |
+
+The tool keys work once an area is selected.
 
 ## Files
 
@@ -85,7 +99,7 @@ Two shots in the same second never overwrite each other: `-2`, `-3` is added to 
 | Key | Values (default first) | Meaning |
 | --- | --- | --- |
 | `palette` | list of 8 colours `#RRGGBB` | the colours on the toolbar (default: red, orange, yellow, green, blue, purple, white, black) |
-| `tools` | object per tool | default colour and thickness of each tool: `{"arrow": {"color": "#E53935", "width": 6}}`. Tools: `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text`. Thickness 1-30; for text it is the size, for blur the strength. The colour applies until you pick one on the toolbar yourself |
+| `tools` | object per tool | default colour and thickness of each tool: `{"arrow": {"color": "#E53935", "width": 6}}`. Tools: `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text`, `stamp`. Thickness 1-30; for text it is the size, for blur the strength, for the number stamp the size of the circle. The colour applies until you pick one on the toolbar yourself |
 | `marker_opacity` | `43` (5-100) | marker opacity, % |
 
 ## Appearance of the selection

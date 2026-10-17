@@ -25,6 +25,20 @@ var keyLabels = map[string]string{
 	settings.ActionUndo:    "Отменить последнюю аннотацию",
 	settings.ActionCopy:    "Только копировать",
 	settings.ActionSave:    "Только сохранить",
+
+	settings.ActionWidthUp:   "Толще (размер текста, сила размытия)",
+	settings.ActionWidthDown: "Тоньше (размер текста, сила размытия)",
+}
+
+// keyLabel возвращает название действия для окна настроек. Для инструментов оно
+// собирается из названия инструмента на панели.
+func keyLabel(action string) string {
+	for i, name := range settings.ToolNames {
+		if settings.ToolAction(name) == action {
+			return fmt.Sprintf(i18n.T("Инструмент «%s»"), i18n.T(toolLabels[i]))
+		}
+	}
+	return i18n.T(keyLabels[action])
 }
 
 // keyRow — строка окна: действие, кнопка с его клавишей и сброс.
@@ -59,7 +73,7 @@ func (s *state) assignKey(row *keyRow, chord string) {
 		if a == row.action {
 			other = b
 		}
-		row.err = fmt.Sprintf(i18n.T("%s уже занята действием «%s»"), keys.Of(row.action), i18n.T(keyLabels[other]))
+		row.err = fmt.Sprintf(i18n.T("%s уже занята действием «%s»"), keys.Of(row.action), keyLabel(other))
 		return
 	}
 	row.err = ""
@@ -117,7 +131,7 @@ func (s *state) keyControls() layout.Widget {
 			}
 			children = append(children, layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Flexed(1, s.label(material.Body2, i18n.T(keyLabels[row.action]), fgColor)),
+					layout.Flexed(1, s.label(material.Body2, keyLabel(row.action), fgColor)),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						gtx.Constraints.Min.X = gtx.Dp(170)
 						b := material.Button(s.th, &row.btn, label)
