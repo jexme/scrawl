@@ -59,7 +59,8 @@ screen capture is not written yet; see [docs/WINDOWS.md](docs/WINDOWS.md).
 - GNOME on Wayland with PipeWire, `xdg-desktop-portal` (1.21 or newer, it must
   support host app registration) and `xdg-desktop-portal-gnome`. Developed and tested on Ubuntu with GNOME 50.
 - `wl-clipboard` (the `wl-copy` command) for the clipboard and `libnotify`
-  (the `notify-send` command) for notifications.
+  (the `notify-send` command) for notifications. Without `wl-copy`, Scrawl falls back to
+  `xclip` through XWayland if both are there; with neither you get a hint what to install.
 - On **X11** there is no portal: the screen is captured directly, and the clipboard
   needs `xclip` instead of `wl-clipboard`.
 
@@ -215,7 +216,7 @@ Every key is described in the [settings reference](docs/SETTINGS.md).
 - **A monitor was added or replaced.** Pick the monitors again (step 1).
 - **The overlay opens on only one monitor.** Same: step 1 must be done for every monitor.
 - **The message says the portal refused.** Grant the permission (step 2).
-- **Pasting into some app gives nothing.** Check that `wl-copy` is installed (`wl-clipboard`).
+- **"Clipboard error" or pasting gives nothing.** Check that `wl-copy` is installed (`wl-clipboard`).
 - **No notifications.** Install `libnotify-bin` (the `notify-send` command), and check that notifications are on in the settings.
 - **No tray icon.** Enable the AppIndicator GNOME extension.
 - **`Print` opens GNOME's screenshot tool.** Turn it off in the keyboard shortcuts (see step 3).

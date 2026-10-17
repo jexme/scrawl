@@ -273,6 +273,7 @@ var zh = map[string]string{
 	"PipeWire есть только в Linux": "PipeWire 仅在 Linux 上可用",
 	"захват экрана пока есть только в Linux (GNOME, Wayland); окно настроек работает: scrawl -settings": "屏幕捕获目前仅支持 Linux（Wayland 下的 GNOME）；设置窗口可用：scrawl -settings",
 	"для буфера обмена в X11 нужен xclip: sudo apt install xclip":                                       "X11 的剪贴板需要 xclip：sudo apt install xclip",
+	"для буфера обмена в Wayland нужен wl-copy: sudo apt install wl-clipboard":                          "Wayland 下的剪贴板需要 wl-copy：sudo apt install wl-clipboard",
 	"формат пикселей X11 не поддерживается (глубина %d, %d бит на пиксель)":                             "不支持的 X11 像素格式（深度 %d，每像素 %d 位）",
 	"необычные маски цветов X11":                                                                        "不常见的 X11 颜色掩码",
 	"не удалось подключиться к X-серверу: %w":                                                           "无法连接到 X 服务器：%w",

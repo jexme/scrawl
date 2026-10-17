@@ -273,6 +273,7 @@ var ko = map[string]string{
 	"PipeWire есть только в Linux": "PipeWire는 Linux에서만 사용할 수 있습니다",
 	"захват экрана пока есть только в Linux (GNOME, Wayland); окно настроек работает: scrawl -settings": "화면 캡처는 아직 Linux(Wayland의 GNOME)에서만 가능합니다. 설정 창은 동작합니다: scrawl -settings",
 	"для буфера обмена в X11 нужен xclip: sudo apt install xclip":                                       "X11 클립보드에는 xclip이 필요합니다: sudo apt install xclip",
+	"для буфера обмена в Wayland нужен wl-copy: sudo apt install wl-clipboard":                          "Wayland 클립보드에는 wl-copy가 필요합니다: sudo apt install wl-clipboard",
 	"формат пикселей X11 не поддерживается (глубина %d, %d бит на пиксель)":                             "지원되지 않는 X11 픽셀 형식 (깊이 %d, 픽셀당 %d비트)",
 	"необычные маски цветов X11":                                                                        "흔치 않은 X11 색상 마스크",
 	"не удалось подключиться к X-серверу: %w":                                                           "X 서버에 연결하지 못했습니다: %w",
