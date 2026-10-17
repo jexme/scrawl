@@ -27,12 +27,21 @@ var named = map[string][]key.Name{
 	"Down":      {key.NameDownArrow},
 	"Left":      {key.NameLeftArrow},
 	"Right":     {key.NameRightArrow},
+	// Плюс и минус: Gio называет клавишу символом, который она печатает. «+» это Shift+«=»
+	// на обычной раскладке, поэтому Shift у этих двух клавиш не учитывается.
+	"Plus":  {"+", "="},
+	"Minus": {"-", "_"},
 }
+
+// noShift — клавиши, у которых Shift не различается: «+» набирают с Shift, «=» без него.
+var noShift = map[string]bool{"Plus": true, "Minus": true}
 
 // Binding — комбинация клавиш в виде, удобном для Gio.
 type Binding struct {
 	Mods  key.Modifiers
 	Names []key.Name // у Enter два имени: основная клавиша и цифровая
+	// IgnoreShift: Shift при сравнении не учитывается (плюс и минус).
+	IgnoreShift bool
 }
 
 // Parse разбирает каноническую запись из настроек («Ctrl+Shift+S»).
@@ -57,6 +66,7 @@ func Parse(chord string) (Binding, bool) {
 	}
 	if names, ok := named[name]; ok {
 		b.Names = names
+		b.IgnoreShift = noShift[name]
 	} else {
 		b.Names = []key.Name{key.Name(name)}
 	}
@@ -75,7 +85,14 @@ func (b Binding) Filters() []key.Filter {
 
 // Matches сообщает, что событие нажатия соответствует комбинации точно.
 func (b Binding) Matches(e key.Event) bool {
-	if e.State != key.Press || e.Modifiers&mask != b.Mods {
+	if e.State != key.Press {
+		return false
+	}
+	have, want := e.Modifiers&mask, b.Mods
+	if b.IgnoreShift {
+		have, want = have&^key.ModShift, want&^key.ModShift
+	}
+	if have != want {
 		return false
 	}
 	for _, n := range b.Names {
@@ -109,14 +126,18 @@ func Chord(e key.Event) (string, bool) {
 		}
 		name = s
 	}
+	mods := e.Modifiers
+	if noShift[name] {
+		mods &^= key.ModShift // Shift+«=» это просто плюс
+	}
 	var out []string
-	if e.Modifiers.Contain(key.ModCtrl) {
+	if mods.Contain(key.ModCtrl) {
 		out = append(out, "Ctrl")
 	}
-	if e.Modifiers.Contain(key.ModShift) {
+	if mods.Contain(key.ModShift) {
 		out = append(out, "Shift")
 	}
-	if e.Modifiers.Contain(key.ModAlt) {
+	if mods.Contain(key.ModAlt) {
 		out = append(out, "Alt")
 	}
 	return strings.Join(append(out, name), "+"), true

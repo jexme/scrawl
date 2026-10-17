@@ -181,6 +181,13 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	if t.wMinus.btn.Clicked(gtx) && enabled {
 		m.bumpWidth(-1)
 	}
+	capKey := func(action string) string { return keyCaption(m.store.Get().Keys.Of(action)) }
+	x0 := cursor
+	capA := uint8(200)
+	if !enabled {
+		capA = 90
+	}
+	m.drawKeyCaptionA(gtx, image.Pt(x0+btn/2, pad+btn), capKey(settings.ActionWidthDown), capA)
 	place(func(g layout.Context) layout.Dimensions {
 		return t.wMinus.btn.Layout(g, func(g layout.Context) layout.Dimensions {
 			drawButtonColored(g, false, t.wMinus.icon, ic)
@@ -197,6 +204,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	if t.wPlus.btn.Clicked(gtx) && enabled {
 		m.bumpWidth(1)
 	}
+	m.drawKeyCaptionA(gtx, image.Pt(cursor+btn/2, pad+btn), capKey(settings.ActionWidthUp), capA)
 	place(func(g layout.Context) layout.Dimensions {
 		return t.wPlus.btn.Layout(g, func(g layout.Context) layout.Dimensions {
 			drawButtonColored(g, false, t.wPlus.icon, ic)
@@ -254,11 +262,16 @@ func handCursor(gtx layout.Context) {
 // drawKeyCaption пишет клавишу быстрого вызова мелко под кнопкой: center это
 // середина кнопки по горизонтали и нижний край кнопки.
 func (m *monitor) drawKeyCaption(gtx layout.Context, center image.Point, txt string) {
+	m.drawKeyCaptionA(gtx, center, txt, 200)
+}
+
+// drawKeyCaptionA то же с заданной яркостью: у недоступной кнопки подпись тусклее.
+func (m *monitor) drawKeyCaptionA(gtx layout.Context, center image.Point, txt string, alpha uint8) {
 	if txt == "" {
 		return
 	}
 	col := iconColor
-	col.A = 200
+	col.A = alpha
 	label, size := m.label(gtx, txt, 10, col)
 	defer op.Offset(image.Pt(center.X-size.X/2, center.Y+gtx.Dp(1))).Push(gtx.Ops).Pop()
 	label.Add(gtx.Ops)

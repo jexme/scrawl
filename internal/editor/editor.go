@@ -487,6 +487,8 @@ func (m *monitor) initKeys() {
 		settings.ActionCopy: func() { m.export(true, false) },
 		settings.ActionSave: func() { m.export(false, true) },
 	}
+	actions[settings.ActionWidthUp] = func() { m.bumpWidth(1) }
+	actions[settings.ActionWidthDown] = func() { m.bumpWidth(-1) }
 	// Клавиши инструментов работают, когда область выбрана: иначе выбор сбросился бы на
 	// инструмент по умолчанию в момент выделения.
 	for t, name := range settings.ToolNames {

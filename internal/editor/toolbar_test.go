@@ -113,3 +113,38 @@ func TestToolKeys(t *testing.T) {
 		}
 	}
 }
+
+// TestWidthKeys: плюс и минус меняют толщину текущего инструмента, у «выделения» ничего не делают.
+func TestWidthKeys(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	src := image.NewRGBA(image.Rect(0, 0, 100, 100))
+	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
+	m.sel, m.hasSel = image.Rect(10, 10, 50, 50), true
+	run := func(action string) {
+		t.Helper()
+		for _, kb := range m.keys {
+			if kb.action == action {
+				kb.run()
+				return
+			}
+		}
+		t.Fatalf("действия %q нет среди клавиш", action)
+	}
+
+	m.tool = annotate.ToolSelect
+	run(settings.ActionWidthUp)
+	if _, ok := m.widths[annotate.ToolSelect]; ok {
+		t.Error("у «выделения» толщины нет")
+	}
+	m.tool = annotate.ToolPen
+	before := m.curWidth()
+	run(settings.ActionWidthUp)
+	if m.curWidth() != before+1 {
+		t.Errorf("плюс: %v -> %v", before, m.curWidth())
+	}
+	run(settings.ActionWidthDown)
+	run(settings.ActionWidthDown)
+	if m.curWidth() != before-1 {
+		t.Errorf("два минуса: %v -> %v", before, m.curWidth())
+	}
+}

@@ -20,6 +20,9 @@ const (
 	ActionCopy    = "copy"    // только копировать
 	ActionSave    = "save"    // только сохранить
 
+	ActionWidthUp   = "width_up"   // толще: толщина, размер текста или сила размытия
+	ActionWidthDown = "width_down" // тоньше
+
 	// Выбор инструмента: действие называется «tool_» и имя из ToolNames.
 	ActionToolSelect = "tool_select"
 	ActionToolPen    = "tool_pen"
@@ -37,6 +40,7 @@ func ToolAction(tool string) string { return "tool_" + tool }
 // KeyActions — все действия в порядке показа в окне настроек.
 var KeyActions = []string{
 	ActionConfirm, ActionCancel, ActionRestore, ActionAdd, ActionGlue, ActionSend, ActionUndo, ActionCopy, ActionSave,
+	ActionWidthUp, ActionWidthDown,
 	ActionToolSelect, ActionToolPen, ActionToolLine, ActionToolArrow, ActionToolRect, ActionToolMarker, ActionToolBlur, ActionToolText,
 }
 
@@ -52,6 +56,9 @@ type Keys struct {
 	Copy    string `json:"copy,omitempty"`
 	Save    string `json:"save,omitempty"`
 
+	WidthUp   string `json:"width_up,omitempty"`
+	WidthDown string `json:"width_down,omitempty"`
+
 	ToolSelect string `json:"tool_select,omitempty"`
 	ToolPen    string `json:"tool_pen,omitempty"`
 	ToolLine   string `json:"tool_line,omitempty"`
@@ -66,6 +73,8 @@ type Keys struct {
 var DefaultKeys = map[string]string{
 	ActionConfirm: "Enter", ActionCancel: "Escape", ActionRestore: "R", ActionAdd: "A",
 	ActionGlue: "G", ActionSend: "D", ActionUndo: "Ctrl+Z", ActionCopy: "Ctrl+C", ActionSave: "Ctrl+S",
+	// Плюс и минус: Shift у «+» на обычной раскладке не нужен, программа его игнорирует.
+	ActionWidthUp: "Plus", ActionWidthDown: "Minus",
 	// Инструменты: W от «arroW», B от «Box», U от «blUr»; A, R, D, G заняты действиями выше.
 	ActionToolSelect: "V", ActionToolPen: "P", ActionToolLine: "L", ActionToolArrow: "W",
 	ActionToolRect: "B", ActionToolMarker: "M", ActionToolBlur: "U", ActionToolText: "T",
@@ -91,6 +100,10 @@ func (k *Keys) ptr(action string) *string {
 		return &k.Copy
 	case ActionSave:
 		return &k.Save
+	case ActionWidthUp:
+		return &k.WidthUp
+	case ActionWidthDown:
+		return &k.WidthDown
 	case ActionToolSelect:
 		return &k.ToolSelect
 	case ActionToolPen:
@@ -130,7 +143,7 @@ func (k *Keys) Set(action, chord string) {
 }
 
 // Допустимые клавиши кроме букв, цифр и F1-F12.
-var namedKeys = []string{"Enter", "Escape", "Space", "Tab", "Backspace", "Delete", "Home", "End", "PageUp", "PageDown", "Up", "Down", "Left", "Right"}
+var namedKeys = []string{"Enter", "Escape", "Space", "Tab", "Backspace", "Delete", "Home", "End", "PageUp", "PageDown", "Up", "Down", "Left", "Right", "Plus", "Minus"}
 
 func validKeyName(k string) bool {
 	if len(k) == 1 && (k[0] >= 'A' && k[0] <= 'Z' || k[0] >= '0' && k[0] <= '9') {

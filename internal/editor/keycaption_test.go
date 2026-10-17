@@ -15,6 +15,9 @@ func TestKeyCaption(t *testing.T) {
 		"Ctrl+Delete":  "^Del",
 		"F5":           "F5",
 		"Left":         "←",
+		"Plus":         "+",
+		"Minus":        "-",
+		"Ctrl+Plus":    "Ctrl++",
 		"":             "",
 	} {
 		if got := keyCaption(chord); got != want {

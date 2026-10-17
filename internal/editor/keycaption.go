@@ -11,7 +11,7 @@ const captionLen = 6
 // keyNames — короткие названия клавиш для подписи под кнопкой панели.
 var keyNames = map[string]string{
 	"Escape": "Esc", "Backspace": "Bksp", "Delete": "Del", "PageUp": "PgUp", "PageDown": "PgDn",
-	"Up": "↑", "Down": "↓", "Left": "←", "Right": "→",
+	"Up": "↑", "Down": "↓", "Left": "←", "Right": "→", "Plus": "+", "Minus": "-",
 }
 
 // keyCaption превращает сочетание из настроек («Ctrl+Z», «Escape») в короткую подпись

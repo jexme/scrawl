@@ -53,7 +53,7 @@ Example:
 `keys` maps an action to a key. A key is written like `R`, `Enter`, `F5`,
 `Ctrl+Z` or `Ctrl+Shift+S` (modifiers: `Ctrl`, `Shift`, `Alt`; keys: letters,
 digits, `F1`-`F12`, `Enter`, `Escape`, `Space`, `Tab`, `Backspace`, `Delete`,
-`Home`, `End`, `PageUp`, `PageDown`, `Up`, `Down`, `Left`, `Right`). An empty
+`Home`, `End`, `PageUp`, `PageDown`, `Up`, `Down`, `Left`, `Right`, `Plus`, `Minus`). An empty
 value means the default. Two actions cannot share a key: if they do, all keys
 go back to the defaults.
 
@@ -68,6 +68,8 @@ go back to the defaults.
 | `undo` | `Ctrl+Z` | undo the last annotation |
 | `copy` | `Ctrl+C` | only copy |
 | `save` | `Ctrl+S` | only save |
+| `width_up` | `Plus` | thicker line, bigger text or stronger blur (like the mouse wheel up); `Shift` is ignored, so `+` and `=` both work |
+| `width_down` | `Minus` | thinner line, smaller text or weaker blur |
 | `tool_select` | `V` | switch on the select tool (move the area) |
 | `tool_pen` | `P` | switch on the pen |
 | `tool_line` | `L` | switch on the line |

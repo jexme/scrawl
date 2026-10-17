@@ -25,6 +25,9 @@ var keyLabels = map[string]string{
 	settings.ActionUndo:    "Отменить последнюю аннотацию",
 	settings.ActionCopy:    "Только копировать",
 	settings.ActionSave:    "Только сохранить",
+
+	settings.ActionWidthUp:   "Толще (размер текста, сила размытия)",
+	settings.ActionWidthDown: "Тоньше (размер текста, сила размытия)",
 }
 
 // keyLabel возвращает название действия для окна настроек. Для инструментов оно
