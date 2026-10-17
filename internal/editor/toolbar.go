@@ -17,6 +17,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/jexme/scrawl/internal/annotate"
+	"github.com/jexme/scrawl/internal/settings"
 )
 
 var (
@@ -35,8 +36,9 @@ type toolButton struct {
 }
 
 type actionButton struct {
-	icon iconFunc
-	btn  widget.Clickable
+	icon   iconFunc
+	btn    widget.Clickable
+	action string // действие с клавишей из настроек: её буква пишется под кнопкой; пусто: клавиши нет
 }
 
 // toolbar хранит кнопки панели инструментов. Состояние выбранного инструмента
@@ -71,11 +73,11 @@ func newToolbar() *toolbar {
 		wMinus:   actionButton{icon: iconMinus},
 		wPlus:    actionButton{icon: iconPlus},
 		settings: actionButton{icon: iconSettings},
-		add:      actionButton{icon: iconAdd},
-		undo:     actionButton{icon: iconUndo},
-		copy:     actionButton{icon: iconCopy},
-		save:     actionButton{icon: iconSave},
-		close:    actionButton{icon: iconClose},
+		add:      actionButton{icon: iconAdd, action: settings.ActionAdd},
+		undo:     actionButton{icon: iconUndo, action: settings.ActionUndo},
+		copy:     actionButton{icon: iconCopy, action: settings.ActionCopy},
+		save:     actionButton{icon: iconSave, action: settings.ActionSave},
+		close:    actionButton{icon: iconClose, action: settings.ActionCancel},
 	}
 }
 
@@ -97,7 +99,8 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	margin := gtx.Dp(8)
 
 	total := t.width(btn, gap, sep, pad)
-	height := btn + 2*pad
+	capH := gtx.Dp(13) // строка под кнопками: клавиша быстрого вызова
+	height := btn + capH + 2*pad
 
 	x := sel.Max.X - total
 	if x < margin {
@@ -143,6 +146,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 		place(func(g layout.Context) layout.Dimensions {
 			return tb.btn.Layout(g, func(g layout.Context) layout.Dimensions {
 				drawButton(g, active, tb.icon)
+				handCursor(g)
 				return layout.Dimensions{Size: g.Constraints.Min}
 			})
 		})
@@ -159,6 +163,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 		place(func(g layout.Context) layout.Dimensions {
 			return t.colors[i].Layout(g, func(g layout.Context) layout.Dimensions {
 				drawSwatch(g, c, active)
+				handCursor(g)
 				return layout.Dimensions{Size: g.Constraints.Min}
 			})
 		})
@@ -177,6 +182,9 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	place(func(g layout.Context) layout.Dimensions {
 		return t.wMinus.btn.Layout(g, func(g layout.Context) layout.Dimensions {
 			drawButtonColored(g, false, t.wMinus.icon, ic)
+			if enabled {
+				handCursor(g)
+			}
 			return layout.Dimensions{Size: g.Constraints.Min}
 		})
 	})
@@ -190,6 +198,9 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	place(func(g layout.Context) layout.Dimensions {
 		return t.wPlus.btn.Layout(g, func(g layout.Context) layout.Dimensions {
 			drawButtonColored(g, false, t.wPlus.icon, ic)
+			if enabled {
+				handCursor(g)
+			}
 			return layout.Dimensions{Size: g.Constraints.Min}
 		})
 	})
@@ -210,12 +221,17 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 		if act.a.btn.Clicked(gtx) {
 			act.do()
 		}
+		x0 := cursor
 		place(func(g layout.Context) layout.Dimensions {
 			return act.a.btn.Layout(g, func(g layout.Context) layout.Dimensions {
 				drawButton(g, false, act.a.icon)
+				handCursor(g)
 				return layout.Dimensions{Size: g.Constraints.Min}
 			})
 		})
+		if act.a.action != "" {
+			m.drawKeyCaption(gtx, image.Pt(x0+btn/2, pad+btn), keyCaption(m.store.Get().Keys.Of(act.a.action)))
+		}
 	}
 
 	// Поглощаем события панели, чтобы они не уходили на холст.
@@ -224,6 +240,26 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 			break
 		}
 	}
+}
+
+// handCursor делает курсор «рукой» над текущей кнопкой: вызывается в содержимом кнопки.
+func handCursor(gtx layout.Context) {
+	area := clip.Rect(image.Rectangle{Max: gtx.Constraints.Min}).Push(gtx.Ops)
+	pointer.CursorPointer.Add(gtx.Ops)
+	area.Pop()
+}
+
+// drawKeyCaption пишет клавишу быстрого вызова мелко под кнопкой: center это
+// середина кнопки по горизонтали и нижний край кнопки.
+func (m *monitor) drawKeyCaption(gtx layout.Context, center image.Point, txt string) {
+	if txt == "" {
+		return
+	}
+	col := iconColor
+	col.A = 200
+	label, size := m.label(gtx, txt, 10, col)
+	defer op.Offset(image.Pt(center.X-size.X/2, center.Y+gtx.Dp(1))).Push(gtx.Ops).Pop()
+	label.Add(gtx.Ops)
 }
 
 func drawButton(gtx layout.Context, active bool, icon iconFunc) {

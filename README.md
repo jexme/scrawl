@@ -153,6 +153,8 @@ From left to right: select, pen, line, arrow, box, marker, blur, text · eight
 colours · `−` thickness `+` · settings (closes the overlay and opens the settings
 window) · add to collection · undo · copy · save · close.
 
+The buttons that have a key show it under the icon (the keys come from the settings).
+
 ### Before/after collections
 
 Take the first shot and press `A`. Take the next one: the previous area is already
