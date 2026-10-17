@@ -372,8 +372,8 @@ func TestShowLoupeDefaultOn(t *testing.T) {
 func TestToolDefaults(t *testing.T) {
 	sandbox(t)
 	got := Load()
-	if got.DefaultTool != "arrow" || got.Tools != (ToolStyles{}) {
-		t.Errorf("по умолчанию после выбора области включается стрелка, стили пустые: %+v", got)
+	if got.DefaultTool != "select" || got.Tools != (ToolStyles{}) {
+		t.Errorf("по умолчанию выбор области и пустые стили: %+v", got)
 	}
 
 	// Неверное значение одного поля не портит соседние, в том числе вложенные.
@@ -397,8 +397,8 @@ func TestToolDefaults(t *testing.T) {
 	}
 
 	writeConfig(t, `{"default_tool":"laser"}`)
-	if got := Load().DefaultTool; got != "arrow" {
-		t.Errorf("неизвестный инструмент должен стать стрелкой (значением по умолчанию): %q", got)
+	if got := Load().DefaultTool; got != "select" {
+		t.Errorf("неизвестный инструмент должен стать select: %q", got)
 	}
 }
 
@@ -739,13 +739,5 @@ func TestLanguageSetting(t *testing.T) {
 		if got := Load().Language; got != want {
 			t.Errorf("%s: %q, ожидали %q", body, got, want)
 		}
-	}
-}
-
-func TestDefaultToolSelectStaysPossible(t *testing.T) {
-	sandbox(t)
-	writeConfig(t, `{"default_tool":"select"}`)
-	if got := Load().DefaultTool; got != "select" {
-		t.Errorf("явный select (ничего не включать) должен сохраняться: %q", got)
 	}
 }

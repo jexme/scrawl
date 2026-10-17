@@ -128,7 +128,7 @@ at `scrawl`. The last area and the collection start fresh.
 
 1. Press your hotkey. The screen freezes and dims.
 2. Drag to select an area (on any monitor). A toolbar appears under it.
-3. Annotate if you want: the arrow tool is already on, just drag on the area; pick another tool or colour on the toolbar when needed (the first tool is configurable, and "select" lets you move the area).
+3. Annotate if you want: pick a tool and a colour, drag on the area.
 4. Press `Enter`. The image is in your clipboard and in `~/Pictures/Screenshots`. Paste it anywhere.
 
 `Esc` cancels at any point.
