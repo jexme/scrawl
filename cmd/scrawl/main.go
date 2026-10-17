@@ -131,7 +131,12 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	if err != nil {
 		fatal("portal: %v", err)
 	}
-	if !p.Registered {
+	if p.OldPortal {
+		// Старый portal узнаёт приложение по systemd-scope: без него токены не работают.
+		if err := p.EnterAppScope(); err != nil {
+			fmt.Fprintln(os.Stderr, i18n.T("portal не принял app_id: restore_token работать не будет, диалоги покажутся при каждом запуске"))
+		}
+	} else if !p.Registered {
 		fmt.Fprintln(os.Stderr, i18n.T("portal не принял app_id: restore_token работать не будет, диалоги покажутся при каждом запуске"))
 	}
 
