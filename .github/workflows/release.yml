@@ -41,3 +41,13 @@ jobs:
           case "${GITHUB_REF_NAME}" in *-*) flags="--prerelease" ;; esac
           gh release create "${GITHUB_REF_NAME}" dist/scrawl-*.tar.gz dist/scrawl_*.deb dist/SHA256SUMS \
             --verify-tag --generate-notes --title "Scrawl ${GITHUB_REF_NAME}" $flags
+
+  # После релиза обновляем apt-репозиторий (если настроен ключ подписи).
+  apt-repo:
+    needs: release
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/apt-repo.yml
+    secrets: inherit

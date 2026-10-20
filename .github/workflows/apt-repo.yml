@@ -1,0 +1,71 @@
+name: APT repository
+
+# Собирает подписанный apt-репозиторий из .deb всех релизов и публикует на GitHub Pages.
+# Вызывается из release.yml после выхода релиза; запускается и вручную:
+#   gh workflow run apt-repo.yml
+# Нужен секрет APT_GPG_PRIVATE_KEY (и APT_GPG_PASSPHRASE, если у ключа есть пароль):
+# без него шаги пропускаются, а workflow остаётся зелёным.
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Ключ подписи
+        id: key
+        env:
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "$APT_GPG_PRIVATE_KEY" ]; then
+            echo "::notice::Секрет APT_GPG_PRIVATE_KEY не задан: apt-репозиторий не обновляется"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Собрать репозиторий
+        if: steps.key.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev
+          mkdir debs
+          for tag in $(gh release list --json tagName --jq '.[].tagName'); do
+            gh release download "$tag" --pattern '*.deb' --dir debs || true
+          done
+          ls debs
+          [ -n "$(ls debs)" ] || { echo "::error::в релизах нет .deb"; exit 1; }
+          printf '%s\n' "$APT_GPG_PRIVATE_KEY" | gpg --batch --import
+          export GPG_KEY_ID=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')
+          scripts/build-apt-repo.sh debs site
+
+      - uses: actions/configure-pages@v5
+        if: steps.key.outputs.enabled == 'true'
+
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.key.outputs.enabled == 'true'
+        with:
+          path: site
+
+      - uses: actions/deploy-pages@v4
+        id: deploy
+        if: steps.key.outputs.enabled == 'true'
