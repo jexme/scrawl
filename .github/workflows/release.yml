@@ -47,6 +47,8 @@ jobs:
   windows:
     needs: release
     runs-on: windows-latest
+    env:
+      CGO_ENABLED: "0"
     permissions:
       contents: write
       id-token: write

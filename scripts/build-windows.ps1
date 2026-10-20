@@ -8,6 +8,8 @@ param(
     [switch]$Package
 )
 $ErrorActionPreference = "Stop"
+# Без cgo: на Windows он не нужен, а если на машине есть gcc, Go иначе пытается собрать C-файлы Linux-пакетов.
+$env:CGO_ENABLED = "0"
 Set-Location (Split-Path $PSScriptRoot -Parent)
 
 # git.exe может лежать в Git\cmd, Git\bin или Git\mingw64\bin: поднимаемся вверх, пока не найдём usr\bin\sh.exe.

@@ -62,6 +62,8 @@ jobs:
   # что и релиз. Подробности в docs/WINDOWS.md.
   windows:
     runs-on: windows-latest
+    env:
+      CGO_ENABLED: "0" # на раннере есть gcc, но Windows-сборке cgo не нужен (и C-файлы Linux-пакетов ему мешают)
     steps:
       - uses: actions/checkout@v5
 
