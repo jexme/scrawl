@@ -54,6 +54,16 @@ sudo apt install xclip libnotify-bin          # X11
 
 ### 1. 프로그램 받기
 
+**apt 저장소에서** (Debian, Ubuntu; 업데이트는 `apt upgrade`로 받습니다):
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
+
+저장소는 다음 키로 서명되어 있습니다: `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`.
+
 **소스에서 (지금 가능):**
 
 ```bash

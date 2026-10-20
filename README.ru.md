@@ -37,6 +37,7 @@
 **Сохранить и отправить**
 - `Enter` копирует картинку в буфер обмена и сохраняет PNG в `~/Pictures/Screenshots`.
   `Ctrl+C` только копирует, `Ctrl+S` только сохраняет. Есть и JPEG.
+- **Двойной клик** внутри выделенной области сразу копирует её (в настройках, вкладка «Общие», раздел «Действия», можно выбрать «копировать и сохранить» или «ничего»).
 - **Подборки «было/стало»:** откладываете снимки клавишей `A`, потом склеиваете их в одну
   картинку с подписями («Было», «Стало» или «Шаг 1…» для большего числа), рядом или друг под другом.
   Или отправляете подборку отдельными файлами: они вставляются в чат как вложения.
@@ -47,7 +48,7 @@
 
 ## Статус
 
-Личный проект в активной разработке. Готовые пакеты лежат на странице
+Личный проект в активной разработке; текущая версия предварительная (`v0.1.0-rc1`). Готовые пакеты лежат на странице
 [Releases](https://github.com/jexme/scrawl/releases); можно и собрать из исходников (несколько минут). Linux: основная цель это GNOME на Wayland. **Сеансы X11** (GNOME на Xorg, KDE, XFCE и другие)
 тоже работают, но эта поддержка новая и пока проверена только на виртуальном X-сервере, так что
 отчёты с настоящих машин нужны. Под Windows код собирается, но захвата экрана там ещё нет:
@@ -72,19 +73,6 @@ sudo apt install xclip libnotify-bin          # X11
 
 ### 1. Получите программу
 
-**Из исходников** (работает уже сейчас):
-
-```bash
-sudo apt install gcc pkg-config patch libwayland-dev libx11-dev libx11-xcb-dev \
-  libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev \
-  libxcursor-dev libvulkan-dev libpipewire-0.3-dev
-git clone https://github.com/jexme/scrawl.git && cd scrawl
-make install            # собирает и ставит в ~/.local (PREFIX=/usr/local для всей системы)
-```
-
-Нужен Go (версия из `go.mod`). Нет `sudo`? `scripts/fetch-pipewire-headers.sh`
-распакует заголовки PipeWire в `.deps/`, Makefile их подхватит.
-
 **Из apt-репозитория** (Debian, Ubuntu; обновления приходят с `apt upgrade`):
 
 ```bash
@@ -105,7 +93,7 @@ sudo apt update && sudo apt install scrawl
 и `SHA256SUMS` со страницы [Releases](https://github.com/jexme/scrawl/releases), затем:
 
 ```bash
-sha256sum -c --ignore-missing SHA256SUMS
+sha256sum -c --ignore-missing SHA256SUMS   # .deb в списке с «~», а GitHub сохраняет его с «.»: сверьте его вручную
 tar xzf scrawl-*-linux-amd64.tar.gz && cd scrawl-*-linux-amd64
 ./install.sh            # в ~/.local (PREFIX=/usr/local для всей системы)
 sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland-cursor0 \
@@ -114,6 +102,19 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 
 `wl-clipboard` (буфер обмена) и `libnotify-bin` (уведомления) нужны и при работе: установщик их
 проверяет и пишет, чего не хватает. В X11 вместо `wl-clipboard` нужен `xclip`.
+
+**Из исходников**:
+
+```bash
+sudo apt install gcc pkg-config patch libwayland-dev libx11-dev libx11-xcb-dev \
+  libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev \
+  libxcursor-dev libvulkan-dev libpipewire-0.3-dev
+git clone https://github.com/jexme/scrawl.git && cd scrawl
+make install            # собирает и ставит в ~/.local (PREFIX=/usr/local для всей системы)
+```
+
+Нужен Go (версия из `go.mod`). Нет `sudo`? `scripts/fetch-pipewire-headers.sh`
+распакует заголовки PipeWire в `.deps/`, Makefile их подхватит.
 
 Проверьте, что `~/.local/bin` есть в `PATH`.
 
@@ -129,7 +130,7 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 2. **Выдайте запасное разрешение:** кнопка «Выдать разрешение» или `scrawl -grant-screenshot`.
    Оно нужно, чтобы в редкий момент, когда PipeWire не отдал кадр, Scrawl мог взять
    более медленный Screenshot portal.
-3. **Назначьте горячую клавишу:** в GNOME установщик (`install.sh`, `make install`) сам назначает `Print`, если она не занята другим пользовательским ярлыком. Чтобы сменить: поле «Горячая клавиша запуска» и кнопка «Назначить»
+3. **Назначьте горячую клавишу:** в GNOME установщик из архива (`install.sh`) и `make install` сами назначают `Print`, если она не занята другим пользовательским ярлыком. После установки через apt или `.deb`, а также чтобы сменить клавишу: поле «Горячая клавиша запуска» и кнопка «Назначить»
    (по умолчанию `Print`), либо `scripts/gnome-hotkey.sh [КЛАВИША]`. Создаётся
    пользовательский ярлык GNOME, занятую комбинацию он не перезаписывает. Если `Print`
    всё ещё открывает встроенный снимок GNOME, отключите его в

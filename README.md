@@ -37,6 +37,7 @@ is one key press: the frozen screen appears in about 150 ms.
 **Save and share**
 - `Enter` copies the image to the clipboard and saves a PNG to `~/Pictures/Screenshots`.
   `Ctrl+C` only copies, `Ctrl+S` only saves. JPEG is available too.
+- A **double click** inside the selected area copies it at once (in the settings, tab "General", section "Actions", it can also copy and save, or do nothing).
 - **Before/after collections:** set shots aside with `A`, then glue them into one
   picture with captions ("Before", "After", or "Step 1…" for more), side by side
   or one under another. Or send the collection as separate files that paste into a chat as attachments.
@@ -47,7 +48,7 @@ is one key press: the frozen screen appears in about 150 ms.
 
 ## Status
 
-A personal project under active development. Ready-made packages are on the
+A personal project under active development; the current version is a pre-release (`v0.1.0-rc1`). Ready-made packages are on the
 [Releases](https://github.com/jexme/scrawl/releases) page; you can also build it from source (a few minutes).
 Linux: GNOME on Wayland is the main target. **X11 sessions** (GNOME on Xorg, KDE,
 XFCE and others) work too, but that support is new and has so far been tested only on a
@@ -73,19 +74,6 @@ sudo apt install xclip libnotify-bin          # X11
 
 ### 1. Get the program
 
-**From source** (works today):
-
-```bash
-sudo apt install gcc pkg-config patch libwayland-dev libx11-dev libx11-xcb-dev \
-  libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev \
-  libxcursor-dev libvulkan-dev libpipewire-0.3-dev
-git clone https://github.com/jexme/scrawl.git && cd scrawl
-make install            # builds and installs to ~/.local (PREFIX=/usr/local for system-wide)
-```
-
-You need Go (the version from `go.mod`). No `sudo`? `scripts/fetch-pipewire-headers.sh`
-unpacks the PipeWire headers into `.deps/`, and the Makefile picks them up.
-
 **From the apt repository** (Debian, Ubuntu; updates come with `apt upgrade`):
 
 ```bash
@@ -107,7 +95,7 @@ Build it yourself with `make deb`.
 [Releases](https://github.com/jexme/scrawl/releases) page, then:
 
 ```bash
-sha256sum -c --ignore-missing SHA256SUMS
+sha256sum -c --ignore-missing SHA256SUMS   # the .deb is listed with "~" but GitHub saves it with "."; check it by hand
 tar xzf scrawl-*-linux-amd64.tar.gz && cd scrawl-*-linux-amd64
 ./install.sh            # to ~/.local (PREFIX=/usr/local for system-wide)
 sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland-cursor0 \
@@ -116,6 +104,19 @@ sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland
 
 `wl-clipboard` (the clipboard) and `libnotify-bin` (notifications) are needed at run time too: the
 installer checks them and prints what is missing. On X11 use `xclip` instead of `wl-clipboard`.
+
+**From source**:
+
+```bash
+sudo apt install gcc pkg-config patch libwayland-dev libx11-dev libx11-xcb-dev \
+  libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev \
+  libxcursor-dev libvulkan-dev libpipewire-0.3-dev
+git clone https://github.com/jexme/scrawl.git && cd scrawl
+make install            # builds and installs to ~/.local (PREFIX=/usr/local for system-wide)
+```
+
+You need Go (the version from `go.mod`). No `sudo`? `scripts/fetch-pipewire-headers.sh`
+unpacks the PipeWire headers into `.deps/`, and the Makefile picks them up.
 
 Make sure `~/.local/bin` is in your `PATH`.
 
@@ -132,7 +133,7 @@ Open the settings window (`scrawl -settings`, tab "System") and use these button
 2. **Grant the fallback permission:** button "Grant permission" or `scrawl -grant-screenshot`.
    This lets Scrawl use the slower Screenshot portal on the rare shot when
    PipeWire gives no frame.
-3. **Set a hotkey:** on GNOME the installer (`install.sh`, `make install`) assigns `Print` itself unless another custom shortcut already uses it. To change it: the "Launch hotkey" field and the "Assign" button (default `Print`),
+3. **Set a hotkey:** on GNOME the archive installer (`install.sh`) and `make install` assign `Print` themselves unless another custom shortcut already uses it. After installing with apt or the `.deb`, or to change the key: the "Launch hotkey" field and the "Assign" button (default `Print`),
    or `scripts/gnome-hotkey.sh [KEY]`. It creates a GNOME custom shortcut and never
    overwrites one that is taken. If `Print` still opens GNOME's own screenshot tool, turn that
    off in *Settings → Keyboard → View and Customize Shortcuts → Screenshots*.

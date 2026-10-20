@@ -54,6 +54,16 @@ sudo apt install xclip libnotify-bin          # X11
 
 ### 1. 获取程序
 
+**从 apt 仓库安装**（Debian、Ubuntu；更新通过 `apt upgrade` 获取）：
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
+
+仓库使用以下密钥签名：`E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`。
+
 **从源码构建（现在可用）：**
 
 ```bash

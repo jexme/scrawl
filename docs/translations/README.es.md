@@ -54,6 +54,16 @@ sudo apt install xclip libnotify-bin          # X11
 
 ### 1. Obtener el programa
 
+**Desde el repositorio apt** (Debian, Ubuntu; las actualizaciones llegan con `apt upgrade`):
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
+
+El repositorio está firmado con la clave `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`.
+
 **Desde el código fuente (funciona hoy):**
 
 ```bash
