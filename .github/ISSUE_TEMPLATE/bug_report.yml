@@ -14,15 +14,16 @@ body:
     id: session
     attributes:
       label: Session type
-      description: Output of `echo $XDG_SESSION_TYPE`
-      options: [Wayland, X11, Other / not sure]
+      description: Output of `echo $XDG_SESSION_TYPE` (on Windows choose Windows)
+      options: [Wayland, X11, Windows, Other / not sure]
     validations:
       required: true
   - type: input
     id: system
     attributes:
-      label: Distribution and desktop
-      placeholder: Ubuntu 24.04, GNOME 46
+      label: Distribution and desktop, or Windows version
+      description: On Windows add the display scale (Settings, System, Display) and how many monitors you have.
+      placeholder: Ubuntu 24.04 GNOME 46, or Windows 11 24H2, 2 monitors, 150% and 100%
     validations:
       required: true
   - type: textarea
@@ -32,9 +33,15 @@ body:
       description: Steps help most. A screenshot of the problem is welcome, but check it for private data first.
     validations:
       required: true
+  - type: input
+    id: other-tools
+    attributes:
+      label: Other screenshot programs running (Windows)
+      description: Greenshot, ShareX, Lightshot, Snipping Tool and similar often hold the Print key.
+      placeholder: none
   - type: textarea
     id: log
     attributes:
       label: Output of `scrawl -v`
-      description: Run it from a terminal and paste what it prints.
+      description: Run it from a terminal (on Windows, PowerShell or cmd) and paste what it prints.
       render: text

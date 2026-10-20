@@ -1,0 +1,19 @@
+{
+    "version": "@VERSION@",
+    "description": "Fast screenshots with annotations: select an area, draw arrows, boxes and text, blur private data",
+    "homepage": "https://github.com/jexme/scrawl",
+    "license": "MIT",
+    "url": "https://github.com/jexme/scrawl/releases/download/v@VERSION@/scrawl-v@VERSION@-windows-amd64.zip",
+    "hash": "@HASH@",
+    "extract_dir": "scrawl-v@VERSION@-windows-amd64",
+    "bin": "scrawl.exe",
+    "shortcuts": [
+        ["scrawl.exe", "Scrawl", "-tray"]
+    ],
+    "notes": "Запуск значка в трее и горячая клавиша: scrawl -tray. Настройки: scrawl -settings. Print может занимать другая программа (Greenshot, Ножницы).",
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/jexme/scrawl/releases/download/v$version/scrawl-v$version-windows-amd64.zip",
+        "extract_dir": "scrawl-v$version-windows-amd64"
+    }
+}

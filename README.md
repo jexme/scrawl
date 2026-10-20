@@ -121,6 +121,24 @@ unpacks the PipeWire headers into `.deps/`, and the Makefile picks them up.
 
 Make sure `~/.local/bin` is in your `PATH`.
 
+### Windows 10 and 11
+
+Download `scrawl-VERSION-windows-amd64.zip` and its `.sha256` from the [Releases](https://github.com/jexme/scrawl/releases)
+page, unpack it anywhere and run `scrawl.exe -tray`. It is a portable program: no installer, nothing else to install.
+With [Scoop](https://scoop.sh): `scoop install https://github.com/jexme/scrawl/releases/latest/download/scrawl.json`.
+
+- **The icon** is in the notification area; in Windows 11 it may hide behind the `^` arrow next to the clock, drag it out to keep it visible.
+- **The Print key** is the default hotkey. Another program often holds it (Greenshot, ShareX, Lightshot). Windows itself may too:
+  Settings, Accessibility, Keyboard, *Use the Print screen button to open screen capture*: turn it off. Or pick another key in
+  `scrawl.exe -settings`, for example `<Control><Alt>a`. The icon tells you when the key is taken and keeps trying.
+- **"Windows protected your PC"** (SmartScreen) may appear: the program is not code-signed yet. Check the SHA-256 against the
+  `.sha256` file (`Get-FileHash scrawl-*.zip`), then *More info*, *Run anyway*. The build comes from public CI:
+  `gh attestation verify scrawl-*.zip --repo jexme/scrawl` proves it. Antivirus programs may flag any new unsigned Go program;
+  report such a case as an issue.
+- **Autostart** is the checkbox in `scrawl.exe -settings`, tab *System* (a value in `HKCU\...\Run`). Keep the folder where it is, or toggle it again after moving.
+
+Build from source and what is missing: [docs/WINDOWS.md](docs/WINDOWS.md).
+
 ### 2. First run: three one-time steps
 
 *On X11 steps 1 and 2 are not needed (there is no portal), only the hotkey.*

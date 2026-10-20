@@ -57,11 +57,11 @@ jobs:
           make build
           ./bin/scrawl -version
 
-  # Windows пока не работает целиком (нет захвата, буфера обмена и горячей клавиши),
-  # но код должен продолжать собираться: так видно, что новые правки не привязали
-  # к Linux лишнего. Подробности в docs/WINDOWS.md.
-  windows-build:
-    runs-on: ubuntu-24.04
+  # Windows собираем и тестируем на настоящем Windows: тесты не привязаны к Linux
+  # (папки пользователя подменяются через internal/testenv), а сборка идёт тем же скриптом,
+  # что и релиз. Подробности в docs/WINDOWS.md.
+  windows:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
 
@@ -69,14 +69,16 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Патч Gio
-        run: make gio
+      - name: Сборка (как в релизе)
+        shell: pwsh
+        run: ./scripts/build-windows.ps1 -Version "ci-${env:GITHUB_SHA}" -Package
 
-      - name: Сборка и go vet для Windows
-        env:
-          GOOS: windows
-          GOARCH: amd64
-          CGO_ENABLED: "0"
-        run: |
-          go vet ./...
-          go build -o scrawl.exe ./cmd/scrawl
+      - name: go vet
+        run: go vet ./...
+
+      - name: Тесты
+        run: go test ./...
+
+      - name: Запуск собранной программы
+        shell: pwsh
+        run: ./bin/scrawl.exe -version

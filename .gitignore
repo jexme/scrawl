@@ -4,3 +4,4 @@ bin/
 /.deps/
 /dist/
 !docs/images/*.png
+*.syso

@@ -3,6 +3,7 @@ package tray
 import (
 	"image"
 	"image/color"
+	"image/draw"
 )
 
 // pixmap — картинка значка для StatusNotifierItem: ширина, высота и байты ARGB32
@@ -72,4 +73,41 @@ func toPixmap(img image.Image) pixmap {
 		}
 	}
 	return pixmap{W: int32(b.Dx()), H: int32(b.Dy()), Data: data}
+}
+
+// Framed рисует значок для Windows: белый видоискатель на синем скруглённом квадрате. Фон нужен,
+// чтобы значок читался и на тёмной, и на светлой панели задач. Его же берут для значка файла
+// scrawl.exe (scripts/genicon).
+func Framed(size int) *image.NRGBA {
+	img := image.NewNRGBA(image.Rect(0, 0, size, size))
+	bg := color.NRGBA{R: 0x25, G: 0x63, B: 0xEB, A: 0xFF}
+	rad := size / 5
+	for y := 0; y < size; y++ {
+		for x := 0; x < size; x++ {
+			if insideRounded(x, y, size, rad) {
+				img.SetNRGBA(x, y, bg)
+			}
+		}
+	}
+	draw.Draw(img, img.Bounds(), drawIcon(size), image.Point{}, draw.Over)
+	return img
+}
+
+// insideRounded сообщает, лежит ли пиксель внутри квадрата n×n со скруглёнными углами радиуса rad.
+func insideRounded(x, y, n, rad int) bool {
+	cx, cy := x, y
+	switch {
+	case x < rad:
+		cx = rad
+	case x >= n-rad:
+		cx = n - rad - 1
+	}
+	switch {
+	case y < rad:
+		cy = rad
+	case y >= n-rad:
+		cy = n - rad - 1
+	}
+	dx, dy := x-cx, y-cy
+	return dx*dx+dy*dy <= rad*rad
 }

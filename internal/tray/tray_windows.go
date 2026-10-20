@@ -5,9 +5,6 @@ package tray
 import (
 	"errors"
 	"fmt"
-	"image"
-	"image/color"
-	"image/draw"
 	"runtime"
 	"syscall"
 	"unsafe"
@@ -342,25 +339,11 @@ func (s *state) showMenu() {
 	}
 }
 
-// makeIcon рисует значок: синий скруглённый квадрат с белым видоискателем. Фон нужен,
-// чтобы значок читался и на тёмной, и на светлой панели задач.
+// makeIcon собирает HICON из рисунка tray.Framed под размер малого значка системы.
 func makeIcon() uintptr {
 	size, _, _ := procGetSystemMetrics.Call(smCxSmIcon)
-	n := int(size)
-	if n < 16 {
-		n = 16
-	}
-	img := image.NewNRGBA(image.Rect(0, 0, n, n))
-	bg := color.NRGBA{R: 0x25, G: 0x63, B: 0xEB, A: 0xFF}
-	rad := n / 5
-	for y := 0; y < n; y++ {
-		for x := 0; x < n; x++ {
-			if insideRounded(x, y, n, rad) {
-				img.SetNRGBA(x, y, bg)
-			}
-		}
-	}
-	draw.Draw(img, img.Bounds(), drawIcon(n), image.Point{}, draw.Over)
+	n := max(int(size), 16)
+	img := Framed(n)
 
 	xor := make([]byte, 0, n*n*4)
 	for y := 0; y < n; y++ {
@@ -372,23 +355,4 @@ func makeIcon() uintptr {
 	and := make([]byte, ((n+15)/16*2)*n) // маска нулевая: прозрачность берётся из альфа-канала
 	icon, _, _ := procCreateIcon.Call(0, uintptr(n), uintptr(n), 1, 32, uintptr(unsafe.Pointer(&and[0])), uintptr(unsafe.Pointer(&xor[0])))
 	return icon
-}
-
-// insideRounded сообщает, лежит ли пиксель внутри квадрата n×n со скруглёнными углами радиуса rad.
-func insideRounded(x, y, n, rad int) bool {
-	cx, cy := x, y
-	switch {
-	case x < rad:
-		cx = rad
-	case x >= n-rad:
-		cx = n - rad - 1
-	}
-	switch {
-	case y < rad:
-		cy = rad
-	case y >= n-rad:
-		cy = n - rad - 1
-	}
-	dx, dy := x-cx, y-cy
-	return dx*dx+dy*dy <= rad*rad
 }

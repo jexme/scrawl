@@ -42,6 +42,45 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" dist/scrawl-*.tar.gz dist/scrawl_*.deb dist/SHA256SUMS \
             --verify-tag --generate-notes --title "Scrawl ${GITHUB_REF_NAME}" $flags
 
+  # Windows: портативный архив, его SHA-256 и манифест Scoop. Собирается на настоящем Windows
+  # из публичного CI, а происхождение файла подтверждается аттестацией GitHub (gh attestation verify).
+  windows:
+    needs: release
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Сборка и архив
+        shell: pwsh
+        run: ./scripts/build-windows.ps1 -Version "${env:GITHUB_REF_NAME}" -Package
+
+      - name: Аттестация сборки
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/scrawl-*-windows-amd64.zip
+
+      - name: Манифест Scoop
+        shell: pwsh
+        run: |
+          $ver = "${env:GITHUB_REF_NAME}".TrimStart('v')
+          $hash = ((Get-Content dist/scrawl-*-windows-amd64.zip.sha256) -split '\s+')[0]
+          (Get-Content packaging/windows/scoop/scrawl.json.in -Raw).Replace('@VERSION@', $ver).Replace('@HASH@', $hash) |
+            Set-Content dist/scrawl.json -Encoding utf8
+
+      - name: Загрузка в релиз
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${env:GITHUB_REF_NAME}" dist/scrawl-*-windows-amd64.zip dist/scrawl-*-windows-amd64.zip.sha256 dist/scrawl.json --clobber
+
   # После релиза обновляем apt-репозиторий (если настроен ключ подписи).
   apt-repo:
     needs: release
