@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"github.com/jexme/scrawl/internal/testenv"
 	"image"
 	"image/color"
 	"os"
@@ -38,7 +39,7 @@ func TestHSVRoundTrip(t *testing.T) {
 // newPickerMonitor делает монитор с открытым окошком цвета и областью под панелью.
 func newPickerMonitor(t *testing.T, w, h int) *monitor {
 	t.Helper()
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	testenv.Config(t, t.TempDir())
 	src := image.NewRGBA(image.Rect(0, 0, w, h))
 	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
 	m.sel, m.hasSel = image.Rect(100, 20, 500, 120), true

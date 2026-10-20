@@ -22,7 +22,10 @@ fi
 # которого может ещё не быть.
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-src=$(cd "$tmp" && go mod download -json "gioui.org@$ver" | sed -n 's/.*"Dir": "\(.*\)",\{0,1\}$/\1/p' | sed 's/",$//; s/"$//' | head -n 1)
+(cd "$tmp" && go mod download "gioui.org@$ver") || true
+src=$(cd "$tmp" && go list -m -f '{{.Dir}}' "gioui.org@$ver" 2>/dev/null | head -n 1)
+# Под Git Bash на Windows Go отдаёт путь вида C:\Users\...: cp и patch ждут Unix-вид.
+if [ -n "$src" ] && command -v cygpath >/dev/null 2>&1; then src=$(cygpath -u "$src"); fi
 [ -d "$src" ] || { echo "не удалось скачать gioui.org@$ver" >&2; exit 1; }
 
 rm -rf "$dst"

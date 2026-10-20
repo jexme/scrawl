@@ -2,6 +2,7 @@ package update
 
 import (
 	"context"
+	"github.com/jexme/scrawl/internal/testenv"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -110,7 +111,7 @@ func TestMessage(t *testing.T) {
 }
 
 func TestNotifiedOncePerVersion(t *testing.T) {
-	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	testenv.Cache(t, t.TempDir())
 	if AlreadyNotified("v0.3.0") {
 		t.Fatal("в чистом кэше ничего не сообщали")
 	}

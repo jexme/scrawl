@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"github.com/jexme/scrawl/internal/testenv"
 	"image"
 	"image/color"
 	"os"
@@ -40,7 +41,7 @@ func TestLoupeFocus(t *testing.T) {
 }
 
 func TestLoupeActive(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	testenv.Config(t, t.TempDir())
 	newM := func() *monitor { return &monitor{store: settings.NewStore()} }
 	for _, tc := range []struct {
 		name  string
@@ -128,7 +129,7 @@ func TestLoupePlacement(t *testing.T) {
 // первого выделения. Проверяет, что пиксели увеличены без сглаживания, фокус стоит в центре,
 // а лупа не закрывает выделение. С SCRAWL_TEST_OUT=путь.png результаты сохраняются.
 func TestRenderLoupe(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	testenv.Config(t, t.TempDir())
 	const W, H = 700, 500
 	src := image.NewRGBA(image.Rect(0, 0, W, H))
 	for y := 0; y < H; y++ {

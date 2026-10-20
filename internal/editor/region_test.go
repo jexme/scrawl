@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"github.com/jexme/scrawl/internal/testenv"
 	"image"
 	"testing"
 
@@ -70,7 +71,7 @@ func TestApplyMove(t *testing.T) {
 }
 
 func TestLastRegionRoundTrip(t *testing.T) {
-	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	testenv.Cache(t, t.TempDir())
 	f := &screencast.Frame{X: 1920, Y: 0, Img: image.NewRGBA(image.Rect(0, 0, 2560, 1440))}
 
 	if _, ok := loadLastRegion(f); ok {

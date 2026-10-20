@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"github.com/jexme/scrawl/internal/testenv"
 	"image"
 	"os"
 	"testing"
@@ -23,7 +24,7 @@ import (
 // вызовом: под инструментами и действиями в основном ряду, под «−» и «+» во втором, а под цветами
 // подписей нет. С SCRAWL_TEST_OUT=путь.png результат сохраняется.
 func TestToolbarKeyCaptions(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	testenv.Config(t, t.TempDir())
 	const W, H = 1100, 300
 	src := image.NewRGBA(image.Rect(0, 0, W, H))
 	for i := 0; i < len(src.Pix); i += 4 {
@@ -113,7 +114,7 @@ func TestToolbarKeyCaptions(t *testing.T) {
 
 // TestToolKeys: клавиша инструмента включает его, но только когда область выбрана.
 func TestToolKeys(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	testenv.Config(t, t.TempDir())
 	src := image.NewRGBA(image.Rect(0, 0, 100, 100))
 	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
 	run := func(action string) {
@@ -143,7 +144,7 @@ func TestToolKeys(t *testing.T) {
 
 // TestWidthKeys: плюс и минус меняют толщину текущего инструмента, у «выделения» ничего не делают.
 func TestWidthKeys(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	testenv.Config(t, t.TempDir())
 	src := image.NewRGBA(image.Rect(0, 0, 100, 100))
 	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
 	m.sel, m.hasSel = image.Rect(10, 10, 50, 50), true
@@ -180,7 +181,7 @@ func TestWidthKeys(t *testing.T) {
 // не должны остаться подсвеченными (раньше клик обрабатывался посреди рисования, и подсвечены были
 // оба инструмента до следующего движения мыши), и должен запрашиваться ещё один кадр.
 func TestToolbarClickRedrawsImmediately(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	testenv.Config(t, t.TempDir())
 	const W, H = 1200, 300
 	src := image.NewRGBA(image.Rect(0, 0, W, H))
 	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
@@ -243,7 +244,7 @@ func TestToolbarClickRedrawsImmediately(t *testing.T) {
 
 // TestToolbarHover: кнопка под мышью слегка подсвечена, остальные нет.
 func TestToolbarHover(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	testenv.Config(t, t.TempDir())
 	const W, H = 1200, 300
 	src := image.NewRGBA(image.Rect(0, 0, W, H))
 	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
@@ -292,7 +293,7 @@ func TestToolbarHover(t *testing.T) {
 // TestToolbarOverflowMenu: «⋯» открывает меню, повторный клик, клик по другой кнопке и клик по холсту
 // закрывают его; меню рисуется поверх и не выходит за окно.
 func TestToolbarOverflowMenu(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	testenv.Config(t, t.TempDir())
 	const W, H = 1100, 400
 	src := image.NewRGBA(image.Rect(0, 0, W, H))
 	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
@@ -374,7 +375,7 @@ func TestToolbarOverflowMenu(t *testing.T) {
 // TestWidthValueCentered: число толщины стоит по центру кнопки и по горизонтали, и по вертикали,
 // при любом числе знаков.
 func TestWidthValueCentered(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	testenv.Config(t, t.TempDir())
 	src := image.NewRGBA(image.Rect(0, 0, 100, 100))
 	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
 	m.tool = annotate.ToolPen

@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"github.com/jexme/scrawl/internal/testenv"
 	"image"
 	"image/color"
 	"os"
@@ -15,7 +16,7 @@ import (
 
 func newStampMonitor(t *testing.T) *monitor {
 	t.Helper()
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	testenv.Config(t, t.TempDir())
 	src := image.NewRGBA(image.Rect(0, 0, 400, 300))
 	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
 	m.sel, m.hasSel = image.Rect(20, 20, 380, 280), true

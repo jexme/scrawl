@@ -2,15 +2,27 @@ package settings
 
 import (
 	"encoding/json"
+	"github.com/jexme/scrawl/internal/testenv"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
 
+// abs даёт путь, абсолютный на любой платформе: на Windows нужна буква диска.
+func abs(p string) string {
+	if runtime.GOOS == "windows" {
+		return "C:" + p
+	}
+	return p
+}
+
+var xDir = abs("/x")
+
 func sandbox(t *testing.T) {
 	t.Helper()
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	testenv.Config(t, t.TempDir())
 }
 
 func TestDefaultsWithoutFile(t *testing.T) {
@@ -23,7 +35,7 @@ func TestDefaultsWithoutFile(t *testing.T) {
 func TestSaveLoadRoundTrip(t *testing.T) {
 	sandbox(t)
 	want := Default()
-	want.DoubleClick, want.Enter, want.SaveDir = DoubleClickCopySave, EnterSave, "/tmp/shots"
+	want.DoubleClick, want.Enter, want.SaveDir = DoubleClickCopySave, EnterSave, abs("/tmp/shots")
 	want.Notifications, want.DimPercent, want.BorderColor = false, 40, "#FF8800"
 	if err := Save(want); err != nil {
 		t.Fatal(err)
@@ -43,8 +55,8 @@ func TestInvalidValuesFallBack(t *testing.T) {
 	os.MkdirAll(filepath.Dir(Path()), 0o755)
 
 	// Неверное значение заменяется, остальное сохраняется.
-	os.WriteFile(Path(), []byte(`{"double_click":"explode","save_dir":"/x"}`), 0o644)
-	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != "/x" {
+	os.WriteFile(Path(), []byte(`{"double_click":"explode","save_dir":"`+xDir+`"}`), 0o644)
+	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != xDir {
 		t.Errorf("неверный double_click должен стать off, остальное остаться: %+v", got)
 	}
 	// Битый JSON: всё по умолчанию.
@@ -71,13 +83,13 @@ func TestEachKeyIsReadIndependently(t *testing.T) {
 	if got := Load(); got != Default() {
 		t.Errorf("пустой объект должен дать значения по умолчанию: %+v", got)
 	}
-	writeConfig(t, `{"save_dir":"/x"}`)
-	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != "/x" {
+	writeConfig(t, `{"save_dir":"`+xDir+`"}`)
+	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != xDir {
 		t.Errorf("отсутствующий ключ должен получить значение по умолчанию: %+v", got)
 	}
 	// Неверный тип одного ключа не отбрасывает остальные.
-	writeConfig(t, `{"double_click":5,"save_dir":"/x"}`)
-	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != "/x" {
+	writeConfig(t, `{"double_click":5,"save_dir":"`+xDir+`"}`)
+	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != xDir {
 		t.Errorf("число вместо строки: ожидали copy и /x, получили %+v", got)
 	}
 	writeConfig(t, `{"double_click":"copy_save","save_dir":["a"]}`)
@@ -134,7 +146,7 @@ func TestUnknownKeysSurviveSave(t *testing.T) {
 
 func TestEmptyOptionalKeyIsRemoved(t *testing.T) {
 	sandbox(t)
-	writeConfig(t, `{"double_click":"off","save_dir":"/old"}`)
+	writeConfig(t, `{"double_click":"off","save_dir":"`+abs("/old")+`"}`)
 	if err := Save(Settings{DoubleClick: DoubleClickOff}); err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +208,7 @@ func TestStoreUpdatePersists(t *testing.T) {
 }
 
 func TestValidateAndExpandDir(t *testing.T) {
-	for _, ok := range []string{"", "/abs/path", "~", "~/Pictures/Shots"} {
+	for _, ok := range []string{"", abs("/abs/path"), "~", "~/Pictures/Shots"} {
 		if err := ValidateSaveDir(ok); err != nil {
 			t.Errorf("%q должен быть допустим: %v", ok, err)
 		}
@@ -207,16 +219,17 @@ func TestValidateAndExpandDir(t *testing.T) {
 		}
 	}
 
-	t.Setenv("HOME", "/home/tester")
+	home := abs("/home/tester")
+	testenv.Home(t, home)
 	cases := map[string]string{
 		"":                 "",
-		"/abs/path":        "/abs/path",
-		"~":                "/home/tester",
-		"~/Pictures/Shots": "/home/tester/Pictures/Shots",
+		abs("/abs/path"):   abs("/abs/path"),
+		"~":                home,
+		"~/Pictures/Shots": filepath.Join(home, "Pictures", "Shots"),
 	}
 	for in, want := range cases {
 		got, err := ExpandDir(in)
-		if err != nil || got != want {
+		if err != nil || filepath.Clean(got) != filepath.Clean(want) {
 			t.Errorf("ExpandDir(%q) = %q, %v; ожидали %q", in, got, err, want)
 		}
 	}
@@ -260,8 +273,8 @@ func TestFilePrefix(t *testing.T) {
 		}
 	}
 	// Неверный префикс в файле сбрасывается, остальное читается.
-	writeConfig(t, `{"file_prefix":"a/b","save_dir":"/x"}`)
-	if got := Load(); got.FilePrefix != "" || got.SaveDir != "/x" {
+	writeConfig(t, `{"file_prefix":"a/b","save_dir":"`+xDir+`"}`)
+	if got := Load(); got.FilePrefix != "" || got.SaveDir != xDir {
 		t.Errorf("неверный префикс должен сброситься: %+v", got)
 	}
 }

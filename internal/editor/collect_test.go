@@ -2,11 +2,13 @@ package editor
 
 import (
 	"errors"
+	"github.com/jexme/scrawl/internal/testenv"
 	"image"
 	"image/color"
 	"image/png"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -19,10 +21,13 @@ import (
 // обмена и файлы пользователя. wl-copy пишет stdin в файл clipboard-<тип>.
 func sandbox(t *testing.T) (home string) {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("нужен поддельный wl-copy (sh-скрипт), а буфер обмена на Windows ещё не написан")
+	}
 	home = t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("XDG_CACHE_HOME", filepath.Join(home, ".cache"))
-	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	testenv.Home(t, home)
+	testenv.Cache(t, filepath.Join(home, ".cache"))
+	testenv.Config(t, filepath.Join(home, ".config"))
 	// Тесты идут с поддельным wl-copy, поэтому сеанс считается Wayland, даже если
 	// их запустили под xvfb-run (там WAYLAND_DISPLAY пуст, и буфер пошёл бы через xclip).
 	// Окружение не трогаем: от него зависит и выбор платформы EGL.

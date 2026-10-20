@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -13,6 +14,9 @@ import (
 // .desktop, с PATH из одних перечисленных программ. Возвращает вывод и папку установки.
 func runInstaller(t *testing.T, env []string, tools ...string) (out string, prefix string) {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("install.sh — установщик для Linux: ему нужны симлинки и sh")
+	}
 	sh, err := exec.LookPath("sh")
 	if err != nil {
 		t.Skip("нет sh")
