@@ -552,7 +552,7 @@ func (m *monitor) keyFilters() []event.Filter {
 func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.Point) {
 	for {
 		ev, ok := gtx.Event(
-			pointer.Filter{Target: &m.canvas, Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Move | pointer.Enter | pointer.Leave},
+			pointer.Filter{Target: &m.canvas, Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Move | pointer.Enter | pointer.Leave | pointer.Cancel},
 			pointer.Filter{Target: &m.canvas, Kinds: pointer.Scroll, ScrollY: pointer.ScrollRange{Min: -100, Max: 100}},
 		)
 		if !ok {
@@ -562,9 +562,15 @@ func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.
 		if !ok {
 			continue
 		}
+		if e.Kind == pointer.Cancel {
+			// Курсор ушёл с окна (например, на оверлей другого монитора): у Cancel нет позиции,
+			// поэтому последнюю не затираем, а лупу гасим.
+			m.hoverIn = false
+			continue
+		}
 		p := toFrame(e.Position)
 		m.hover = p
-		m.hoverIn = e.Kind != pointer.Leave && e.Kind != pointer.Cancel
+		m.hoverIn = e.Kind != pointer.Leave
 		switch e.Kind {
 		case pointer.Press:
 			if e.Buttons.Contain(pointer.ButtonPrimary) {

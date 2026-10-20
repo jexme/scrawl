@@ -95,17 +95,31 @@
  			w.sendWMStateEvent(_NET_WM_STATE_ADD, w.atoms.wmStateFullscreen, 0)
  		}
  	case Minimized:
+--- a/app/internal/windows/windows.go
++++ b/app/internal/windows/windows.go
+@@ -372,6 +372,7 @@
+ 	WM_POINTERDOWN           = 0x0246
+ 	WM_POINTERUP             = 0x0247
+ 	WM_POINTERUPDATE         = 0x0245
++	WM_POINTERLEAVE          = 0x024A
+ 	WM_POINTERWHEEL          = 0x024E
+ 	WM_POINTERHWHEEL         = 0x024F
+ 	WM_QUIT                  = 0x0012
 --- a/app/os_windows.go
 +++ b/app/os_windows.go
-@@ -39,6 +39,8 @@
+@@ -39,8 +39,10 @@
  
  type window struct {
  	hwnd syscall.Handle
+-	hdc  syscall.Handle
+-	w    *callbacks
 +	// outputAt: the window exactly covers one monitor (FullscreenAt), without being maximized.
 +	outputAt bool
- 	hdc  syscall.Handle
- 	w    *callbacks
++	hdc      syscall.Handle
++	w        *callbacks
  
+ 	// cursorIn tracks whether the cursor was inside the window according
+ 	// to the most recent WM_SETCURSOR.
 @@ -240,6 +242,8 @@
  	)
  	style := windows.GetWindowLong(w.hwnd, windows.GWL_STYLE)
@@ -115,7 +129,18 @@
  	case p.IsMaximized() && style&windows.WS_OVERLAPPEDWINDOW != 0:
  		w.config.Mode = Maximized
  	case p.IsMaximized():
-@@ -870,6 +874,7 @@
+@@ -333,6 +337,10 @@
+ 		}
+ 
+ 		w.pointerUpdate(pi, pid, kind, lParam)
++	case windows.WM_POINTERLEAVE:
++		// The mouse left this window (for example onto another monitor's overlay). Without
++		// this the window keeps its last hover position and goes on drawing a hover marker.
++		w.ProcessEvent(pointer.Event{Kind: pointer.Cancel})
+ 	case windows.WM_CANCELMODE:
+ 		w.ProcessEvent(pointer.Event{
+ 			Kind: pointer.Cancel,
+@@ -870,6 +878,7 @@
  	style := windows.GetWindowLong(w.hwnd, windows.GWL_STYLE)
  	var showMode int32
  	var x, y, width, height int32
@@ -123,7 +148,7 @@
  	swpStyle := uintptr(windows.SWP_FRAMECHANGED)
  	if cnf.TopMost == w.config.TopMost {
  		// Don't change the z-order if TopMost didn't change.
-@@ -880,6 +885,7 @@
+@@ -880,6 +889,7 @@
  		hwndAfter = windows.HWND_TOPMOST
  	}
  	w.config.TopMost = cnf.TopMost
@@ -131,7 +156,7 @@
  	winStyle := uintptr(windows.WS_OVERLAPPEDWINDOW)
  	style &^= winStyle
  	switch cnf.Mode {
-@@ -921,6 +927,22 @@
+@@ -921,6 +931,22 @@
  	case Fullscreen:
  		swpStyle |= windows.SWP_NOMOVE | windows.SWP_NOSIZE
  		showMode = windows.SW_SHOWMAXIMIZED
@@ -154,7 +179,7 @@
  	}
  
  	// Disable the maximize button if MaxSize is set.
-@@ -937,6 +959,18 @@
+@@ -937,6 +963,18 @@
  	windows.SetWindowPos(w.hwnd, hwndAfter, x, y, width, height, swpStyle)
  	windows.SetWindowLong(w.hwnd, windows.GWL_STYLE, style)
  	windows.ShowWindow(w.hwnd, showMode)

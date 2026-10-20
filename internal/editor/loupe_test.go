@@ -9,10 +9,13 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/gpu/headless"
+	"gioui.org/io/input"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 
 	"github.com/jexme/scrawl/internal/screencast"
 	"github.com/jexme/scrawl/internal/settings"
@@ -221,5 +224,46 @@ func TestRenderLoupe(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Курсор ушёл на оверлей другого монитора: окно получает pointer.Cancel (Windows) или
+// pointer.Leave (Wayland, X11) и обязано погасить лупу. Раньше Cancel отбрасывался фильтром,
+// и на покинутом мониторе лупа оставалась рядом с последней позицией курсора.
+func TestLoupeHidesWhenPointerLeavesWindow(t *testing.T) {
+	testenv.Config(t, t.TempDir())
+	const W, H = 800, 600
+	src := image.NewRGBA(image.Rect(0, 0, W, H))
+	m := newMonitor(Config{Fresh: true}, &screencast.Frame{Img: src}, func() {})
+	size := image.Pt(W, H)
+	var r input.Router
+	var ops op.Ops
+	frame := func() {
+		ops.Reset()
+		gtx := layout.Context{Ops: &ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(size), Source: r.Source()}
+		m.layout(gtx, size)
+		r.Frame(&ops)
+	}
+	frame()
+	frame()
+
+	for _, tc := range []struct {
+		name string
+		ev   pointer.Event
+		want bool
+	}{
+		{"курсор над окном", pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(300, 200)}, true},
+		{"курсор ушёл на другой монитор (Cancel)", pointer.Event{Kind: pointer.Cancel}, false},
+		{"курсор вернулся", pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(310, 210)}, true},
+		{"курсор ушёл (Leave)", pointer.Event{Kind: pointer.Leave, Source: pointer.Mouse, Position: f32.Pt(310, 210)}, false},
+	} {
+		r.Queue(tc.ev)
+		frame()
+		if m.hoverIn != tc.want || m.loupeActive() != tc.want {
+			t.Errorf("%s: hoverIn=%v, лупа=%v, ожидали %v", tc.name, m.hoverIn, m.loupeActive(), tc.want)
+		}
+	}
+	if m.hover != f32.Pt(310, 210) {
+		t.Errorf("Cancel не должен затирать последнюю позицию (у него её нет): %v", m.hover)
 	}
 }
