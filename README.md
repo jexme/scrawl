@@ -52,8 +52,9 @@ A personal project under active development; the current version is a pre-releas
 [Releases](https://github.com/jexme/scrawl/releases) page; you can also build it from source (a few minutes).
 Linux: GNOME on Wayland is the main target. **X11 sessions** (GNOME on Xorg, KDE,
 XFCE and others) work too, but that support is new and has so far been tested only on a
-virtual X server, so reports from real machines are welcome. A Windows build compiles, but
-screen capture is not written yet; see [docs/WINDOWS.md](docs/WINDOWS.md).
+virtual X server, so reports from real machines are welcome. **Windows 10 and 11** work too (capture, annotations,
+clipboard, tray icon and a global hotkey); this port is new and has been tried only on a 100% scale, see
+[docs/WINDOWS.md](docs/WINDOWS.md) for building and what is missing.
 
 ## Requirements
 

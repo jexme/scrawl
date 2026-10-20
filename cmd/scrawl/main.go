@@ -79,16 +79,18 @@ func main() {
 		return
 	}
 
-	if runtime.GOOS != "linux" {
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
 		// Захват экрана, буфер обмена и горячая клавиша для этой системы ещё не написаны.
-		fatal("%s", i18n.T("захват экрана пока есть только в Linux (GNOME, Wayland); окно настроек работает: scrawl -settings"))
+		fatal("%s", i18n.T("захват экрана пока есть только в Linux (GNOME, Wayland) и Windows; окно настроек работает: scrawl -settings"))
 	}
 
 	var (
 		frames []screencast.Frame
 		t0     time.Time
 	)
-	if x11capture.IsSession() {
+	if runtime.GOOS == "windows" {
+		frames, t0 = grabWindows(*verbose)
+	} else if x11capture.IsSession() {
 		frames, t0 = grabX11(*setup, *verbose)
 	} else {
 		frames, t0 = grabPortal(*setup, *verbose)
@@ -206,7 +208,7 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 func fatal(f string, a ...any) {
 	msg := fmt.Sprintf(f, a...)
 	fmt.Fprintln(os.Stderr, msg)
-	exec.Command("notify-send", "-a", "Scrawl", i18n.T("Не удалось сделать скриншот"), msg).Run()
+	notify(i18n.T("Не удалось сделать скриншот"), msg)
 	os.Exit(1)
 }
 
@@ -250,7 +252,7 @@ func runTray(exitAfter time.Duration) {
 func watchUpdates() {
 	for {
 		if res, err := update.Check(context.Background(), version.String()); err == nil && res.Newer && !update.AlreadyNotified(res.Latest) {
-			exec.Command("notify-send", "-a", "Scrawl", i18n.T("Доступна новая версия"), res.Message()).Run()
+			notify(i18n.T("Доступна новая версия"), res.Message())
 			update.MarkNotified(res.Latest)
 		}
 		time.Sleep(24 * time.Hour)

@@ -27,6 +27,9 @@ func Path() string {
 
 // Enabled сообщает, есть ли файл автозапуска.
 func Enabled() bool {
+	if useRegistry {
+		return regEnabled()
+	}
 	_, err := os.Stat(Path())
 	return err == nil
 }
@@ -61,6 +64,9 @@ func Enable(bin string) error {
 	if !filepath.IsAbs(bin) {
 		return fmt.Errorf(i18n.T("путь к программе должен быть абсолютным: %q"), bin)
 	}
+	if useRegistry {
+		return regEnable(bin)
+	}
 	path := Path()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
@@ -70,6 +76,9 @@ func Enable(bin string) error {
 
 // Disable удаляет файл автозапуска; если его нет, это не ошибка.
 func Disable() error {
+	if useRegistry {
+		return regDisable()
+	}
 	if err := os.Remove(Path()); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}

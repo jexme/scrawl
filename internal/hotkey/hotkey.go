@@ -138,6 +138,9 @@ func sameAccel(a, b string) bool { return strings.EqualFold(a, b) }
 
 // Current возвращает комбинацию ярлыка программы или "", если ярлыка нет.
 func Current() string {
+	if onWindows {
+		return winCurrent()
+	}
 	list, err := listShortcuts()
 	if err != nil {
 		return ""
@@ -153,6 +156,9 @@ func Current() string {
 // Assign назначает комбинацию accel на запуск bin. Есть ярлык программы:
 // он обновляется. Нет: создаётся новый. Чужой ярлык с той же комбинацией даёт *Conflict.
 func Assign(accel, bin string) (Result, error) {
+	if onWindows {
+		return winAssign(accel)
+	}
 	var res Result
 	if err := ValidateAccel(accel); err != nil {
 		return res, err

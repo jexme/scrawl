@@ -39,9 +39,9 @@ func boolInt(b bool) int {
 func install(t *testing.T, values map[string]string) *fakeGSettings {
 	t.Helper()
 	f := &fakeGSettings{values: values}
-	old := gsettings
-	gsettings = f.run
-	t.Cleanup(func() { gsettings = old })
+	old, oldWin := gsettings, onWindows
+	gsettings, onWindows = f.run, false
+	t.Cleanup(func() { gsettings, onWindows = old, oldWin })
 	return f
 }
 

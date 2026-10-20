@@ -1139,6 +1139,13 @@ func (s *state) captureRows() []layout.Widget {
 		s.row(i18n.T("Горячая клавиша запуска"), i18n.T("Создаёт или обновляет ярлык в настройках клавиатуры GNOME. Формат: Print, <Super>s, <Control><Alt>p. Чужие ярлыки не меняются."),
 			s.hotkeyControl()),
 	}
+	if onWindows {
+		// В Windows нет ни портала, ни GNOME: экран снимается напрямую через GDI, а комбинацию
+		// держит значок в трее (scrawl -tray).
+		rows[0] = s.row(i18n.T("Горячая клавиша запуска"), i18n.T("Работает, пока запущен значок в трее. Формат: Print, <Super>s, <Control><Alt>p. Print может занимать другая программа (Greenshot, «Ножницы»): тогда выберите другую комбинацию."),
+			s.hotkeyControl())
+		return rows
+	}
 	if x11Session() {
 		return append(rows, s.row(i18n.T("Сеанс X11"), i18n.T("Экран снимается напрямую, без портала: выбирать мониторы и выдавать разрешение не нужно. Для буфера обмена нужен xclip."), nil))
 	}

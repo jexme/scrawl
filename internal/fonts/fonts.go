@@ -106,6 +106,7 @@ func candidates(tag string) []candidate {
 			}
 		}
 	}
+	out = append(out, windowsCandidates(tag)...)
 	for _, p := range knownFiles {
 		out = append(out, candidate{p, 0})
 	}

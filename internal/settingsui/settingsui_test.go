@@ -2,10 +2,12 @@ package settingsui
 
 import (
 	"errors"
+	"github.com/jexme/scrawl/internal/testenv"
 	"image"
 	"image/png"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -24,8 +26,8 @@ import (
 
 func testState(t *testing.T) *state {
 	t.Helper()
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	t.Setenv("XDG_CACHE_HOME", t.TempDir()) // запомненная вкладка не должна браться из кэша пользователя
+	testenv.Config(t, t.TempDir())
+	testenv.Cache(t, t.TempDir()) // запомненная вкладка не должна браться из кэша пользователя
 	return newState(settings.NewStore())
 }
 
@@ -65,12 +67,12 @@ func TestInvalidDirIsRejected(t *testing.T) {
 }
 
 func TestInitialStateReflectsFile(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	if err := settings.Save(settings.Settings{DoubleClick: settings.DoubleClickCopy, SaveDir: "/tmp/x"}); err != nil {
+	testenv.Config(t, t.TempDir())
+	if err := settings.Save(settings.Settings{DoubleClick: settings.DoubleClickCopy, SaveDir: tmpX}); err != nil {
 		t.Fatal(err)
 	}
 	s := newState(settings.NewStore())
-	if s.choice.Value != string(settings.DoubleClickCopy) || s.dir.Text() != "/tmp/x" {
+	if s.choice.Value != string(settings.DoubleClickCopy) || s.dir.Text() != tmpX {
 		t.Errorf("окно должно показывать сохранённое: выбор=%q, папка=%q", s.choice.Value, s.dir.Text())
 	}
 }
@@ -181,7 +183,7 @@ func TestFilePrefixIsValidatedAndSaved(t *testing.T) {
 func TestOpenOutputDirCreatesAndOpensFolder(t *testing.T) {
 	s := testState(t)
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	testenv.Home(t, home)
 	var opened string
 	old := openFolder
 	openFolder = func(dir string) error { opened = dir; return nil }
@@ -773,8 +775,8 @@ func TestDocSettingsImages(t *testing.T) {
 	const W, H = 820, 640
 	for lang, name := range map[string]string{i18n.RU: "settings-ru.png", i18n.EN: "settings-en.png"} {
 		i18n.SetLanguage(lang)
-		t.Setenv("XDG_CONFIG_HOME", "/home/you/.config") // красивый путь в подписи; файл не создаётся
-		t.Setenv("XDG_CACHE_HOME", t.TempDir())
+		testenv.Config(t, "/home/you/.config") // красивый путь в подписи; файл не создаётся
+		testenv.Cache(t, t.TempDir())
 		s := newState(settings.NewStore())
 		s.selectTab(1) // «Инструменты»: на ней больше всего видно
 		win, err := headless.NewWindow(W, H)
@@ -802,9 +804,10 @@ func TestDocSettingsImages(t *testing.T) {
 }
 
 func TestCaptureRowsDependOnSession(t *testing.T) {
-	old := x11Session
-	defer func() { x11Session = old }()
+	old, oldWin := x11Session, onWindows
+	defer func() { x11Session, onWindows = old, oldWin }()
 	s := testState(t)
+	onWindows = false
 	x11Session = func() bool { return false }
 	wayland := len(s.captureRows())
 	x11Session = func() bool { return true }
@@ -813,6 +816,13 @@ func TestCaptureRowsDependOnSession(t *testing.T) {
 		t.Errorf("строк захвата: Wayland %d (ожидали 3), X11 %d (ожидали 2: без кнопок портала)", wayland, x11)
 	}
 	s.layout(frameContext(700, 3300)) // окно в сеансе X11 рисуется без ошибок
+
+	// Windows: ни портала, ни GNOME, остаётся одна строка с горячей клавишей.
+	onWindows = true
+	if n := len(s.captureRows()); n != 1 {
+		t.Errorf("строк захвата в Windows %d, ожидали 1", n)
+	}
+	s.layout(frameContext(700, 3300))
 }
 
 func TestTabs(t *testing.T) {
@@ -948,3 +958,11 @@ func TestFontHintShownOnlyWhenFontIsMissing(t *testing.T) {
 		t.Errorf("без шрифта под списком должна быть подсказка: высота %d и %d", with, without)
 	}
 }
+
+// tmpX: абсолютный путь на любой платформе (на Windows нужна буква диска).
+var tmpX = func() string {
+	if runtime.GOOS == "windows" {
+		return "C:/tmp/x"
+	}
+	return "/tmp/x"
+}()

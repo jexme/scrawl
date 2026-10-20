@@ -1,13 +1,27 @@
 package autostart
 
 import (
+	"github.com/jexme/scrawl/internal/testenv"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
 
-func sandbox(t *testing.T) { t.Helper(); t.Setenv("XDG_CONFIG_HOME", t.TempDir()) }
+func sandbox(t *testing.T) {
+	t.Helper()
+	testenv.Config(t, t.TempDir())
+	setRegistry(t, false) // файловая ветка: настоящий реестр тесты не трогают
+}
+
+// bin: абсолютный путь к программе на любой платформе (на Windows нужна буква диска).
+var bin = func() string {
+	if runtime.GOOS == "windows" {
+		return `C:/home/me/.local/bin/scrawl`
+	}
+	return "/home/me/.local/bin/scrawl"
+}()
 
 func TestEnableDisable(t *testing.T) {
 	sandbox(t)
@@ -17,14 +31,14 @@ func TestEnableDisable(t *testing.T) {
 	if err := Disable(); err != nil {
 		t.Errorf("выключить выключенный автозапуск не ошибка: %v", err)
 	}
-	if err := Enable("/home/me/.local/bin/scrawl"); err != nil {
+	if err := Enable(bin); err != nil {
 		t.Fatal(err)
 	}
 	if !Enabled() || filepath.Base(Path()) != "io.github.jexme.Scrawl.desktop" || filepath.Base(filepath.Dir(Path())) != "autostart" {
 		t.Errorf("файл автозапуска: %s", Path())
 	}
 	data, _ := os.ReadFile(Path())
-	for _, want := range []string{"[Desktop Entry]", "Type=Application", "Exec=/home/me/.local/bin/scrawl -tray\n", "X-GNOME-Autostart-enabled=true"} {
+	for _, want := range []string{"[Desktop Entry]", "Type=Application", "Exec=" + bin + " -tray\n", "X-GNOME-Autostart-enabled=true"} {
 		if !strings.Contains(string(data), want) {
 			t.Errorf("в файле нет %q:\n%s", want, data)
 		}

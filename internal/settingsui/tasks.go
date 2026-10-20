@@ -2,6 +2,7 @@ package settingsui
 
 import (
 	"context"
+	"runtime"
 	"sync"
 
 	"gioui.org/layout"
@@ -21,6 +22,7 @@ import (
 // подменяют их, чтобы не трогать настройки системы.
 var (
 	x11Session      = x11capture.IsSession
+	onWindows       = runtime.GOOS == "windows"
 	fontAvailable   = fonts.Available
 	grantPermission = screencast.GrantScreenshotPermission
 	setupMonitors   = screencast.SetupMonitors

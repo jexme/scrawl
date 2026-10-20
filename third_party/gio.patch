@@ -95,3 +95,81 @@
  			w.sendWMStateEvent(_NET_WM_STATE_ADD, w.atoms.wmStateFullscreen, 0)
  		}
  	case Minimized:
+--- a/app/os_windows.go
++++ b/app/os_windows.go
+@@ -39,6 +39,8 @@
+ 
+ type window struct {
+ 	hwnd syscall.Handle
++	// outputAt: the window exactly covers one monitor (FullscreenAt), without being maximized.
++	outputAt bool
+ 	hdc  syscall.Handle
+ 	w    *callbacks
+ 
+@@ -240,6 +242,8 @@
+ 	)
+ 	style := windows.GetWindowLong(w.hwnd, windows.GWL_STYLE)
+ 	switch {
++	case w.outputAt:
++		w.config.Mode = Fullscreen
+ 	case p.IsMaximized() && style&windows.WS_OVERLAPPEDWINDOW != 0:
+ 		w.config.Mode = Maximized
+ 	case p.IsMaximized():
+@@ -870,6 +874,7 @@
+ 	style := windows.GetWindowLong(w.hwnd, windows.GWL_STYLE)
+ 	var showMode int32
+ 	var x, y, width, height int32
++	raise := false
+ 	swpStyle := uintptr(windows.SWP_FRAMECHANGED)
+ 	if cnf.TopMost == w.config.TopMost {
+ 		// Don't change the z-order if TopMost didn't change.
+@@ -880,6 +885,7 @@
+ 		hwndAfter = windows.HWND_TOPMOST
+ 	}
+ 	w.config.TopMost = cnf.TopMost
++	w.outputAt = false
+ 	winStyle := uintptr(windows.WS_OVERLAPPEDWINDOW)
+ 	style &^= winStyle
+ 	switch cnf.Mode {
+@@ -921,6 +927,22 @@
+ 	case Fullscreen:
+ 		swpStyle |= windows.SWP_NOMOVE | windows.SWP_NOSIZE
+ 		showMode = windows.SW_SHOWMAXIMIZED
++		// A maximized window covers the monitor it stands on. FullscreenAt asks for a
++		// specific monitor, so move the window there first and keep it on top.
++		if pos := cnf.OutputPos; pos != nil {
++			r := windows.Rect{Left: int32(pos.X), Top: int32(pos.Y), Right: int32(pos.X) + 1, Bottom: int32(pos.Y) + 1}
++			if mi, ok := windows.GetMonitorInfo(r, windows.MONITOR_DEFAULTTONULL); ok {
++				x, y = mi.Monitor.Left, mi.Monitor.Top
++				width, height = mi.Monitor.Right-mi.Monitor.Left, mi.Monitor.Bottom-mi.Monitor.Top
++				swpStyle &^= windows.SWP_NOMOVE | windows.SWP_NOSIZE | windows.SWP_NOZORDER
++				hwndAfter = windows.HWND_TOPMOST
++				w.config.TopMost = true
++				// Maximizing would stop at the work area; size the window to the monitor instead.
++				showMode = windows.SW_SHOWNORMAL
++				w.outputAt = true
++				raise = true
++			}
++		}
+ 	}
+ 
+ 	// Disable the maximize button if MaxSize is set.
+@@ -937,6 +959,18 @@
+ 	windows.SetWindowPos(w.hwnd, hwndAfter, x, y, width, height, swpStyle)
+ 	windows.SetWindowLong(w.hwnd, windows.GWL_STYLE, style)
+ 	windows.ShowWindow(w.hwnd, showMode)
++	if raise {
++		forceForeground(w.hwnd)
++	}
++}
++
++// forceForeground brings hwnd to the front even when the process was not started by
++// the user's last input: a synthetic Alt press lifts the foreground lock.
++func forceForeground(hwnd syscall.Handle) {
++	keybd := syscall.NewLazyDLL("user32.dll").NewProc("keybd_event")
++	keybd.Call(uintptr(windows.VK_MENU), 0, 0, 0)
++	windows.SetForegroundWindow(hwnd)
++	keybd.Call(uintptr(windows.VK_MENU), 0, 2, 0) // KEYEVENTF_KEYUP
+ }
+ 
+ func (w *window) WriteClipboard(mime string, s []byte) {
