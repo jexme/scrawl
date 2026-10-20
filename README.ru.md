@@ -85,6 +85,16 @@ make install            # собирает и ставит в ~/.local (PREFIX=/
 Нужен Go (версия из `go.mod`). Нет `sudo`? `scripts/fetch-pipewire-headers.sh`
 распакует заголовки PipeWire в `.deps/`, Makefile их подхватит.
 
+**Из apt-репозитория** (Debian, Ubuntu; обновления приходят с `apt upgrade`):
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
+
+Репозиторий подписан ключом `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`.
+
 **Из пакета .deb** (Debian, Ubuntu): скачайте `scrawl_ВЕРСИЯ_amd64.deb`
 со страницы [Releases](https://github.com/jexme/scrawl/releases) и выполните
 `sudo apt install ./scrawl_*.deb`. Пакет подтянет библиотеки и порекомендует `wl-clipboard`, `xclip`

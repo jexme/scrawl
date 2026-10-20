@@ -86,6 +86,16 @@ make install            # builds and installs to ~/.local (PREFIX=/usr/local for
 You need Go (the version from `go.mod`). No `sudo`? `scripts/fetch-pipewire-headers.sh`
 unpacks the PipeWire headers into `.deps/`, and the Makefile picks them up.
 
+**From the apt repository** (Debian, Ubuntu; updates come with `apt upgrade`):
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
+
+The repository is signed with the key `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`.
+
 **From a .deb package** (Debian, Ubuntu): download `scrawl_VERSION_amd64.deb`
 from the [Releases](https://github.com/jexme/scrawl/releases) page, then
 `sudo apt install ./scrawl_*.deb`. It pulls in the libraries and recommends `wl-clipboard`, `xclip`
