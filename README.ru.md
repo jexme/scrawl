@@ -123,7 +123,7 @@ make install            # собирает и ставит в ~/.local (PREFIX=/
 
 Скачайте `scrawl-ВЕРСИЯ-windows-amd64.zip` и файл `.sha256` со страницы [Releases](https://github.com/jexme/scrawl/releases),
 распакуйте куда угодно и запустите `scrawl.exe -tray`. Программа портативная: установщика нет, ничего ставить не нужно.
-Через [Scoop](https://scoop.sh): `scoop install https://github.com/jexme/scrawl/releases/latest/download/scrawl.json`.
+Через [Scoop](https://scoop.sh): `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc2/scrawl.json` (адрес `releases/latest/...` заработает, когда появится стабильный релиз: предварительные он пропускает).
 
 - **Значок** в области уведомлений; в Windows 11 он может прятаться за стрелкой `^` рядом с часами, перетащите его на панель.
 - **Клавиша Print** назначена по умолчанию. Её часто занимает другая программа (Greenshot, ShareX, Lightshot), а иногда и сама Windows:
