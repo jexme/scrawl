@@ -4,7 +4,6 @@
 package collection
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -28,9 +27,23 @@ func Add(png []byte) (string, error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", err
 	}
-	name := fmt.Sprintf("%s.png", time.Now().Format("20060102-150405.000000"))
-	path := filepath.Join(dir, name)
-	return path, os.WriteFile(path, png, 0o600)
+	// Часы на Windows тикают реже микросекунды: два быстрых Add получили бы одно имя,
+	// и второй снимок затёр бы первый. O_EXCL не даёт перезаписать, время сдвигаем на микросекунду.
+	for ts := time.Now(); ; ts = ts.Add(time.Microsecond) {
+		path := filepath.Join(dir, ts.Format("20060102-150405.000000")+".png")
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if os.IsExist(err) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		if _, err := f.Write(png); err != nil {
+			f.Close()
+			return "", err
+		}
+		return path, f.Close()
+	}
 }
 
 // List возвращает пути к картинкам подборки в порядке добавления.
