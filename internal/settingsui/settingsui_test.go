@@ -39,8 +39,8 @@ func frameContext(w, h int) layout.Context {
 
 func TestChoiceIsSavedToDisk(t *testing.T) {
 	s := testState(t)
-	if s.choice.Value != string(settings.DoubleClickOff) {
-		t.Fatalf("по умолчанию двойной клик выключен, а в окне %q", s.choice.Value)
+	if s.choice.Value != string(settings.DoubleClickCopy) {
+		t.Fatalf("по умолчанию двойной клик копирует, а в окне %q", s.choice.Value)
 	}
 	s.choice.Value = string(settings.DoubleClickCopySave)
 	s.layout(frameContext(700, 650)) // apply на кадре замечает смену выбора

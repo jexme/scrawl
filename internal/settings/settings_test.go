@@ -15,7 +15,7 @@ func sandbox(t *testing.T) {
 
 func TestDefaultsWithoutFile(t *testing.T) {
 	sandbox(t)
-	if got := Load(); got.DoubleClick != DoubleClickOff || got.SaveDir != "" {
+	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != "" {
 		t.Errorf("без файла ожидали настройки по умолчанию, получили %+v", got)
 	}
 }
@@ -44,7 +44,7 @@ func TestInvalidValuesFallBack(t *testing.T) {
 
 	// Неверное значение заменяется, остальное сохраняется.
 	os.WriteFile(Path(), []byte(`{"double_click":"explode","save_dir":"/x"}`), 0o644)
-	if got := Load(); got.DoubleClick != DoubleClickOff || got.SaveDir != "/x" {
+	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != "/x" {
 		t.Errorf("неверный double_click должен стать off, остальное остаться: %+v", got)
 	}
 	// Битый JSON: всё по умолчанию.
@@ -72,17 +72,17 @@ func TestEachKeyIsReadIndependently(t *testing.T) {
 		t.Errorf("пустой объект должен дать значения по умолчанию: %+v", got)
 	}
 	writeConfig(t, `{"save_dir":"/x"}`)
-	if got := Load(); got.DoubleClick != DoubleClickOff || got.SaveDir != "/x" {
+	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != "/x" {
 		t.Errorf("отсутствующий ключ должен получить значение по умолчанию: %+v", got)
 	}
 	// Неверный тип одного ключа не отбрасывает остальные.
 	writeConfig(t, `{"double_click":5,"save_dir":"/x"}`)
-	if got := Load(); got.DoubleClick != DoubleClickOff || got.SaveDir != "/x" {
-		t.Errorf("число вместо строки: ожидали off и /x, получили %+v", got)
+	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != "/x" {
+		t.Errorf("число вместо строки: ожидали copy и /x, получили %+v", got)
 	}
-	writeConfig(t, `{"double_click":"copy","save_dir":["a"]}`)
-	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != "" {
-		t.Errorf("массив вместо строки: ожидали copy и пустую папку, получили %+v", got)
+	writeConfig(t, `{"double_click":"copy_save","save_dir":["a"]}`)
+	if got := Load(); got.DoubleClick != DoubleClickCopySave || got.SaveDir != "" {
+		t.Errorf("массив вместо строки: ожидали copy_save и пустую папку, получили %+v", got)
 	}
 	// Относительный путь отклоняется так же, как в окне настроек.
 	writeConfig(t, `{"double_click":"copy","save_dir":"relative/dir"}`)

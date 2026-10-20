@@ -32,8 +32,8 @@ import (
 type DoubleClick string
 
 const (
-	DoubleClickOff      DoubleClick = "off"       // ничего (по умолчанию)
-	DoubleClickCopy     DoubleClick = "copy"      // скопировать в буфер обмена
+	DoubleClickOff      DoubleClick = "off"       // ничего
+	DoubleClickCopy     DoubleClick = "copy"      // скопировать в буфер обмена (по умолчанию)
 	DoubleClickCopySave DoubleClick = "copy_save" // скопировать и сохранить в файл
 )
 
@@ -112,7 +112,7 @@ type Settings struct {
 
 // Default возвращает настройки по умолчанию.
 func Default() Settings {
-	return Settings{DoubleClick: DoubleClickOff, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
+	return Settings{DoubleClick: DoubleClickCopy, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
 		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, ShowLoupe: true, DefaultTool: "select", Palette: DefaultPalette, MarkerOpacity: 43, Glue: DefaultGlue(), Format: FormatPNG, JPEGQuality: 90, Language: i18n.Auto}
 }
 
