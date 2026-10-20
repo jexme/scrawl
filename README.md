@@ -47,8 +47,8 @@ is one key press: the frozen screen appears in about 150 ms.
 
 ## Status
 
-A personal project under active development. **No release has been published
-yet**, so for now you build it from source (it takes a few minutes).
+A personal project under active development. Ready-made packages are on the
+[Releases](https://github.com/jexme/scrawl/releases) page; you can also build it from source (a few minutes).
 Linux: GNOME on Wayland is the main target. **X11 sessions** (GNOME on Xorg, KDE,
 XFCE and others) work too, but that support is new and has so far been tested only on a
 virtual X server, so reports from real machines are welcome. A Windows build compiles, but
@@ -86,13 +86,13 @@ make install            # builds and installs to ~/.local (PREFIX=/usr/local for
 You need Go (the version from `go.mod`). No `sudo`? `scripts/fetch-pipewire-headers.sh`
 unpacks the PipeWire headers into `.deps/`, and the Makefile picks them up.
 
-**From a .deb package** (Debian, Ubuntu; once a version is published): download `scrawl_VERSION_amd64.deb`
+**From a .deb package** (Debian, Ubuntu): download `scrawl_VERSION_amd64.deb`
 from the [Releases](https://github.com/jexme/scrawl/releases) page, then
 `sudo apt install ./scrawl_*.deb`. It pulls in the libraries and recommends `wl-clipboard`, `xclip`
 and `libnotify-bin`. The hotkey is not assigned by the package (it is per user): do it in `scrawl -settings`.
 Build it yourself with `make deb`.
 
-**From a release archive** (once a version is published): download
+**From a release archive**: download
 `scrawl-VERSION-linux-amd64.tar.gz` and `SHA256SUMS` from the
 [Releases](https://github.com/jexme/scrawl/releases) page, then:
 

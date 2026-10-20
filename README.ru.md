@@ -47,8 +47,8 @@
 
 ## Статус
 
-Личный проект в активной разработке. **Релизов пока нет**, поэтому сейчас программу
-нужно собрать из исходников (это несколько минут). Linux: основная цель это GNOME на Wayland. **Сеансы X11** (GNOME на Xorg, KDE, XFCE и другие)
+Личный проект в активной разработке. Готовые пакеты лежат на странице
+[Releases](https://github.com/jexme/scrawl/releases); можно и собрать из исходников (несколько минут). Linux: основная цель это GNOME на Wayland. **Сеансы X11** (GNOME на Xorg, KDE, XFCE и другие)
 тоже работают, но эта поддержка новая и пока проверена только на виртуальном X-сервере, так что
 отчёты с настоящих машин нужны. Под Windows код собирается, но захвата экрана там ещё нет:
 см. [docs/WINDOWS.md](docs/WINDOWS.md).
@@ -85,13 +85,13 @@ make install            # собирает и ставит в ~/.local (PREFIX=/
 Нужен Go (версия из `go.mod`). Нет `sudo`? `scripts/fetch-pipewire-headers.sh`
 распакует заголовки PipeWire в `.deps/`, Makefile их подхватит.
 
-**Из пакета .deb** (Debian, Ubuntu; когда версия выйдет): скачайте `scrawl_ВЕРСИЯ_amd64.deb`
+**Из пакета .deb** (Debian, Ubuntu): скачайте `scrawl_ВЕРСИЯ_amd64.deb`
 со страницы [Releases](https://github.com/jexme/scrawl/releases) и выполните
 `sudo apt install ./scrawl_*.deb`. Пакет подтянет библиотеки и порекомендует `wl-clipboard`, `xclip`
 и `libnotify-bin`. Клавишу пакет не назначает (она у каждого своя): сделайте это в `scrawl -settings`.
 Собрать самому: `make deb`.
 
-**Из архива релиза** (когда версия выйдет): скачайте `scrawl-ВЕРСИЯ-linux-amd64.tar.gz`
+**Из архива релиза**: скачайте `scrawl-ВЕРСИЯ-linux-amd64.tar.gz`
 и `SHA256SUMS` со страницы [Releases](https://github.com/jexme/scrawl/releases), затем:
 
 ```bash
