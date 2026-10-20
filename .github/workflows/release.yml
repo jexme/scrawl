@@ -28,8 +28,9 @@ jobs:
       - name: Архив и контрольные суммы
         run: |
           make dist VERSION="${GITHUB_REF_NAME}"
+          make deb VERSION="${GITHUB_REF_NAME}"
           cd dist
-          sha256sum scrawl-*.tar.gz > SHA256SUMS
+          sha256sum scrawl-*.tar.gz scrawl_*.deb > SHA256SUMS
           cat SHA256SUMS
 
       - name: Публикация релиза
@@ -38,5 +39,5 @@ jobs:
         run: |
           flags=""
           case "${GITHUB_REF_NAME}" in *-*) flags="--prerelease" ;; esac
-          gh release create "${GITHUB_REF_NAME}" dist/scrawl-*.tar.gz dist/SHA256SUMS \
+          gh release create "${GITHUB_REF_NAME}" dist/scrawl-*.tar.gz dist/scrawl_*.deb dist/SHA256SUMS \
             --verify-tag --generate-notes --title "Scrawl ${GITHUB_REF_NAME}" $flags

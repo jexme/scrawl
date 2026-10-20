@@ -20,7 +20,7 @@ BINDIR ?= $(PREFIX)/bin
 APPDIR ?= $(PREFIX)/share/applications
 DESKTOP := io.github.jexme.Scrawl.desktop
 
-.PHONY: all gio build test notices install uninstall dist hooks clean
+.PHONY: all gio build test notices install uninstall dist deb hooks clean
 
 all: build
 
@@ -67,6 +67,10 @@ dist: build
 	tar -C $(DIST) --owner=0 --group=0 -czf $(DIST)/$(PKG).tar.gz $(PKG)
 	cd $(DIST) && sha256sum $(PKG).tar.gz > $(PKG).tar.gz.sha256
 	@echo "Готово: $(DIST)/$(PKG).tar.gz"
+
+# Пакет для Debian и Ubuntu: dist/scrawl_ВЕРСИЯ_ARCH.deb.
+deb: build
+	packaging/deb.sh "$(VERSION)" "$(shell $(GO) env GOARCH)" $(DIST)
 
 # Включает проверки перед коммитом и отправкой: в историю не должна попасть личная почта.
 hooks:

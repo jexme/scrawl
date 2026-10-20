@@ -86,6 +86,12 @@ make install            # builds and installs to ~/.local (PREFIX=/usr/local for
 You need Go (the version from `go.mod`). No `sudo`? `scripts/fetch-pipewire-headers.sh`
 unpacks the PipeWire headers into `.deps/`, and the Makefile picks them up.
 
+**From a .deb package** (Debian, Ubuntu; once a version is published): download `scrawl_VERSION_amd64.deb`
+from the [Releases](https://github.com/jexme/scrawl/releases) page, then
+`sudo apt install ./scrawl_*.deb`. It pulls in the libraries and recommends `wl-clipboard`, `xclip`
+and `libnotify-bin`. The hotkey is not assigned by the package (it is per user): do it in `scrawl -settings`.
+Build it yourself with `make deb`.
+
 **From a release archive** (once a version is published): download
 `scrawl-VERSION-linux-amd64.tar.gz` and `SHA256SUMS` from the
 [Releases](https://github.com/jexme/scrawl/releases) page, then:
@@ -242,6 +248,7 @@ so the saved image matches what you saw.
 make build    # bin/scrawl; fetches and patches Gio on the first run
 make test     # unit tests, including the tray icon on the session D-Bus
 make dist     # release archive and checksum in dist/
+make deb      # .deb package for Debian and Ubuntu in dist/
 make notices  # regenerate THIRD_PARTY_NOTICES.md
 ```
 

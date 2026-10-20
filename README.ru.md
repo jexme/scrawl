@@ -85,6 +85,12 @@ make install            # собирает и ставит в ~/.local (PREFIX=/
 Нужен Go (версия из `go.mod`). Нет `sudo`? `scripts/fetch-pipewire-headers.sh`
 распакует заголовки PipeWire в `.deps/`, Makefile их подхватит.
 
+**Из пакета .deb** (Debian, Ubuntu; когда версия выйдет): скачайте `scrawl_ВЕРСИЯ_amd64.deb`
+со страницы [Releases](https://github.com/jexme/scrawl/releases) и выполните
+`sudo apt install ./scrawl_*.deb`. Пакет подтянет библиотеки и порекомендует `wl-clipboard`, `xclip`
+и `libnotify-bin`. Клавишу пакет не назначает (она у каждого своя): сделайте это в `scrawl -settings`.
+Собрать самому: `make deb`.
+
 **Из архива релиза** (когда версия выйдет): скачайте `scrawl-ВЕРСИЯ-linux-amd64.tar.gz`
 и `SHA256SUMS` со страницы [Releases](https://github.com/jexme/scrawl/releases), затем:
 
@@ -240,6 +246,7 @@ Scrawl снимает экран через интерфейс ScreenCast `xdg-d
 make build    # bin/scrawl; при первом запуске скачивает и патчит Gio
 make test     # тесты, в том числе значок в трее на шине D-Bus сеанса
 make dist     # архив релиза и контрольная сумма в dist/
+make deb      # пакет .deb для Debian и Ubuntu в dist/
 make notices  # пересобрать THIRD_PARTY_NOTICES.md
 ```
 
