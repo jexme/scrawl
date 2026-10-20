@@ -48,7 +48,7 @@ is one key press: the frozen screen appears in about 150 ms.
 
 ## Status
 
-A personal project under active development; the current version is a pre-release (`v0.1.0-rc1`). Ready-made packages are on the
+A personal project under active development; the current version is a pre-release (`v0.1.0-rc2`). Ready-made packages are on the
 [Releases](https://github.com/jexme/scrawl/releases) page; you can also build it from source (a few minutes).
 Linux: GNOME on Wayland is the main target. **X11 sessions** (GNOME on Xorg, KDE,
 XFCE and others) work too, but that support is new and has so far been tested only on a
