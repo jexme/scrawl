@@ -116,7 +116,7 @@ Open the settings window (`scrawl -settings`, tab "System") and use these button
 2. **Grant the fallback permission:** button "Grant permission" or `scrawl -grant-screenshot`.
    This lets Scrawl use the slower Screenshot portal on the rare shot when
    PipeWire gives no frame.
-3. **Set a hotkey:** the "Launch hotkey" field and the "Assign" button (default `Print`),
+3. **Set a hotkey:** on GNOME the installer (`install.sh`, `make install`) assigns `Print` itself unless another custom shortcut already uses it. To change it: the "Launch hotkey" field and the "Assign" button (default `Print`),
    or `scripts/gnome-hotkey.sh [KEY]`. It creates a GNOME custom shortcut and never
    overwrites one that is taken. If `Print` still opens GNOME's own screenshot tool, turn that
    off in *Settings → Keyboard → View and Customize Shortcuts → Screenshots*.

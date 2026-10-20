@@ -49,6 +49,7 @@ install: build
 	install -d $(DESTDIR)$(APPDIR)
 	sed 's|^Exec=scrawl|Exec=$(BINDIR)/scrawl|' packaging/$(DESKTOP) > $(DESTDIR)$(APPDIR)/$(DESKTOP)
 	chmod 644 $(DESTDIR)$(APPDIR)/$(DESKTOP)
+	@sh scripts/gnome-hotkey.sh Print $(BINDIR)/scrawl --auto; case $$? in 0) echo "Клавиша Print назначена на Scrawl.";; 12) echo "Print занята другим ярлыком: назначьте свою в scrawl -settings.";; esac
 	@echo "Установлено в $(BINDIR). Дальше: scrawl -setup, затем scrawl -grant-screenshot"
 
 uninstall:
@@ -62,7 +63,7 @@ PKG = scrawl-$(VERSION)-linux-$(shell $(GO) env GOARCH)
 dist: build
 	rm -rf $(DIST)/$(PKG) $(DIST)/$(PKG).tar.gz $(DIST)/$(PKG).tar.gz.sha256
 	mkdir -p $(DIST)/$(PKG)
-	cp bin/scrawl packaging/$(DESKTOP) packaging/install.sh LICENSE THIRD_PARTY_NOTICES.md README.md README.ru.md $(DIST)/$(PKG)/
+	cp bin/scrawl packaging/$(DESKTOP) packaging/install.sh scripts/gnome-hotkey.sh LICENSE THIRD_PARTY_NOTICES.md README.md README.ru.md $(DIST)/$(PKG)/
 	tar -C $(DIST) --owner=0 --group=0 -czf $(DIST)/$(PKG).tar.gz $(PKG)
 	cd $(DIST) && sha256sum $(PKG).tar.gz > $(PKG).tar.gz.sha256
 	@echo "Готово: $(DIST)/$(PKG).tar.gz"
