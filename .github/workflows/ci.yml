@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
 
 permissions:
@@ -16,7 +16,7 @@ jobs:
         with:
           fetch-depth: 0 # для проверки адресов авторов по всей истории
 
-      # В публичной истории только noreply-адреса. Проверяем при пуше в main (чужие
+      # В публичной истории только noreply-адреса. Проверяем при пуше в любую ветку (чужие
       # pull request приходят со своими адресами, их это не касается).
       - name: Адреса авторов
         if: github.event_name == 'push'
