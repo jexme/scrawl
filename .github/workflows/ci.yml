@@ -8,11 +8,16 @@ on:
 permissions:
   contents: read
 
+# Новый пуш в ту же ветку отменяет ещё идущий запуск: старый результат уже не нужен.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # для проверки адресов авторов по всей истории
 
@@ -24,7 +29,7 @@ jobs:
           bad=$(git log --format='%h %ae %ce' | ALLOWED='(@users\.noreply\.github\.com|^noreply@github\.com)$' awk '$2 !~ ENVIRON["ALLOWED"] || $3 !~ ENVIRON["ALLOWED"]')
           if [ -n "$bad" ]; then echo "Коммиты с личным адресом:"; echo "$bad"; exit 1; fi
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
@@ -65,9 +70,9 @@ jobs:
     env:
       CGO_ENABLED: "0" # на раннере есть gcc, но Windows-сборке cgo не нужен (и C-файлы Linux-пакетов ему мешают)
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
