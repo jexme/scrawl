@@ -216,7 +216,7 @@ func TestCatalogCompleteness(t *testing.T) {
 		if d.IsDir() && (d.Name() == "third_party" || d.Name() == ".git" || d.Name() == ".deps" || d.Name() == "capturespike") {
 			return filepath.SkipDir
 		}
-		if d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") || strings.Contains(path, "internal/i18n") {
+		if d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") || strings.Contains(filepath.ToSlash(path), "internal/i18n") {
 			return nil
 		}
 		f, err := parser.ParseFile(fset, path, nil, 0)
