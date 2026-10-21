@@ -11,7 +11,7 @@ import (
 )
 
 func TestClipboardToolBySession(t *testing.T) {
-	sandbox(t) // подставляет поддельный wl-copy
+	sandbox(t) // installs a fake wl-copy
 
 	// Wayland: wl-copy.
 	isX11 = func() bool { return false }
@@ -19,7 +19,7 @@ func TestClipboardToolBySession(t *testing.T) {
 		t.Errorf("Wayland: %q %v %v", name, args, err)
 	}
 
-	// X11 без xclip: понятная ошибка, а не молчание.
+	// X11 without xclip: a clear error, not silence.
 	isX11 = func() bool { return true }
 	t.Setenv("PATH", t.TempDir())
 	if _, _, err := clipboardTool("image/png"); err == nil || !strings.Contains(err.Error(), "xclip") {
@@ -27,7 +27,8 @@ func TestClipboardToolBySession(t *testing.T) {
 	}
 }
 
-// startXvfb запускает виртуальный X-сервер и возвращает его DISPLAY; без Xvfb тест пропускается.
+// startXvfb starts a virtual X server and returns its DISPLAY; without Xvfb the test is
+// skipped.
 func startXvfb(t *testing.T) string {
 	t.Helper()
 	if _, err := exec.LookPath("Xvfb"); err != nil {
@@ -56,7 +57,8 @@ func startXvfb(t *testing.T) string {
 	return display
 }
 
-// TestClipboardOnX11 кладёт картинку и список файлов в буфер обмена настоящего X-сервера и читает обратно.
+// TestClipboardOnX11 puts an image and a list of files into the clipboard of a real X
+// server and reads them back.
 func TestClipboardOnX11(t *testing.T) {
 	if _, err := exec.LookPath("xclip"); err != nil {
 		t.Skip("нет xclip")
@@ -86,7 +88,8 @@ func TestClipboardOnX11(t *testing.T) {
 	}
 }
 
-// fakeBin кладёт в новую папку пустые исполняемые программы с указанными именами и делает её единственным PATH.
+// fakeBin puts empty executables with the given names into a new folder and makes it the
+// only PATH.
 func fakeBin(t *testing.T, names ...string) {
 	t.Helper()
 	dir := t.TempDir()
@@ -98,34 +101,36 @@ func fakeBin(t *testing.T, names ...string) {
 	t.Setenv("PATH", dir)
 }
 
-// TestClipboardToolWaylandFallback: в Wayland без wl-copy копируем через xclip (XWayland сводит буфер
-// X11 с Wayland), а без обеих программ и без X-сервера даём ошибку с тем, что поставить.
+// TestClipboardToolWaylandFallback: on Wayland without wl-copy we copy through xclip
+// (XWayland syncs the X11 clipboard with Wayland), and without both programs and without
+// an X server we give an error saying what to install.
 func TestClipboardToolWaylandFallback(t *testing.T) {
 	old := isX11
 	defer func() { isX11 = old }()
 	isX11 = func() bool { return false }
 
-	// Есть wl-copy: он главнее, даже если есть и xclip.
+	// wl-copy is present: it takes precedence, even if xclip is present too.
 	fakeBin(t, "wl-copy", "xclip")
 	t.Setenv("DISPLAY", ":0")
 	if name, args, err := clipboardTool("image/png"); err != nil || name != "wl-copy" || args[0] != "--type" {
 		t.Errorf("с wl-copy: %q %v %v", name, args, err)
 	}
 
-	// Нет wl-copy, есть xclip и X-сервер: xclip с нужным типом.
+	// No wl-copy, but there is xclip and an X server: xclip with the needed type.
 	fakeBin(t, "xclip")
 	name, args, err := clipboardTool("text/uri-list")
 	if err != nil || name != "xclip" || strings.Join(args, " ") != "-selection clipboard -t text/uri-list" {
 		t.Errorf("без wl-copy: %q %v %v", name, args, err)
 	}
 
-	// Нет wl-copy, xclip есть, но X-сервера нет: xclip бесполезен, нужна подсказка про wl-clipboard.
+	// No wl-copy, xclip is present, but there is no X server: xclip is useless, a hint about
+	// wl-clipboard is needed.
 	t.Setenv("DISPLAY", "")
 	if _, _, err := clipboardTool("image/png"); err == nil || !strings.Contains(err.Error(), "wl-clipboard") {
 		t.Errorf("без X-сервера нужна ошибка с wl-clipboard: %v", err)
 	}
 
-	// Нет ничего: понятная ошибка, а не «executable file not found».
+	// Nothing at all: a clear error, not "executable file not found".
 	fakeBin(t)
 	t.Setenv("DISPLAY", ":0")
 	err = copyPNG([]byte("x"))

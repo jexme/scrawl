@@ -1,6 +1,6 @@
-// Package collection хранит подборку скриншотов между запусками программы:
-// «было» снимается в одном запуске, «стало» в другом, потом всё склеивается
-// или отправляется по отдельности.
+// Package collection stores a collection of screenshots between program runs:
+// "before" is captured in one run, "after" in another, then everything is glued together
+// or sent separately.
 package collection
 
 import (
@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// Dir возвращает каталог подборки в кэше пользователя.
+// Dir returns the collection directory in the user's cache.
 func Dir() string {
 	base, err := os.UserCacheDir()
 	if err != nil {
@@ -20,15 +20,16 @@ func Dir() string {
 	return filepath.Join(base, "scrawl", "collection")
 }
 
-// Add кладёт PNG в подборку и возвращает путь. Имя файла начинается со времени,
-// поэтому порядок в подборке совпадает с порядком добавления.
+// Add puts a PNG into the collection and returns the path. The file name starts with the time,
+// so the order in the collection matches the order of addition.
 func Add(png []byte) (string, error) {
 	dir := Dir()
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", err
 	}
-	// Часы на Windows тикают реже микросекунды: два быстрых Add получили бы одно имя,
-	// и второй снимок затёр бы первый. O_EXCL не даёт перезаписать, время сдвигаем на микросекунду.
+	// The clock on Windows ticks less often than once per microsecond: two quick Adds would
+	// get the same name, and the second shot would overwrite the first. O_EXCL prevents
+	// overwriting, we shift the time by a microsecond.
 	for ts := time.Now(); ; ts = ts.Add(time.Microsecond) {
 		path := filepath.Join(dir, ts.Format("20060102-150405.000000")+".png")
 		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
@@ -46,7 +47,7 @@ func Add(png []byte) (string, error) {
 	}
 }
 
-// List возвращает пути к картинкам подборки в порядке добавления.
+// List returns the paths to the collection images in the order they were added.
 func List() ([]string, error) {
 	entries, err := os.ReadDir(Dir())
 	if os.IsNotExist(err) {
@@ -65,13 +66,13 @@ func List() ([]string, error) {
 	return paths, nil
 }
 
-// Count возвращает число картинок в подборке (0 при любой ошибке).
+// Count returns the number of images in the collection (0 on any error).
 func Count() int {
 	paths, _ := List()
 	return len(paths)
 }
 
-// Clear удаляет все картинки подборки. Удаляются только .png в её каталоге.
+// Clear deletes all the collection images. Only .png files in its directory are deleted.
 func Clear() error {
 	paths, err := List()
 	if err != nil {

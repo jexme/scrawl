@@ -1,6 +1,6 @@
 name: Release
 
-# Релиз выпускается по тегу вида v1.2.3 (или v1.2.3-rc1: такой помечается как предварительный).
+# A release is made for a tag like v1.2.3 (or v1.2.3-rc1: it is marked as a pre-release).
 on:
   push:
     tags: ["v*"]
@@ -42,8 +42,9 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" dist/scrawl-*.tar.gz dist/scrawl_*.deb dist/SHA256SUMS \
             --verify-tag --generate-notes --title "Scrawl ${GITHUB_REF_NAME}" $flags
 
-  # Windows: портативный архив, его SHA-256 и манифест Scoop. Собирается на настоящем Windows
-  # из публичного CI, а происхождение файла подтверждается аттестацией GitHub (gh attestation verify).
+  # Windows: a portable archive, its SHA-256 and the Scoop manifest. It is built on real
+  # Windows in public CI, and the origin of the file is confirmed by a GitHub attestation
+  # (gh attestation verify).
   windows:
     needs: release
     runs-on: windows-latest
@@ -82,11 +83,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # PowerShell не раскрывает * для внешних программ, поэтому список файлов собираем сами.
+          # PowerShell does not expand * for external programs, so we build the file list ourselves.
           $files = Get-ChildItem dist/scrawl-*-windows-amd64.zip, dist/scrawl-*-windows-amd64.zip.sha256, dist/scrawl.json | ForEach-Object FullName
           gh release upload "${env:GITHUB_REF_NAME}" @files --clobber
 
-  # После релиза обновляем apt-репозиторий (если настроен ключ подписи).
+  # After the release we update the apt repository (if a signing key is configured).
   apt-repo:
     needs: release
     permissions:

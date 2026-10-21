@@ -1,24 +1,24 @@
-// Package testenv подменяет папки пользователя в тестах так, чтобы они не
-// трогали настоящий профиль ни на Linux (XDG_*), ни на Windows (%AppData%).
+// Package testenv replaces the user's folders in tests so that they do not
+// touch the real profile, either on Linux (XDG_*) or on Windows (%AppData%).
 package testenv
 
 import "testing"
 
-// Config направляет папку настроек (os.UserConfigDir) в dir.
+// Config points the config folder (os.UserConfigDir) to dir.
 func Config(t testing.TB, dir string) {
 	t.Helper()
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("APPDATA", dir)
 }
 
-// Cache направляет папку кэша (os.UserCacheDir) в dir.
+// Cache points the cache folder (os.UserCacheDir) to dir.
 func Cache(t testing.TB, dir string) {
 	t.Helper()
 	t.Setenv("XDG_CACHE_HOME", dir)
 	t.Setenv("LOCALAPPDATA", dir)
 }
 
-// Home направляет домашнюю папку (os.UserHomeDir) в dir.
+// Home points the home folder (os.UserHomeDir) to dir.
 func Home(t testing.TB, dir string) {
 	t.Helper()
 	t.Setenv("HOME", dir)

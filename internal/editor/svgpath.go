@@ -12,15 +12,14 @@ import (
 	"gioui.org/op/paint"
 )
 
-// segment — одна команда пути в абсолютных координатах.
+// segment is a single path command in absolute coordinates.
 type segment struct {
 	kind byte // 'M', 'L', 'C', 'Z'
 	pts  [3]f32.Point
 }
 
-// parseSVGPath разбирает атрибут d из SVG: M L H V C S A Z в абсолютной и
-// относительной формах (этого хватает для иконок Tabler). Дуги превращаются в
-// кубические кривые.
+// parseSVGPath parses the d attribute of an SVG: M L H V C S A Z in absolute and
+// relative forms (enough for Tabler icons). Arcs are converted to cubic curves.
 func parseSVGPath(d string) []segment {
 	l := &pathLexer{s: d}
 	var (
@@ -59,7 +58,7 @@ func parseSVGPath(d string) []segment {
 			segs = append(segs, segment{kind: 'M', pts: [3]f32.Point{p}})
 			cur, start, prevCubic = p, p, false
 			if next, ok := moveToLine[cmd]; ok {
-				cmd = next // повторные пары после M означают L
+				cmd = next // repeated pairs after M mean L
 			}
 		case 'L':
 			p := pt(l.num(), l.num())
@@ -112,7 +111,7 @@ func parseSVGPath(d string) []segment {
 	return segs
 }
 
-// pathLexer читает числа и флаги из строки пути.
+// pathLexer reads numbers and flags from a path string.
 type pathLexer struct {
 	s   string
 	pos int
@@ -149,7 +148,7 @@ func (l *pathLexer) num() float32 {
 	return float32(v)
 }
 
-// flag читает флаг дуги: один символ 0 или 1.
+// flag reads an arc flag: a single character, 0 or 1.
 func (l *pathLexer) flag() bool {
 	l.skipSep()
 	if l.eof() {
@@ -160,7 +159,7 @@ func (l *pathLexer) flag() bool {
 	return c == '1'
 }
 
-// arcToCubics переводит дугу SVG (по конечным точкам) в кубические кривые.
+// arcToCubics converts an SVG arc (given by endpoints) into cubic curves.
 func arcToCubics(from f32.Point, rx, ry, rotDeg float32, large, sweep bool, to f32.Point) []segment {
 	x1, y1, x2, y2 := float64(from.X), float64(from.Y), float64(to.X), float64(to.Y)
 	a, b := math.Abs(float64(rx)), math.Abs(float64(ry))
@@ -214,14 +213,14 @@ func arcToCubics(from f32.Point, rx, ry, rotDeg float32, large, sweep bool, to f
 		c2 := mapPt(math.Cos(t2)+t*math.Sin(t2), math.Sin(t2)-t*math.Cos(t2))
 		p := mapPt(math.Cos(t2), math.Sin(t2))
 		if i == n-1 {
-			p = to // без накопленной погрешности
+			p = to // without accumulated error
 		}
 		out = append(out, segment{kind: 'C', pts: [3]f32.Point{c1, c2, p}})
 	}
 	return out
 }
 
-// buildPath строит clip.Path из SVG-пути: масштаб scale на единицу сетки, смещение off.
+// buildPath builds a clip.Path from an SVG path: scale is per grid unit, off is the offset.
 func buildPath(ops *op.Ops, d string, off f32.Point, scale float32) clip.PathSpec {
 	var p clip.Path
 	p.Begin(ops)
@@ -241,12 +240,12 @@ func buildPath(ops *op.Ops, d string, off f32.Point, scale float32) clip.PathSpe
 	return p.End()
 }
 
-// strokeSVG рисует контур по SVG-пути толщиной width пикселей.
+// strokeSVG draws an outline along an SVG path with a thickness of width pixels.
 func strokeSVG(ops *op.Ops, c color.NRGBA, d string, off f32.Point, scale, width float32) {
 	paint.FillShape(ops, c, clip.Stroke{Path: buildPath(ops, d, off, scale), Width: width}.Op())
 }
 
-// fillSVG заливает замкнутый SVG-путь.
+// fillSVG fills a closed SVG path.
 func fillSVG(ops *op.Ops, c color.NRGBA, d string, off f32.Point, scale float32) {
 	paint.FillShape(ops, c, clip.Outline{Path: buildPath(ops, d, off, scale)}.Op())
 }

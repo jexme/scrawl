@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// lastTabPath — файл, где помнится вкладка, на которой закрыли окно настроек.
+// lastTabPath is the file that remembers the tab on which the settings window was closed.
 func lastTabPath() string {
 	dir, err := os.UserCacheDir()
 	if err != nil {
@@ -15,8 +15,8 @@ func lastTabPath() string {
 	return filepath.Join(dir, "scrawl", "settings-tab")
 }
 
-// rememberedTab возвращает номер запомненной вкладки или 0, если её нет или такой
-// вкладки больше нет.
+// rememberedTab returns the number of the remembered tab, or 0 if there is none or that
+// tab no longer exists.
 func rememberedTab(tabs []settingsTab) int {
 	data, err := os.ReadFile(lastTabPath())
 	if err != nil {
@@ -31,7 +31,7 @@ func rememberedTab(tabs []settingsTab) int {
 	return 0
 }
 
-// saveTab запоминает вкладку; ошибка записи не важна.
+// saveTab remembers the tab; a write error does not matter.
 func saveTab(id string) {
 	path := lastTabPath()
 	if os.MkdirAll(filepath.Dir(path), 0o700) == nil {

@@ -11,9 +11,9 @@ import (
 	"github.com/jexme/scrawl/internal/wincapture"
 )
 
-// grabWindows снимает все мониторы через GDI.
+// grabWindows captures all monitors through GDI.
 func grabWindows(verbose bool) ([]screencast.Frame, time.Time) {
-	t0 := time.Now() // момент «нажатия хоткея»
+	t0 := time.Now() // the moment of the "hotkey press"
 	frames, err := wincapture.GrabAll()
 	if err != nil {
 		fatal(i18n.T("frame: %v"), err)

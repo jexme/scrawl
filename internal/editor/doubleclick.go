@@ -14,11 +14,11 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// doubleClickWindow — максимальное время между двумя нажатиями для двойного клика.
+// doubleClickWindow is the maximum time between two presses for a double click.
 const doubleClickWindow = 400 * time.Millisecond
 
-// isDoubleClick запоминает нажатие и сообщает, был ли это второй клик подряд
-// рядом с первым.
+// isDoubleClick remembers a press and reports whether it was a second consecutive click
+// near the first one.
 func (m *monitor) isDoubleClick(p f32.Point) bool {
 	now := time.Now()
 	dist := math.Hypot(float64(p.X-m.lastClickPos.X), float64(p.Y-m.lastClickPos.Y))
@@ -26,15 +26,15 @@ func (m *monitor) isDoubleClick(p f32.Point) bool {
 	m.lastClickPos = p
 	m.lastClickAt = now
 	if dbl {
-		m.lastClickAt = time.Time{} // третий клик не считается новым двойным
+		m.lastClickAt = time.Time{} // a third click does not count as a new double click
 	}
 	return dbl
 }
 
-// doubleClickAction выполняет действие двойного клика из настроек. Возвращает
-// true, если клик обработан: только внутри выделения и не на рамке. Работает с
-// любым инструментом, кроме текста и штампов (ими кликают подряд): после выбора области включается инструмент
-// по умолчанию, и клик не должен зависеть от него.
+// doubleClickAction performs the double-click action from the settings. It returns true if
+// the click was handled: only inside the selection and not on the border. It works with
+// any tool except text and stamps (those are clicked repeatedly): after an area is
+// selected the default tool is enabled, and the click must not depend on it.
 func (m *monitor) doubleClickAction(p f32.Point) bool {
 	mode := m.store.Get().DoubleClick
 	if mode == settings.DoubleClickOff || !m.hasSel || m.tool == annotate.ToolText || m.tool == annotate.ToolStamp || !inRect(p, m.sel) {
@@ -48,8 +48,8 @@ func (m *monitor) doubleClickAction(p f32.Point) bool {
 	return true
 }
 
-// dropClickDot убирает точку, которую первый клик двойного оставил пером или
-// маркером: остальные инструменты от клика без движения ничего не рисуют.
+// dropClickDot removes the dot that the first click of a double click left with the pen or
+// marker: the other tools draw nothing on a click without movement.
 func (m *monitor) dropClickDot() {
 	if n := len(m.shapes); n > 0 {
 		last := m.shapes[n-1]
@@ -59,8 +59,8 @@ func (m *monitor) dropClickDot() {
 	}
 }
 
-// openSettingsWindow закрывает оверлей и открывает отдельное окно настроек:
-// полноэкранный оверлей закрыл бы его собой.
+// openSettingsWindow closes the overlay and opens a separate settings window:
+// a full-screen overlay would cover it.
 func (m *monitor) openSettingsWindow() {
 	exe, err := os.Executable()
 	if err == nil {

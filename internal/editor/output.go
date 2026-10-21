@@ -24,8 +24,8 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// render рисует выделенную область кадра вместе с аннотациями тем же кодом
-// Gio, что и экран, поэтому результат совпадает с тем, что видел пользователь.
+// render draws the selected region of the frame together with the annotations using the
+// same Gio code as the screen, so the result matches what the user saw.
 func render(src *image.RGBA, sel image.Rectangle, shapes []annotate.Shape, shaper *text.Shaper) (*image.RGBA, error) {
 	w, h := sel.Dx(), sel.Dy()
 	win, err := headless.NewWindow(w, h)
@@ -53,7 +53,7 @@ func render(src *image.RGBA, sel image.Rectangle, shapes []annotate.Shape, shape
 	return out, nil
 }
 
-// fileBytes готовит PNG к записи в файл: в формате из настроек.
+// fileBytes prepares the PNG for writing to a file: in the format from settings.
 func fileBytes(cfg settings.Settings, pngData []byte) ([]byte, error) {
 	if cfg.Format != settings.FormatJPEG {
 		return pngData, nil
@@ -69,8 +69,8 @@ func fileBytes(cfg settings.Settings, pngData []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// writeUnique записывает файл, не затирая существующий: при совпадении имени
-// (два снимка в одну секунду) к имени добавляется -2, -3 и так далее.
+// writeUnique writes a file without overwriting an existing one: on a name clash (two
+// shots in the same second) -2, -3 and so on is appended to the name.
 func writeUnique(path string, data []byte) (string, error) {
 	ext := filepath.Ext(path)
 	base := strings.TrimSuffix(path, ext)
@@ -94,8 +94,8 @@ func writeUnique(path string, data []byte) (string, error) {
 	}
 }
 
-// saveFile пишет снимок (PNG на входе) в каталог скриншотов в выбранном формате
-// и возвращает путь.
+// saveFile writes the shot (PNG on input) to the screenshot directory in the chosen format
+// and returns the path.
 func saveFile(cfg settings.Settings, data []byte) (string, error) {
 	dir, err := cfg.OutputDir()
 	if err != nil {
@@ -108,7 +108,8 @@ func saveFile(cfg settings.Settings, data []byte) (string, error) {
 	return writeUnique(filepath.Join(dir, cfg.FileName(time.Now().Format(settings.StampLayout))), data)
 }
 
-// saveNumbered пишет снимок (PNG на входе) в каталог скриншотов под именем с номером в наборе.
+// saveNumbered writes the shot (PNG on input) to the screenshot directory under a name
+// with its number in the set.
 func saveNumbered(cfg settings.Settings, data []byte, stamp string, n int) (string, error) {
 	dir, err := cfg.OutputDir()
 	if err != nil {
@@ -129,15 +130,15 @@ func encodePNG(img image.Image) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// inform показывает уведомление об успешном действии, если оно не отключено в
-// настройках. Ошибки и подсказки идут через notify и показываются всегда.
+// inform shows a notification about a successful action unless it is disabled in settings.
+// Errors and hints go through notify and are always shown.
 func (m *monitor) inform(title, body string) {
 	if m.store.Get().Notifications {
 		notify(title, body)
 	}
 }
 
-// notify показывает уведомление, если есть notify-send. Ошибки не важны.
+// notify shows a notification if notify-send is available. Errors do not matter.
 func notify(title, body string) {
 	exec.Command("notify-send", "-a", "Scrawl", title, body).Run()
 }

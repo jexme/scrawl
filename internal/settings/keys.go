@@ -8,22 +8,22 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// Действия оверлея, которым можно назначить клавиши.
+// Overlay actions that can be assigned keys.
 const (
-	ActionConfirm = "confirm" // скопировать и/или сохранить (по настройке Enter)
-	ActionCancel  = "cancel"  // закрыть оверлей
-	ActionRestore = "restore" // вернуть область прошлого снимка
-	ActionAdd     = "add"     // добавить в подборку
-	ActionGlue    = "glue"    // склеить подборку
-	ActionSend    = "send"    // отправить подборку отдельными файлами
-	ActionUndo    = "undo"    // отменить последнюю аннотацию
-	ActionCopy    = "copy"    // только копировать
-	ActionSave    = "save"    // только сохранить
+	ActionConfirm = "confirm" // copy and/or save (per the Enter setting)
+	ActionCancel  = "cancel"  // close the overlay
+	ActionRestore = "restore" // restore the previous capture's area
+	ActionAdd     = "add"     // add to the collection
+	ActionGlue    = "glue"    // glue the collection
+	ActionSend    = "send"    // send the collection as separate files
+	ActionUndo    = "undo"    // undo the last annotation
+	ActionCopy    = "copy"    // copy only
+	ActionSave    = "save"    // save only
 
-	ActionWidthUp   = "width_up"   // толще: толщина, размер текста или сила размытия
-	ActionWidthDown = "width_down" // тоньше
+	ActionWidthUp   = "width_up"   // thicker: thickness, text size or blur strength
+	ActionWidthDown = "width_down" // thinner
 
-	// Выбор инструмента: действие называется «tool_» и имя из ToolNames.
+	// Tool selection: the action is named "tool_" plus a name from ToolNames.
 	ActionToolSelect = "tool_select"
 	ActionToolPen    = "tool_pen"
 	ActionToolLine   = "tool_line"
@@ -35,17 +35,17 @@ const (
 	ActionToolStamp  = "tool_stamp"
 )
 
-// ToolAction возвращает действие, которое включает инструмент с именем из ToolNames.
+// ToolAction returns the action that activates the tool with a name from ToolNames.
 func ToolAction(tool string) string { return "tool_" + tool }
 
-// KeyActions — все действия в порядке показа в окне настроек.
+// KeyActions are all the actions in the order they are shown in the settings window.
 var KeyActions = []string{
 	ActionConfirm, ActionCancel, ActionRestore, ActionAdd, ActionGlue, ActionSend, ActionUndo, ActionCopy, ActionSave,
 	ActionWidthUp, ActionWidthDown,
 	ActionToolSelect, ActionToolPen, ActionToolLine, ActionToolArrow, ActionToolRect, ActionToolMarker, ActionToolBlur, ActionToolText, ActionToolStamp,
 }
 
-// Keys — клавиши действий в виде «Ctrl+Shift+S», «R», «Enter». Пусто: по умолчанию.
+// Keys are the action keys written like "Ctrl+Shift+S", "R", "Enter". Empty: the default.
 type Keys struct {
 	Confirm string `json:"confirm,omitempty"`
 	Cancel  string `json:"cancel,omitempty"`
@@ -71,13 +71,14 @@ type Keys struct {
 	ToolStamp  string `json:"tool_stamp,omitempty"`
 }
 
-// DefaultKeys — клавиши, с которыми программа поставляется.
+// DefaultKeys are the keys the program ships with.
 var DefaultKeys = map[string]string{
 	ActionConfirm: "Enter", ActionCancel: "Escape", ActionRestore: "R", ActionAdd: "A",
 	ActionGlue: "G", ActionSend: "D", ActionUndo: "Ctrl+Z", ActionCopy: "Ctrl+C", ActionSave: "Ctrl+S",
-	// Плюс и минус: Shift у «+» на обычной раскладке не нужен, программа его игнорирует.
+	// Plus and minus: Shift for "+" is not needed on a regular layout, the program ignores it.
 	ActionWidthUp: "Plus", ActionWidthDown: "Minus",
-	// Инструменты: W от «arroW», B от «Box», U от «blUr»; A, R, D, G заняты действиями выше.
+	// Tools: W from "arroW", B from "Box", U from "blUr"; A, R, D, G are taken by the actions
+	// above.
 	ActionToolSelect: "V", ActionToolPen: "P", ActionToolLine: "L", ActionToolArrow: "W",
 	ActionToolRect: "B", ActionToolMarker: "M", ActionToolBlur: "U", ActionToolText: "T", ActionToolStamp: "N",
 }
@@ -128,7 +129,7 @@ func (k *Keys) ptr(action string) *string {
 	return nil
 }
 
-// Of возвращает клавишу действия: заданную или по умолчанию.
+// Of returns the key of an action: the assigned one or the default.
 func (k Keys) Of(action string) string {
 	if p := k.ptr(action); p != nil && *p != "" {
 		return *p
@@ -136,7 +137,7 @@ func (k Keys) Of(action string) string {
 	return DefaultKeys[action]
 }
 
-// Set назначает клавишу действию; значение, равное умолчанию, хранится пустым.
+// Set assigns a key to an action; a value equal to the default is stored as empty.
 func (k *Keys) Set(action, chord string) {
 	if p := k.ptr(action); p != nil {
 		if chord == DefaultKeys[action] {
@@ -146,7 +147,7 @@ func (k *Keys) Set(action, chord string) {
 	}
 }
 
-// Допустимые клавиши кроме букв, цифр и F1-F12.
+// Allowed keys besides letters, digits and F1-F12.
 var namedKeys = []string{"Enter", "Escape", "Space", "Tab", "Backspace", "Delete", "Home", "End", "PageUp", "PageDown", "Up", "Down", "Left", "Right", "Plus", "Minus"}
 
 func validKeyName(k string) bool {
@@ -165,8 +166,8 @@ func validKeyName(k string) bool {
 	return false
 }
 
-// ParseChord разбирает комбинацию («ctrl+shift+s», «Enter») и возвращает её в
-// каноническом виде: модификаторы Ctrl, Shift, Alt по порядку, клавиша с большой буквы.
+// ParseChord parses a key combination ("ctrl+shift+s", "Enter") and returns it in
+// canonical form: modifiers Ctrl, Shift, Alt in order, the key capitalized.
 func ParseChord(s string) (string, error) {
 	parts := strings.Split(strings.TrimSpace(s), "+")
 	var ctrl, shift, alt bool
@@ -215,8 +216,8 @@ func ParseChord(s string) (string, error) {
 	return strings.Join(append(out, canon), "+"), nil
 }
 
-// normalize заменяет неверные клавиши умолчаниями. Если после этого две клавиши
-// совпали, все клавиши возвращаются к умолчаниям: неясно, какое действие главнее.
+// normalize replaces invalid keys with the defaults. If two keys then coincide,
+// all keys are reset to the defaults: it is unclear which action takes priority.
 func (k *Keys) normalize() {
 	for _, a := range KeyActions {
 		p := k.ptr(a)
@@ -234,7 +235,7 @@ func (k *Keys) normalize() {
 	}
 }
 
-// Conflict находит два действия с одной клавишей.
+// Conflict finds two actions with the same key.
 func (k Keys) Conflict() (a, b string, clash bool) {
 	seen := map[string]string{}
 	for _, action := range KeyActions {

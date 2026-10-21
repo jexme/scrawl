@@ -18,9 +18,9 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// TestToast рисует плашку «Толщина: N» для разных инструментов и проверяет, что
-// она нарисована, а после срока жизни исчезает. С SCRAWL_TEST_OUT=путь
-// картинка сохраняется для просмотра.
+// TestToast draws a "Thickness: N" toast for various tools and checks that
+// it is drawn and disappears after its lifetime. With SCRAWL_TEST_OUT=path
+// the image is saved for viewing.
 func TestToast(t *testing.T) {
 	const W, H = 560, 420
 	frame := image.NewRGBA(image.Rect(0, 0, W, H))
@@ -75,7 +75,7 @@ func TestToast(t *testing.T) {
 	}
 
 	if path := os.Getenv("SCRAWL_TEST_OUT"); path != "" {
-		// Несколько плашек подряд на одном кадре для просмотра.
+		// Several toasts in a row on one frame for viewing.
 		sheet := image.NewRGBA(image.Rect(0, 0, W, 4*70))
 		for i, c := range []struct {
 			tool annotate.Tool
@@ -93,7 +93,7 @@ func TestToast(t *testing.T) {
 	}
 }
 
-// TestSizeLabelSetting: подпись «W × H» рисуется, пока её не выключили в настройках.
+// TestSizeLabelSetting: the "W × H" label is drawn until it is turned off in the settings.
 func TestSizeLabelSetting(t *testing.T) {
 	sandbox(t)
 	const W, H = 400, 300
@@ -119,7 +119,7 @@ func TestSizeLabelSetting(t *testing.T) {
 		}
 		return out
 	}
-	// Участок над левым верхним углом области, где стоит подпись.
+	// The area above the top left corner of the selection, where the label sits.
 	labelArea := image.Rect(100, 90, 180, 118)
 	diff := func(a, b *image.RGBA) int {
 		n := 0

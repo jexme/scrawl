@@ -1,6 +1,7 @@
-﻿# Собирает bin\scrawl.exe для Windows: GUI-программа без окна консоли, со значком, манифестом
-# (DPI, длинные пути) и сведениями о версии. С -Package ещё кладёт в dist\ архив для релиза и его SHA-256.
-# Нужны Go (версия из go.mod) и Git for Windows: из него берутся sh и patch для подготовки Gio.
+﻿# Builds bin\scrawl.exe for Windows: a GUI program without a console window, with an icon, a manifest
+# (DPI, long paths) and version information. With -Package it also puts into dist\ the
+# release archive and its SHA-256. Requires Go (the version from go.mod) and Git for
+# Windows: sh and patch for preparing Gio come from it.
 #   powershell -ExecutionPolicy Bypass -File scripts\build-windows.ps1 [-Version v0.1.0] [-Package]
 param(
     [string]$Out = "bin\scrawl.exe",
@@ -8,11 +9,12 @@ param(
     [switch]$Package
 )
 $ErrorActionPreference = "Stop"
-# Без cgo: на Windows он не нужен, а если на машине есть gcc, Go иначе пытается собрать C-файлы Linux-пакетов.
+# Without cgo: it is not needed on Windows, and if the machine has gcc, Go would otherwise
+# try to build the C files of the Linux packages.
 $env:CGO_ENABLED = "0"
 Set-Location (Split-Path $PSScriptRoot -Parent)
 
-# git.exe может лежать в Git\cmd, Git\bin или Git\mingw64\bin: поднимаемся вверх, пока не найдём usr\bin\sh.exe.
+# git.exe may be in Git\cmd, Git\bin or Git\mingw64\bin: go up until usr\bin\sh.exe is found.
 $gitUsrBin = $null
 $dir = Split-Path (Get-Command git.exe -ErrorAction Stop).Source
 while ($dir -and -not $gitUsrBin) {
@@ -22,7 +24,8 @@ while ($dir -and -not $gitUsrBin) {
 if (-not $gitUsrBin) { throw "не нашёл usr\bin\sh.exe рядом с git.exe: нужен Git for Windows" }
 $env:PATH = "$gitUsrBin;$env:PATH"
 
-# Gio нужной версии с нашим патчем (повторный запуск ничего не делает, пока версия не менялась).
+# Gio of the required version with our patch (a rerun does nothing while the version has
+# not changed).
 & sh scripts/setup-gio.sh
 if ($LASTEXITCODE -ne 0) { throw "setup-gio.sh завершился с кодом $LASTEXITCODE" }
 
@@ -30,7 +33,8 @@ if (-not $Version) { $Version = (& git describe --tags --always --dirty 2>$null)
 $major = 0; $minor = 0; $patch = 0
 if ($Version -match '^v?(\d+)\.(\d+)\.(\d+)') { $major = [int]$Matches[1]; $minor = [int]$Matches[2]; $patch = [int]$Matches[3] }
 
-# Значок, манифест и версия файла попадают в .exe ресурсом (.syso рядом с main.go, в git не хранится).
+# The icon, manifest and file version go into the .exe as a resource (.syso next to
+# main.go, not stored in git).
 $syso = "cmd\scrawl\resource_windows_amd64.syso"
 Push-Location packaging\windows
 try {
@@ -56,8 +60,9 @@ if ($Package) {
     New-Item -ItemType Directory -Force $dir | Out-Null
     Copy-Item $Out (Join-Path $dir "scrawl.exe")
     Copy-Item LICENSE, THIRD_PARTY_NOTICES.md, README.md, docs\translations\README.ru.md, docs\WINDOWS.md $dir
-    # Архив пишем сами: Compress-Archive и ZipFile.CreateFromDirectory в Windows PowerShell 5.1 кладут в имена
-    # обратные косые, и такой архив неправильно распаковывается в других системах.
+    # We write the archive ourselves: Compress-Archive and ZipFile.CreateFromDirectory in
+    # Windows PowerShell 5.1 put backslashes in the names, and such an archive extracts
+    # incorrectly on other systems.
     Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
     $distRoot = (Resolve-Path "dist").Path
     $fs = [IO.File]::Create((Join-Path $distRoot "$name.zip"))

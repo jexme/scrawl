@@ -1,6 +1,6 @@
-// Package wincapture снимает экран в Windows через GDI: каждый монитор отдельным кадром,
-// в физических пикселях. Процесс должен быть DPI-aware (EnsureDPIAware), иначе на
-// мониторах с масштабом размеры и координаты врут.
+// Package wincapture captures the screen on Windows via GDI: each monitor as a separate frame,
+// in physical pixels. The process must be DPI-aware (EnsureDPIAware), otherwise on
+// scaled monitors the sizes and coordinates are wrong.
 package wincapture
 
 import (
@@ -64,24 +64,25 @@ type bitmapInfoHeader struct {
 	ClrImportant  uint32
 }
 
-// EnsureDPIAware делает процесс DPI-aware (Per-Monitor V2). Вызывать до создания окон и
-// до любого снимка; повторный вызов безвреден (система его просто отклонит).
+// EnsureDPIAware makes the process DPI-aware (Per-Monitor V2). Call it before creating
+// windows and before any capture; a repeated call is harmless (the system simply rejects
+// it).
 func EnsureDPIAware() {
 	if procSetProcessDpiAwarenessContext.Find() == nil {
 		if r, _, _ := procSetProcessDpiAwarenessContext.Call(perMonitorAwareV2); r != 0 {
 			return
 		}
 	}
-	procSetProcessDPIAware.Call() // Windows 7/8 и старые сборки 10
+	procSetProcessDPIAware.Call() // Windows 7/8 and old builds of 10
 }
 
-// Monitor — прямоугольник монитора в координатах виртуального рабочего стола (пиксели).
+// Monitor is a monitor rectangle in virtual desktop coordinates (pixels).
 type Monitor struct {
 	Rect    image.Rectangle
 	Primary bool
 }
 
-// Monitors возвращает мониторы слева направо и сверху вниз.
+// Monitors returns the monitors left to right and top to bottom.
 func Monitors() ([]Monitor, error) {
 	var out []Monitor
 	cb := syscall.NewCallback(func(hmon, _, _, _ uintptr) uintptr {
@@ -109,8 +110,8 @@ func Monitors() ([]Monitor, error) {
 	return out, nil
 }
 
-// GrabAll снимает каждый монитор. Frame.X и Frame.Y — левый верхний угол монитора на
-// рабочем столе, по ним редактор открывает окно на нужном мониторе.
+// GrabAll captures every monitor. Frame.X and Frame.Y are the monitor's top-left corner on the
+// desktop; the editor uses them to open its window on the right monitor.
 func GrabAll() ([]screencast.Frame, error) {
 	mons, err := Monitors()
 	if err != nil {
@@ -133,7 +134,7 @@ func GrabAll() ([]screencast.Frame, error) {
 	return frames, nil
 }
 
-// grabRect копирует прямоугольник экрана в RGBA.
+// grabRect copies a screen rectangle into an RGBA image.
 func grabRect(screen uintptr, r image.Rectangle) (*image.RGBA, error) {
 	w, h := r.Dx(), r.Dy()
 	if w <= 0 || h <= 0 {
@@ -156,13 +157,13 @@ func grabRect(screen uintptr, r image.Rectangle) (*image.RGBA, error) {
 		return nil, fmt.Errorf("BitBlt: %w", err)
 	}
 
-	// Отрицательная высота: строки идут сверху вниз.
+	// Negative height: rows go from top to bottom.
 	hdr := bitmapInfoHeader{Size: uint32(unsafe.Sizeof(bitmapInfoHeader{})), Width: int32(w), Height: -int32(h), Planes: 1, Bits: 32, Compression: biRGB}
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
 	if n, _, err := procGetDIBits.Call(mem, bmp, 0, uintptr(h), uintptr(unsafe.Pointer(&img.Pix[0])), uintptr(unsafe.Pointer(&hdr)), dibRGB); n == 0 {
 		return nil, fmt.Errorf("GetDIBits: %w", err)
 	}
-	// GDI отдаёт B, G, R, 0: меняем каналы и делаем кадр непрозрачным.
+	// GDI returns B, G, R, 0: swap the channels and make the frame opaque.
 	pix := img.Pix
 	for i := 0; i+3 < len(pix); i += 4 {
 		pix[i], pix[i+2], pix[i+3] = pix[i+2], pix[i], 0xFF

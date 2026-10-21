@@ -4,8 +4,8 @@ package main
 
 import "golang.org/x/sys/windows"
 
-// notify показывает сообщение окном: при запуске по горячей клавише или из автозапуска
-// терминала нет, и без окна сбой остаётся незаметным.
+// notify shows a message in a window: when launched by a hotkey or from autostart
+// there is no terminal, and without a window a failure goes unnoticed.
 func notify(title, msg string) {
 	t, _ := windows.UTF16PtrFromString(title)
 	m, _ := windows.UTF16PtrFromString(msg)

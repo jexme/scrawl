@@ -41,8 +41,8 @@ const (
 	gmemZeroInit = 0x0040
 )
 
-// openClipboard открывает буфер обмена, повторяя попытку: его может на мгновение занимать
-// другая программа (менеджер буфера, удалённый рабочий стол).
+// openClipboard opens the clipboard, retrying: another program (a clipboard manager,
+// remote desktop) may hold it for a moment.
 func openClipboard() error {
 	var err error
 	for i := 0; i < 20; i++ {
@@ -55,8 +55,8 @@ func openClipboard() error {
 	return fmt.Errorf("OpenClipboard: %w", err)
 }
 
-// setData кладёт копию data в буфер обмена в формате format. При успехе память принадлежит
-// системе; при ошибке её освобождаем сами.
+// setData puts a copy of data into the clipboard in the given format. On success the
+// memory belongs to the system; on error we free it ourselves.
 func setData(format uintptr, data []byte) error {
 	h, _, err := procGlobalAlloc.Call(gmemMoveable|gmemZeroInit, uintptr(len(data)))
 	if h == 0 {
@@ -67,7 +67,8 @@ func setData(format uintptr, data []byte) error {
 		procGlobalFree.Call(h)
 		return fmt.Errorf("GlobalLock: %w", err)
 	}
-	// Адрес выдала система; приведение через указатель на переменную не трогает сборщик мусора.
+	// The address was given by the system; converting through a pointer to the variable does
+	// not involve the garbage collector.
 	p := *(*unsafe.Pointer)(unsafe.Pointer(&addr))
 	copy(unsafe.Slice((*byte)(p), len(data)), data)
 	procGlobalUnlock.Call(h)
@@ -78,7 +79,7 @@ func setData(format uintptr, data []byte) error {
 	return nil
 }
 
-// withClipboard очищает буфер и вызывает fill, пока он открыт.
+// withClipboard empties the clipboard and calls fill while it is open.
 func withClipboard(fill func() error) error {
 	if err := openClipboard(); err != nil {
 		return err
@@ -90,8 +91,8 @@ func withClipboard(fill func() error) error {
 	return fill()
 }
 
-// copyPNG кладёт картинку в двух видах: «PNG» (без потерь, его берут Telegram, Discord,
-// браузеры) и CF_DIB (Paint, Word, почти всё остальное).
+// copyPNG puts the image in two forms: "PNG" (lossless, used by Telegram, Discord and
+// browsers) and CF_DIB (Paint, Word, nearly everything else).
 func copyPNG(data []byte) error {
 	img, err := png.Decode(bytes.NewReader(data))
 	if err != nil {
@@ -110,7 +111,7 @@ func copyPNG(data []byte) error {
 	})
 }
 
-// dib собирает CF_DIB: заголовок BITMAPINFOHEADER и 32-битные пиксели BGRA снизу вверх.
+// dib builds CF_DIB: a BITMAPINFOHEADER header and 32-bit BGRA pixels, bottom-up.
 func dib(img image.Image) []byte {
 	b := img.Bounds()
 	w, h := b.Dx(), b.Dy()
@@ -120,7 +121,7 @@ func dib(img image.Image) []byte {
 	out := make([]byte, 40+w*h*4)
 	binary.LittleEndian.PutUint32(out[0:], 40)
 	binary.LittleEndian.PutUint32(out[4:], uint32(w))
-	binary.LittleEndian.PutUint32(out[8:], uint32(h)) // положительная высота: строки снизу вверх
+	binary.LittleEndian.PutUint32(out[8:], uint32(h)) // positive height: rows go bottom-up
 	binary.LittleEndian.PutUint16(out[12:], 1)
 	binary.LittleEndian.PutUint16(out[14:], 32)
 	binary.LittleEndian.PutUint32(out[20:], uint32(w*h*4))
@@ -129,8 +130,8 @@ func dib(img image.Image) []byte {
 		row := src.Pix[y*src.Stride : y*src.Stride+w*4]
 		dst := px[(h-1-y)*w*4:]
 		for x := 0; x < w; x++ {
-			// Снимок непрозрачный; если нет, смешиваем с белым, как это делают программы,
-			// не понимающие альфа-канал в CF_DIB.
+			// The shot is opaque; if it is not, we blend it with white, as programs that do not
+			// understand the alpha channel in CF_DIB do.
 			r, g, bl, a := uint32(row[x*4]), uint32(row[x*4+1]), uint32(row[x*4+2]), uint32(row[x*4+3])
 			if a != 255 {
 				r, g, bl = (r*a+255*(255-a))/255, (g*a+255*(255-a))/255, (bl*a+255*(255-a))/255
@@ -141,14 +142,14 @@ func dib(img image.Image) []byte {
 	return out
 }
 
-// copyFiles кладёт список файлов (CF_HDROP): несколько картинок вставляются в чат или
-// письмо как отдельные вложения.
+// copyFiles puts a list of files (CF_HDROP): several images are pasted into a chat or an
+// email as separate attachments.
 func copyFiles(paths []string) error {
 	if len(paths) == 0 {
 		return errors.New("no files")
 	}
-	// DROPFILES: смещение списка (20), точка (8 байт), fNC, fWide; дальше UTF-16 пути
-	// через нулевой символ и ещё один нуль в конце.
+	// DROPFILES: list offset (20), point (8 bytes), fNC, fWide; then the UTF-16 paths
+	// separated by a null character and one more null at the end.
 	buf := make([]byte, 20)
 	binary.LittleEndian.PutUint32(buf[0:], 20)
 	binary.LittleEndian.PutUint32(buf[16:], 1) // fWide

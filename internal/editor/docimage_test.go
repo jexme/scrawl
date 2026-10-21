@@ -20,21 +20,21 @@ import (
 	"github.com/jexme/scrawl/internal/screencast"
 )
 
-// fakeDesktop рисует вымышленный экран с окном приложения: настоящие снимки
-// пользователя в документацию не попадают.
+// fakeDesktop draws a fictional screen with an application window: the user's real
+// screenshots do not end up in the documentation.
 func fakeDesktop(w, h int) *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
 	fill := func(r image.Rectangle, c color.RGBA) {
 		draw.Draw(img, r.Intersect(img.Bounds()), image.NewUniform(c), image.Point{}, draw.Src)
 	}
-	fill(img.Bounds(), color.RGBA{R: 44, G: 62, B: 92, A: 255}) // обои
+	fill(img.Bounds(), color.RGBA{R: 44, G: 62, B: 92, A: 255}) // wallpaper
 	win := image.Rect(90, 70, w-90, h-60)
 	fill(win, color.RGBA{R: 250, G: 250, B: 252, A: 255})
 	fill(image.Rect(win.Min.X, win.Min.Y, win.Max.X, win.Min.Y+34), color.RGBA{R: 226, G: 228, B: 234, A: 255})
 	for i, c := range []color.RGBA{{R: 237, G: 106, B: 94, A: 255}, {R: 245, G: 191, B: 79, A: 255}, {R: 97, G: 197, B: 84, A: 255}} {
 		fill(image.Rect(win.Min.X+14+i*22, win.Min.Y+11, win.Min.X+26+i*22, win.Min.Y+23), c)
 	}
-	// Боковая панель, строки текста и карточки.
+	// Sidebar, text rows and cards.
 	fill(image.Rect(win.Min.X, win.Min.Y+34, win.Min.X+190, win.Max.Y), color.RGBA{R: 238, G: 240, B: 245, A: 255})
 	for i := 0; i < 8; i++ {
 		fill(image.Rect(win.Min.X+20, win.Min.Y+60+i*30, win.Min.X+20+90+(i%3)*25, win.Min.Y+70+i*30), color.RGBA{R: 190, G: 196, B: 210, A: 255})
@@ -53,8 +53,8 @@ func fakeDesktop(w, h int) *image.RGBA {
 	return img
 }
 
-// TestDocOverlayImage рисует настоящий оверлей (панель, рамка, подписи) поверх
-// вымышленного экрана для README. Нужна переменная SCRAWL_DOC_IMAGES с папкой.
+// TestDocOverlayImage draws the real overlay (toolbar, frame, labels) over the
+// fictional screen for the README. Requires the SCRAWL_DOC_IMAGES variable with a folder.
 func TestDocOverlayImage(t *testing.T) {
 	dir := os.Getenv("SCRAWL_DOC_IMAGES")
 	if dir == "" {

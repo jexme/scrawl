@@ -1,6 +1,6 @@
 package i18n
 
-// ko — перевод интерфейса: корейский. Ключ это английский текст из кода.
+// ko is the interface translation: Korean. The key is the English text from the code.
 var ko = map[string]string{
 	"pick the monitors again (shows GNOME dialogs)": "모니터를 다시 선택 (GNOME 대화상자를 표시)",
 	"print timings": "소요 시간 출력",

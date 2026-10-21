@@ -1,7 +1,7 @@
-// scrawl делает скриншот области экрана с аннотациями.
+// scrawl takes a screenshot of a screen area with annotations.
 //
-// Первый запуск (или с -setup) показывает диалоги GNOME по одному на монитор,
-// дальше сохранённые restore_token позволяют обойтись без вопросов.
+// The first launch (or with -setup) shows GNOME dialogs, one per monitor;
+// after that the saved restore_token values make questions unnecessary.
 package main
 
 import (
@@ -29,8 +29,8 @@ import (
 )
 
 func main() {
-	i18n.SetLanguage(settings.Load().Language) // до флагов: у них тоже есть описания
-	fonts.Preload(i18n.Language())             // шрифт для иероглифов грузится, пока идёт захват
+	i18n.SetLanguage(settings.Load().Language) // before the flags: they have descriptions too
+	fonts.Preload(i18n.Language())             // the font for CJK glyphs loads while the capture is in progress
 	setup := flag.Bool("setup", false, i18n.T("pick the monitors again (shows GNOME dialogs)"))
 	verbose := flag.Bool("v", false, i18n.T("print timings"))
 	fresh := flag.Bool("fresh", false, i18n.T("do not offer the area of the previous screenshot"))
@@ -64,8 +64,8 @@ func main() {
 	}
 
 	if *openSettings {
-		// Своя блокировка: окно настроек не мешает оверлею и наоборот, но второе окно
-		// настроек не открываем.
+		// Its own lock: the settings window does not block the overlay and vice versa, but a
+		// second settings window is not opened.
 		if ok, err := singleton.Acquire("scrawl-settings"); err == nil && !ok {
 			return
 		}
@@ -73,14 +73,14 @@ func main() {
 		return
 	}
 
-	// Повторное нажатие хоткея не должно открывать второй оверлей поверх первого
-	// (и слать параллельные запросы в portal).
+	// Pressing the hotkey again must not open a second overlay over the first
+	// (and send parallel requests to the portal).
 	if ok, err := singleton.Acquire("scrawl"); err == nil && !ok {
 		return
 	}
 
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
-		// Захват экрана, буфер обмена и горячая клавиша для этой системы ещё не написаны.
+		// Screen capture, the clipboard and the hotkey are not written for this system yet.
 		fatal("%s", i18n.T("screen capture is only available on Linux (GNOME, Wayland) and Windows for now; the settings window works: scrawl -settings"))
 	}
 
@@ -110,12 +110,12 @@ func main() {
 	app.Main()
 }
 
-// grabX11 снимает экран напрямую из X11: без портала, диалогов и токенов.
+// grabX11 captures the screen directly from X11: no portal, dialogs or tokens.
 func grabX11(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	if setup {
 		fmt.Fprintln(os.Stderr, i18n.T("in an X11 session there is no need to pick monitors: capture goes straight to X11"))
 	}
-	t0 := time.Now() // момент «нажатия хоткея»
+	t0 := time.Now() // the moment of the hotkey press
 	frames, err := x11capture.GrabAll()
 	if err != nil {
 		fatal(i18n.T("frame: %v"), err)
@@ -126,15 +126,15 @@ func grabX11(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	return frames, t0
 }
 
-// grabPortal снимает экран через ScreenCast portal (Wayland): сначала поднимает
-// сессии по сохранённым токенам, потом берёт по кадру с каждого монитора.
+// grabPortal captures the screen through the ScreenCast portal (Wayland): first it starts
+// sessions from the saved tokens, then takes one frame from each monitor.
 func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	p, err := screencast.New()
 	if err != nil {
 		fatal("portal: %v", err)
 	}
 	if p.OldPortal {
-		// Старый portal узнаёт приложение по systemd-scope: без него токены не работают.
+		// An old portal identifies the application by its systemd scope: without it tokens do not work.
 		if err := p.EnterAppScope(); err != nil {
 			fmt.Fprintln(os.Stderr, i18n.T("the portal did not accept the app_id: restore_token will not work, dialogs will appear on every run"))
 		}
@@ -148,15 +148,15 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	if !setup {
 		tokens = screencast.LoadTokens()
 	}
-	// Без регистрации portal не примет сохранённые токены и покажет диалоги, которых
-	// при запуске по хоткею никто не ждёт. Чаще всего это зависший portal.
-	// У portal старше 1.21 Registry нет вовсе: это не зависание, токены он принимает
-	// по app_id из systemd-scope, поэтому идём дальше.
+	// Without registration the portal will not accept the saved tokens and will show dialogs
+	// nobody expects when launched by hotkey. Most often this is a hung portal.
+	// A portal older than 1.21 has no Registry at all: that is not a hang, it accepts tokens
+	// by the app_id from the systemd scope, so we carry on.
 	if !p.Registered && !p.OldPortal && len(tokens) > 0 {
 		fatal("%s", i18n.T("xdg-desktop-portal is not responding. Restart it: systemctl --user restart xdg-desktop-portal"))
 	}
 
-	// Старт сессий в замер не входит: в будущем их будет держать демон.
+	// Starting the sessions is not part of the measurement: in the future a daemon will hold them.
 	tSessions := time.Now()
 	sessions, newTokens, err := p.OpenAll(tokens, func(i, n int, again bool, left []screencast.MonitorInfo) {
 		msg := screencast.SetupMessage(i, n, again, left)
@@ -181,14 +181,14 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 		fmt.Printf("sessions (%d) ready in %s\n", len(sessions), time.Since(tSessions).Round(time.Millisecond))
 	}
 
-	t0 := time.Now() // момент «нажатия хоткея»
-	// Обычно кадры приходят за ~100 мс; если нет, экран статичен и PipeWire молчит.
+	t0 := time.Now() // the moment of the hotkey press
+	// Frames usually arrive within ~100 ms; if not, the screen is static and PipeWire is silent.
 	frames, fallback, err := p.GrabAll(sessions, 250*time.Millisecond)
 	if err != nil {
 		fatal(i18n.T("frame: %v"), err)
 	}
-	// Кадры получены: сессии захвата больше не нужны. Пока они открыты, GNOME
-	// вынужден композитить экран вместо прямого вывода (это бьёт по FPS в играх).
+	// The frames are received: the capture sessions are no longer needed. While they are open,
+	// GNOME has to composite the screen instead of direct output (this hurts FPS in games).
 	for _, s := range sessions {
 		s.Close()
 	}
@@ -203,8 +203,8 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	return frames, t0
 }
 
-// fatal печатает ошибку и показывает уведомление: при запуске по хоткею
-// терминала нет, и без уведомления сбой остаётся незаметным.
+// fatal prints the error and shows a notification: when launched by hotkey there is no
+// terminal, and without a notification the failure goes unnoticed.
 func fatal(f string, a ...any) {
 	msg := fmt.Sprintf(f, a...)
 	fmt.Fprintln(os.Stderr, msg)
@@ -212,8 +212,8 @@ func fatal(f string, a ...any) {
 	os.Exit(1)
 }
 
-// runTray держит значок в области уведомлений: снимок и настройки запускаются
-// отдельными процессами, поэтому значок остаётся лёгким и не держит захват экрана.
+// runTray keeps the tray icon in the notification area: screenshots and settings run as
+// separate processes, so the icon stays light and does not hold the screen capture.
 func runTray(exitAfter time.Duration) {
 	if ok, err := singleton.Acquire("scrawl-tray"); err == nil && !ok {
 		return
@@ -228,7 +228,7 @@ func runTray(exitAfter time.Duration) {
 			fmt.Fprintln(os.Stderr, err)
 			return
 		}
-		go cmd.Wait() // чтобы не оставлять зомби-процесс
+		go cmd.Wait() // so as not to leave a zombie process
 	}
 	var stop chan struct{}
 	if exitAfter > 0 {
@@ -247,8 +247,8 @@ func runTray(exitAfter time.Duration) {
 	}
 }
 
-// watchUpdates проверяет новую версию при старте значка и потом раз в сутки; о
-// каждой новой версии сообщает один раз. Работает, только если проверка включена в настройках.
+// watchUpdates checks for a new version when the tray icon starts and then once a day;
+// it announces each new version once. Works only if the check is enabled in the settings.
 func watchUpdates() {
 	for {
 		if res, err := update.Check(context.Background(), version.String()); err == nil && res.Newer && !update.AlreadyNotified(res.Latest) {
@@ -257,7 +257,7 @@ func watchUpdates() {
 		}
 		time.Sleep(24 * time.Hour)
 		if !settings.Load().CheckUpdates {
-			return // выключили в настройках
+			return // turned off in the settings
 		}
 	}
 }

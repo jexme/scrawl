@@ -1,12 +1,12 @@
 #!/bin/sh
-# Перед отправкой проверяет адреса авторов и коммитеров в коммитах, которых ещё нет
-# на сервере. Так личная почта не попадёт в историю, даже если коммит сделан в обход
-# pre-commit (например, --no-verify или другим клиентом).
+# Before pushing, checks the author and committer addresses in commits that are not yet on
+# the server. This way a personal email will not get into the history, even if the commit
+# was made bypassing pre-commit (for example, with --no-verify or another client).
 allowed='(@users\.noreply\.github\.com|^noreply@github\.com)$'
 zero=0000000000000000000000000000000000000000
 
 while read -r local_ref local_sha remote_ref remote_sha; do
-	[ "$local_sha" = "$zero" ] && continue # удаление ветки
+	[ "$local_sha" = "$zero" ] && continue # branch deletion
 	if [ "$remote_sha" = "$zero" ]; then
 		range="$local_sha --not --remotes=$1"
 	else

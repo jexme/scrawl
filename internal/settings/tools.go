@@ -6,20 +6,21 @@ import (
 	"slices"
 )
 
-// ToolNames — имена инструментов в файле настроек, в порядке инструментов
-// редактора (annotate.Tool): выделение, перо, линия, стрелка, рамка, маркер,
-// размытие, текст, штамп с номером.
+// ToolNames are the tool names in the settings file, in the order of the editor's
+// tools (annotate.Tool): select, pen, line, arrow, rectangle, marker,
+// blur, text, numbered stamp.
 var ToolNames = []string{"select", "pen", "line", "arrow", "rect", "marker", "blur", "text", "stamp"}
 
-// Границы толщины инструмента (зеркало annotate.MinWidth/MaxWidth, сверяется тестом).
+// Bounds of the tool thickness (mirror annotate.MinWidth/MaxWidth, checked by a test).
 const (
 	MinToolWidth = 1
 	MaxToolWidth = 30
-	// MaxBlurLevel — наибольший уровень силы у размытия (зеркало annotate.MaxBlurLevel): 1-3 размытие, 4-6 мозаика.
+	// MaxBlurLevel is the highest blur strength level (mirrors annotate.MaxBlurLevel):
+	// 1-3 blur, 4-6 mosaic.
 	MaxBlurLevel = 6
 )
 
-// MaxWidthOf возвращает наибольшую толщину инструмента с именем name.
+// MaxWidthOf returns the largest thickness of the tool named name.
 func MaxWidthOf(name string) float64 {
 	if name == "blur" {
 		return MaxBlurLevel
@@ -27,15 +28,15 @@ func MaxWidthOf(name string) float64 {
 	return MaxToolWidth
 }
 
-// ToolStyle — вид одного инструмента по умолчанию. Пустое значение: не задано.
+// ToolStyle is the default look of a single tool. The zero value means not set.
 type ToolStyle struct {
-	// Color — цвет #RRGGBB. Пусто: не менять цвет при выборе инструмента.
+	// Color is the colour #RRGGBB. Empty means do not change the colour when the tool is selected.
 	Color string `json:"color,omitempty"`
-	// Width — толщина линии, размер текста или сила размытия. 0: стандартная.
+	// Width is the line thickness, text size or blur strength. 0 means the standard one.
 	Width float64 `json:"width,omitempty"`
 }
 
-// ToolStyles — вид каждого инструмента по умолчанию.
+// ToolStyles is the default look of each tool.
 type ToolStyles struct {
 	Pen    ToolStyle `json:"pen"`
 	Line   ToolStyle `json:"line"`
@@ -47,7 +48,7 @@ type ToolStyles struct {
 	Stamp  ToolStyle `json:"stamp"`
 }
 
-// Of возвращает указатель на вид инструмента по имени (nil для неизвестного и «select»).
+// Of returns a pointer to the tool's style by name (nil for an unknown name and for "select").
 func (t *ToolStyles) Of(name string) *ToolStyle {
 	switch name {
 	case "pen":
@@ -70,7 +71,7 @@ func (t *ToolStyles) Of(name string) *ToolStyle {
 	return nil
 }
 
-// MarshalJSON пишет только те инструменты, у которых что-то задано.
+// MarshalJSON writes only the tools that have something set.
 func (t ToolStyles) MarshalJSON() ([]byte, error) {
 	out := map[string]ToolStyle{}
 	for _, name := range ToolNames {
@@ -81,7 +82,7 @@ func (t ToolStyles) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
-// normalize сбрасывает неверный цвет и подрезает толщину.
+// normalize resets an invalid colour and clamps the thickness.
 func (t *ToolStyles) normalize() {
 	for _, name := range ToolNames {
 		st := t.Of(name)
@@ -99,18 +100,18 @@ func (t *ToolStyles) normalize() {
 	}
 }
 
-// validTool сообщает, что имя входит в ToolNames.
+// validTool reports whether the name is in ToolNames.
 func validTool(name string) bool { return slices.Contains(ToolNames, name) }
 
-// PaletteSize — число цветов в панели инструментов.
+// PaletteSize is the number of colours in the toolbar.
 const PaletteSize = 8
 
-// DefaultPalette — цвета панели по умолчанию (сверяется с annotate.Palette тестом).
+// DefaultPalette is the default toolbar colours (checked against annotate.Palette by a test).
 var DefaultPalette = [PaletteSize]string{
 	"#E53935", "#FB8C00", "#FDD835", "#43A047", "#1E88E5", "#8E24AA", "#FFFFFF", "#141414",
 }
 
-// normalizePalette заменяет пустые и неверные цвета палитры цветами по умолчанию.
+// normalizePalette replaces empty and invalid palette colours with the defaults.
 func normalizePalette(p *[PaletteSize]string) {
 	for i, hex := range p {
 		if c, err := ParseColor(hex); err == nil {
@@ -121,7 +122,7 @@ func normalizePalette(p *[PaletteSize]string) {
 	}
 }
 
-// PaletteColors возвращает цвета панели инструментов.
+// PaletteColors returns the toolbar colours.
 func (s Settings) PaletteColors() [PaletteSize]color.NRGBA {
 	var out [PaletteSize]color.NRGBA
 	for i, hex := range s.Palette {

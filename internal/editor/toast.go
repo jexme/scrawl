@@ -22,7 +22,7 @@ const (
 	toastFade = 350 * time.Millisecond
 )
 
-// widthLabel подписывает значение силы для разных инструментов.
+// widthLabel labels the strength value for different tools.
 func widthLabel(t annotate.Tool) string {
 	switch t {
 	case annotate.ToolText:
@@ -38,7 +38,7 @@ func widthLabel(t annotate.Tool) string {
 	}
 }
 
-// showToast показывает на секунду плашку с новым значением силы инструмента.
+// showToast shows a toast with the new tool strength value for a second.
 func (m *monitor) showToast() {
 	m.toastMsg = ""
 	m.toastTool = m.tool
@@ -46,15 +46,15 @@ func (m *monitor) showToast() {
 	m.toastUntil = time.Now().Add(toastLife)
 }
 
-// showMessage показывает на пару секунд плашку с готовым текстом, например
-// «Скопировано в буфер обмена».
+// showMessage shows a toast with ready-made text for a couple of seconds, for example
+// "Copied to the clipboard".
 func (m *monitor) showMessage(txt string) {
 	m.toastMsg = txt
 	m.toastUntil = time.Now().Add(toastLife + 700*time.Millisecond)
 }
 
-// layoutToast рисует плашку «Толщина: N» с образцом линии и плавно гасит её.
-// Она висит в верхней части выделения и не привязана к курсору.
+// layoutToast draws the "Thickness: N" toast with a line sample and fades it out smoothly.
+// It hangs in the upper part of the selection and is not tied to the cursor.
 func (m *monitor) layoutToast(gtx layout.Context, win image.Point, selWin image.Rectangle) {
 	remain := time.Until(m.toastUntil)
 	if remain <= 0 {
@@ -63,7 +63,7 @@ func (m *monitor) layoutToast(gtx layout.Context, win image.Point, selWin image.
 	fade := float32(1)
 	if remain < toastFade {
 		fade = float32(remain) / float32(toastFade)
-		gtx.Execute(op.InvalidateCmd{}) // анимация затухания идёт кадр за кадром
+		gtx.Execute(op.InvalidateCmd{}) // the fade animation runs frame by frame
 	} else {
 		gtx.Execute(op.InvalidateCmd{At: m.toastUntil.Add(-toastFade)})
 	}
@@ -76,7 +76,8 @@ func (m *monitor) layoutToast(gtx layout.Context, win image.Point, selWin image.
 	if m.toastMsg != "" {
 		txt = m.toastMsg
 	} else if m.toastTool == annotate.ToolBlur {
-		// У размытия сила меняет не только степень, но и вид: мягкое, мозаика, матовое стекло.
+		// For blur the strength changes not only the degree but also the kind: soft, mosaic,
+		// frosted glass.
 		txt += "  ·  " + annotate.ModeOf(float32(m.toastValue)).Label()
 	}
 	rec := op.Record(gtx.Ops)
@@ -88,7 +89,8 @@ func (m *monitor) layoutToast(gtx layout.Context, win image.Point, selWin image.
 	dims := widget.Label{MaxLines: 1}.Layout(lgtx, m.shaper, annotate.Font, 17, txt, mat)
 	label := rec.Stop()
 
-	// Образец: отрезок нужной толщины тем же цветом. Для текста и размытия образца нет.
+	// Sample: a segment of the needed thickness in the same colour. Text and blur have no
+	// sample.
 	sample := m.toastMsg == "" && m.toastTool != annotate.ToolText && m.toastTool != annotate.ToolBlur && m.toastTool != annotate.ToolStamp
 	sampleW := 0
 	lineW := float32(m.toastValue)
@@ -113,7 +115,7 @@ func (m *monitor) layoutToast(gtx layout.Context, win image.Point, selWin image.
 	x := selWin.Min.X + (selWin.Dx()-w)/2
 	y := selWin.Min.Y + gtx.Dp(16)
 	x = clampInt(x, gtx.Dp(8), max(win.X-w-gtx.Dp(8), gtx.Dp(8)))
-	if selWin.Dy() < h+gtx.Dp(32) { // выделение низкое: ставим ниже центра окна
+	if selWin.Dy() < h+gtx.Dp(32) { // the selection is low: place the toast below the centre of the window
 		y = clampInt(selWin.Min.Y, gtx.Dp(8), max(win.Y-h-gtx.Dp(8), gtx.Dp(8)))
 	}
 

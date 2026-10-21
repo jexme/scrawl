@@ -11,19 +11,19 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// slider — ползунок с настоящими границами и шагом: widget.Float хранит только 0..1.
+// slider is a slider with real bounds and step: widget.Float stores only 0..1.
 type slider struct {
 	f              widget.Float
 	min, max, step float64
-	format         func(float64) string // подпись значения справа
+	format         func(float64) string // value label on the right
 
-	// get и set связывают ползунок с настройкой.
+	// get and set connect the slider to a setting.
 	get func(settings.Settings) float64
 	set func(*settings.Settings, float64)
 }
 
-// Value возвращает значение, округлённое до шага (и до тысячных, чтобы 4.6 не
-// превращалось в 4.6000004 и не воспринималось как изменение).
+// Value returns the value rounded to the step (and to thousandths, so that 4.6 does not
+// turn into 4.6000004 and get treated as a change).
 func (sl *slider) Value() float64 {
 	v := sl.min + float64(sl.f.Value)*(sl.max-sl.min)
 	v = math.Round((v-sl.min)/sl.step)*sl.step + sl.min
@@ -31,14 +31,14 @@ func (sl *slider) Value() float64 {
 	return min(max(v, sl.min), sl.max)
 }
 
-// Set ставит значение (подрезается до границ и шага).
+// Set sets the value (clamped to the bounds and step).
 func (sl *slider) Set(v float64) {
 	v = min(max(v, sl.min), sl.max)
 	sl.f.Value = float32((v - sl.min) / (sl.max - sl.min))
 	sl.f.Value = float32((sl.Value() - sl.min) / (sl.max - sl.min))
 }
 
-// Update обрабатывает перетаскивание и прижимает ползунок к шагу, когда его отпустили.
+// Update handles dragging and snaps the slider to the step when it is released.
 func (sl *slider) Update(gtx layout.Context) {
 	sl.f.Update(gtx)
 	if !sl.f.Dragging() {

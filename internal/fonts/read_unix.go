@@ -7,9 +7,9 @@ import (
 	"syscall"
 )
 
-// readFile отображает файл в память, а не читает целиком: файл CJK-шрифта весит
-// около 20 МБ, а программе нужны лишь таблицы нескольких символов. Отображение
-// живёт до конца процесса.
+// readFile maps the file into memory instead of reading it whole: a CJK font file weighs
+// about 20 MB, while the program needs only the tables for a few glyphs. The mapping
+// lives until the process exits.
 func readFile(path string) ([]byte, error) {
 	f, err := os.Open(path)
 	if err != nil {

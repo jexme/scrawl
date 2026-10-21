@@ -17,8 +17,8 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// sandbox подменяет HOME, кэш и внешние команды, чтобы тест не трогал буфер
-// обмена и файлы пользователя. wl-copy пишет stdin в файл clipboard-<тип>.
+// sandbox replaces HOME, the cache and external commands so that the test does not touch the
+// user's clipboard and files. wl-copy writes stdin to a file clipboard-<type>.
 func sandbox(t *testing.T) (home string) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
@@ -28,9 +28,10 @@ func sandbox(t *testing.T) (home string) {
 	testenv.Home(t, home)
 	testenv.Cache(t, filepath.Join(home, ".cache"))
 	testenv.Config(t, filepath.Join(home, ".config"))
-	// Тесты идут с поддельным wl-copy, поэтому сеанс считается Wayland, даже если
-	// их запустили под xvfb-run (там WAYLAND_DISPLAY пуст, и буфер пошёл бы через xclip).
-	// Окружение не трогаем: от него зависит и выбор платформы EGL.
+	// The tests run with a fake wl-copy, so the session counts as Wayland even if they were
+	// started under xvfb-run (there WAYLAND_DISPLAY is empty, and the clipboard would go via
+	// xclip). We leave the environment alone: the choice of the EGL platform depends on it
+	// too.
 	oldX11 := isX11
 	isX11 = func() bool { return false }
 	t.Cleanup(func() { isX11 = oldX11 })
@@ -41,7 +42,7 @@ func sandbox(t *testing.T) (home string) {
 			t.Fatal(err)
 		}
 	}
-	// $2 — значение после --type.
+	// $2 is the value after --type.
 	script("wl-copy", `cat > "`+home+`/clipboard-$(echo "$2" | tr '/' '_')"`)
 	script("notify-send", "exit 0")
 	t.Setenv("PATH", bin+":"+os.Getenv("PATH"))
@@ -72,7 +73,7 @@ func TestGlueCollection(t *testing.T) {
 	}
 	m, finished := newTestMonitor(t)
 	m.queued = collection.Count()
-	// Текущая область станет вторым кадром: «Стало».
+	// The current area becomes the second frame: "After".
 	m.sel, m.hasSel = image.Rect(10, 10, 250, 170), true
 
 	m.glueCollection()
@@ -95,7 +96,8 @@ func TestGlueCollection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Две картинки одной высоты (160) рядом: ширина больше высоты, есть подписи сверху.
+	// Two images of the same height (160) side by side: the width is greater than the height,
+	// with captions on top.
 	_, labelH := composeMetrics(settings.DefaultGlue())
 	if cfg.Width < 2*200 || cfg.Height < 160+labelH {
 		t.Errorf("склейка слишком мала: %dx%d", cfg.Width, cfg.Height)
@@ -124,7 +126,7 @@ func TestSendSeparately(t *testing.T) {
 	}
 	m, finished := newTestMonitor(t)
 	m.queued = collection.Count()
-	m.sel, m.hasSel = image.Rect(0, 0, 100, 80), true // третьей будет текущая область
+	m.sel, m.hasSel = image.Rect(0, 0, 100, 80), true // the third will be the current area
 
 	m.sendSeparately()
 	if !*finished || collection.Count() != 0 {
@@ -153,7 +155,7 @@ func TestAddToCollection(t *testing.T) {
 	sandbox(t)
 	m, finished := newTestMonitor(t)
 
-	m.addToCollection() // без выделения: ничего не добавляется
+	m.addToCollection() // without a selection: nothing is added
 	if collection.Count() != 0 || *finished {
 		t.Fatal("без выделения добавлять нечего")
 	}
@@ -164,7 +166,7 @@ func TestAddToCollection(t *testing.T) {
 	}
 }
 
-// TestNotificationsSetting: успех молчит при выключенных уведомлениях, ошибки нет.
+// TestNotificationsSetting: success is silent when notifications are off, no error.
 func TestNotificationsSetting(t *testing.T) {
 	sandbox(t)
 	log := filepath.Join(t.TempDir(), "notify.log")

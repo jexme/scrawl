@@ -11,13 +11,13 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// onWindows выбирает хранилище комбинации: gsettings или файл. Тесты подменяют.
+// onWindows chooses the combination storage: gsettings or a file. Tests replace it.
 var onWindows = runtime.GOOS == "windows"
 
-// DefaultWindows — комбинация по умолчанию в Windows.
+// DefaultWindows is the default combination on Windows.
 const DefaultWindows = "Print"
 
-// Модификаторы RegisterHotKey.
+// RegisterHotKey modifiers.
 const (
 	ModAlt     = 0x1
 	ModControl = 0x2
@@ -25,8 +25,9 @@ const (
 	ModWin     = 0x8
 )
 
-// WinFile возвращает путь к файлу с комбинацией: в Windows ярлыков GNOME нет, комбинацию
-// хранит сама программа, а значок в трее регистрирует её через RegisterHotKey.
+// WinFile returns the path to the file with the combination: Windows has no GNOME
+// shortcuts, so the program stores the combination itself, and the tray icon registers it
+// through RegisterHotKey.
 func WinFile() string {
 	dir, err := os.UserConfigDir()
 	if err != nil {
@@ -65,8 +66,8 @@ var winKeys = map[string]uint32{
 	"left": 0x25, "up": 0x26, "right": 0x27, "down": 0x28,
 }
 
-// ParseWin разбирает комбинацию GTK (Print, <Control><Alt>a, <Super>F9) в модификаторы и
-// виртуальный код клавиши для RegisterHotKey.
+// ParseWin parses a GTK combination (Print, <Control><Alt>a, <Super>F9) into modifiers and
+// a virtual key code for RegisterHotKey.
 func ParseWin(accel string) (mods, vk uint32, err error) {
 	rest := strings.TrimSpace(accel)
 	for strings.HasPrefix(rest, "<") {

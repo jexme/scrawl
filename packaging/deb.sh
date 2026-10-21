@@ -1,6 +1,6 @@
 #!/bin/sh
-# Собирает .deb для Debian и Ubuntu из готового bin/scrawl.
-# Использование: packaging/deb.sh VERSION ARCH OUTDIR   (VERSION как у тега: v0.1.0-rc12)
+# Builds a .deb for Debian and Ubuntu from a ready bin/scrawl.
+# Usage: packaging/deb.sh VERSION ARCH OUTDIR   (VERSION as in the tag: v0.1.0-rc12)
 set -eu
 
 version=${1:?версия, например v0.1.0-rc12}
@@ -9,7 +9,7 @@ out=${3:?папка для .deb}
 root=$(cd "$(dirname "$0")/.." && pwd)
 desktop=io.github.jexme.Scrawl.desktop
 
-# Версия Debian: v0.1.0-rc12 -> 0.1.0~rc12 (предварительная меньше итоговой),
+# Debian version: v0.1.0-rc12 -> 0.1.0~rc12 (a pre-release sorts below the final),
 # v0.1.0-rc12-1-gabc-dirty -> 0.1.0~rc12+1.gabc.dirty.
 deb_version=$(printf '%s' "$version" | sed -e 's/^v//' -e 's/-/~/' -e 's/-/+/' -e 's/-/./g')
 
@@ -18,7 +18,7 @@ trap 'rm -rf "$pkg"' EXIT
 
 install -Dm755 "$root/bin/scrawl" "$pkg/usr/bin/scrawl"
 install -d "$pkg/usr/share/applications"
-# Абсолютный Exec: portal сопоставляет приложение с .desktop-файлом только если Exec существует.
+# Absolute Exec: the portal matches an application to a .desktop file only if Exec exists.
 sed 's|^Exec=scrawl|Exec=/usr/bin/scrawl|' "$root/packaging/$desktop" > "$pkg/usr/share/applications/$desktop"
 chmod 644 "$pkg/usr/share/applications/$desktop"
 
@@ -55,7 +55,7 @@ Description: Fast screenshots with annotations for GNOME (Wayland and X11)
  monitors, grant the permission and assign a hotkey.
 CONTROL
 
-# Каталоги пакета должны быть 755 независимо от umask сборщика.
+# Package directories must be 755 regardless of the builder's umask.
 find "$pkg" -type d -exec chmod 755 {} +
 
 mkdir -p "$out"

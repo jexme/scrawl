@@ -10,15 +10,15 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// MonitorInfo описывает логический монитор по данным GNOME Mutter.
+// MonitorInfo describes a logical monitor, from GNOME Mutter data.
 type MonitorInfo struct {
 	X, Y    int
-	Name    string // производитель и модель, например "AOC 2276WM"
+	Name    string // manufacturer and model, for example "AOC 2276WM"
 	Primary bool
 }
 
-// Monitors возвращает логические мониторы по данным GNOME Mutter.
-// Второе значение false, если узнать не удалось (не GNOME).
+// Monitors returns the logical monitors from GNOME Mutter data.
+// The second value is false if they could not be determined (not GNOME).
 func (p *Portal) Monitors() ([]MonitorInfo, bool) {
 	call := p.conn.Object("org.gnome.Mutter.DisplayConfig", "/org/gnome/Mutter/DisplayConfig").
 		Call("org.gnome.Mutter.DisplayConfig.GetCurrentState", 0)
@@ -48,13 +48,13 @@ func (p *Portal) Monitors() ([]MonitorInfo, bool) {
 	return out, len(out) > 0
 }
 
-// MonitorCount возвращает число логических мониторов.
+// MonitorCount returns the number of logical monitors.
 func (p *Portal) MonitorCount() (int, bool) {
 	m, ok := p.Monitors()
 	return len(m), ok
 }
 
-// positions возвращает позиции мониторов, которые отдаёт сессия.
+// positions returns the monitor positions reported by the session.
 func (s *Session) positions() [][2]int {
 	var out [][2]int
 	for _, st := range s.streams {
@@ -64,14 +64,14 @@ func (s *Session) positions() [][2]int {
 	return out
 }
 
-// OpenAll запускает по сессии на каждый монитор. GNOME отдаёт в диалоге один
-// монитор за сессию, поэтому на каждый монитор нужен свой restore_token.
+// OpenAll starts one session per monitor. GNOME's dialog hands out one
+// monitor per session, so each monitor needs its own restore_token.
 //
-// Если restore пуст, показываются диалоги по числу мониторов; перед каждым
-// вызывается prompt(i, n, again, left): again сообщает, что выбранный монитор
-// уже был и диалог показывается повторно, left — мониторы, которые ещё не
-// выбраны (если их удалось определить). Возвращаются сессии и актуальные
-// токены (их нужно сохранить через SaveTokens).
+// If restore is empty, one dialog per monitor is shown; before each one
+// prompt(i, n, again, left) is called: again says that the chosen monitor
+// was already picked and the dialog is being shown again, left lists the monitors that
+// are not yet chosen (if they could be determined). It returns the sessions and the current
+// tokens (they must be saved via SaveTokens).
 func (p *Portal) OpenAll(restore []string, prompt func(i, n int, again bool, left []MonitorInfo)) ([]*Session, []string, error) {
 	if len(restore) > 0 {
 		return p.restoreAll(restore)
@@ -128,7 +128,7 @@ func (p *Portal) OpenAll(restore []string, prompt func(i, n int, again bool, lef
 		if tok != "" {
 			tokens = append(tokens, tok)
 		}
-		// Если диалог вернул сразу несколько мониторов, остальные не нужны.
+		// If the dialog returned several monitors at once, the rest are not needed.
 		if len(seen) >= n {
 			break
 		}
@@ -136,9 +136,9 @@ func (p *Portal) OpenAll(restore []string, prompt func(i, n int, again bool, lef
 	return sessions, tokens, nil
 }
 
-// restoreAll поднимает сессии по сохранённым токенам. Запросы к portal идут
-// строго по одному: старт по токену занимает миллисекунды, а параллельные
-// вызовы замечены в зависании xdg-desktop-portal.
+// restoreAll brings up the sessions from the saved tokens. Requests to the portal go
+// strictly one at a time: starting by token takes milliseconds, while parallel
+// calls have been seen to hang xdg-desktop-portal.
 func (p *Portal) restoreAll(restore []string) ([]*Session, []string, error) {
 	var (
 		sessions []*Session
@@ -161,10 +161,10 @@ func (p *Portal) restoreAll(restore []string) ([]*Session, []string, error) {
 	return sessions, tokens, nil
 }
 
-// GrabAll получает кадры со всех мониторов всех сессий. Сначала быстрый путь
-// через PipeWire (десятки миллисекунд); если за deadline кадр не пришёл
-// (статичный экран), снимается Screenshot-portal и режется по мониторам.
-// Второе значение true, если понадобился запасной путь.
+// GrabAll gets frames from all monitors of all sessions. First the fast path
+// through PipeWire (tens of milliseconds); if no frame arrives within deadline
+// (a static screen), the Screenshot portal is used and the result is cut up by monitor.
+// The second value is true if the fallback path was needed.
 func (p *Portal) GrabAll(sessions []*Session, deadline time.Duration) ([]Frame, bool, error) {
 	results := make([][]Frame, len(sessions))
 	errs := make([]error, len(sessions))

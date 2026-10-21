@@ -1,8 +1,9 @@
 #!/bin/sh
-# Скачивает заголовки libpipewire (пакеты libpipewire-0.3-dev и libspa-0.2-dev) и
-# распаковывает в .deps/pipewire-dev без sudo и без установки в систему. Нужен,
-# если нет прав на `sudo apt install libpipewire-0.3-dev`. Makefile подхватывает
-# эту папку сам. Работает на Debian и Ubuntu (apt-get download и dpkg -x).
+# Downloads the libpipewire headers (packages libpipewire-0.3-dev and libspa-0.2-dev) and
+# unpacks them into .deps/pipewire-dev without sudo and without installing anything into
+# the system. It is needed if you have no rights for `sudo apt install
+# libpipewire-0.3-dev`. The Makefile picks this folder up by itself. Works on Debian and
+# Ubuntu (apt-get download and dpkg -x).
 set -eu
 
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -11,7 +12,7 @@ dst="$root/.deps/pipewire-dev"
 
 mkdir -p "$debs"
 cd "$debs"
-# Версия dev-пакетов должна совпадать с установленной библиотекой.
+# The version of the dev packages must match the installed library.
 /usr/bin/apt-get download libpipewire-0.3-dev libspa-0.2-dev
 
 rm -rf "$dst"
@@ -20,8 +21,8 @@ for d in "$debs"/*.deb; do
 	dpkg -x "$d" "$dst"
 done
 
-# В dev-пакете ссылка libpipewire-0.3.so указывает на файл runtime-пакета,
-# которого в распакованной папке нет: перенаправляем на системную библиотеку.
+# In the dev package the libpipewire-0.3.so link points to a file of the runtime package,
+# which is absent from the unpacked folder: we redirect it to the system library.
 lib=$(ls /usr/lib/*/libpipewire-0.3.so.0 | head -n 1)
 ln -sfn "$lib" "$dst/usr/lib/$(basename "$(dirname "$lib")")/libpipewire-0.3.so"
 echo "Заголовки PipeWire распакованы в $dst"

@@ -13,18 +13,19 @@ import (
 	"github.com/jexme/scrawl/internal/screencast"
 )
 
-// minSelection — минимальный размер выделения в пикселях кадра.
+// minSelection is the minimum selection size in frame pixels.
 const minSelection = 4
 
-// edge задаёт, какие стороны рамки тянет пользователь: -1 левая/верхняя,
-// 1 правая/нижняя, 0 сторона не меняется.
+// edge says which sides of the frame the user is dragging: -1 left/top,
+// 1 right/bottom, 0 the side does not change.
 type edge struct{ hx, hy int }
 
 func abs32(v float32) float32 { return float32(math.Abs(float64(v))) }
 
-// hitHandle проверяет, попала ли точка p в ручку рамки r с допуском tol (пиксели кадра).
-// С bands=true рамка захватывается по всей длине сторон (инструмент выделения),
-// иначе только за четыре угловые ручки (чтобы не мешать рисованию).
+// hitHandle reports whether point p hits a handle of frame r with tolerance tol (frame
+// pixels). With bands=true the frame is grabbed along the full length of its sides (the
+// select tool), otherwise only by the four corner handles (so as not to interfere with
+// drawing).
 func hitHandle(r image.Rectangle, p f32.Point, tol float32, bands bool) (edge, bool) {
 	minX, maxX := float32(r.Min.X), float32(r.Max.X)
 	minY, maxY := float32(r.Min.Y), float32(r.Max.Y)
@@ -49,7 +50,7 @@ func hitHandle(r image.Rectangle, p f32.Point, tol float32, bands bool) (edge, b
 		return e, e != edge{}
 	}
 
-	// Без полос рамка берётся только за углы: именно они нарисованы ручками.
+	// Without bands the frame is grabbed only by the corners: they are what is drawn as handles.
 	corners := [4]struct {
 		x, y   float32
 		hx, hy int
@@ -62,7 +63,7 @@ func hitHandle(r image.Rectangle, p f32.Point, tol float32, bands bool) (edge, b
 	return edge{}, false
 }
 
-// cornerPoints возвращает четыре угла рамки: центры ручек.
+// cornerPoints returns the four corners of the frame: the handle centers.
 func cornerPoints(r image.Rectangle) []f32.Point {
 	return []f32.Point{
 		f32.Pt(float32(r.Min.X), float32(r.Min.Y)), f32.Pt(float32(r.Max.X), float32(r.Min.Y)),
@@ -80,8 +81,8 @@ func clampInt(v, lo, hi int) int {
 	return v
 }
 
-// applyResize двигает стороны рамки start, указанные в e, к точке p, не выходя
-// за bounds и не делая рамку меньше minSelection.
+// applyResize moves the sides of frame start named in e to point p, without going
+// outside bounds and without making the frame smaller than minSelection.
 func applyResize(start image.Rectangle, e edge, p f32.Point, bounds image.Rectangle) image.Rectangle {
 	r := start
 	px := clampInt(int(math.Round(float64(p.X))), bounds.Min.X, bounds.Max.X)
@@ -101,7 +102,7 @@ func applyResize(start image.Rectangle, e edge, p f32.Point, bounds image.Rectan
 	return r
 }
 
-// applyMove сдвигает рамку start на (dx, dy), не выпуская её за bounds.
+// applyMove shifts frame start by (dx, dy), without letting it go outside bounds.
 func applyMove(start image.Rectangle, dx, dy int, bounds image.Rectangle) image.Rectangle {
 	r := start.Add(image.Pt(dx, dy))
 	if r.Min.X < bounds.Min.X {
@@ -119,7 +120,7 @@ func applyMove(start image.Rectangle, dx, dy int, bounds image.Rectangle) image.
 	return r
 }
 
-// cursorFor подбирает курсор для края e.
+// cursorFor picks the cursor for edge e.
 func cursorFor(e edge) pointer.Cursor {
 	switch {
 	case e.hx != 0 && e.hy != 0 && e.hx == e.hy:
@@ -133,11 +134,11 @@ func cursorFor(e edge) pointer.Cursor {
 	}
 }
 
-// lastRegion — запомненная область предыдущего скриншота.
+// lastRegion is the remembered area of the previous screenshot.
 type lastRegion struct {
-	X, Y int    // позиция монитора
-	W, H int    // размер кадра монитора
-	Sel  [4]int // x0, y0, x1, y1 в пикселях кадра
+	X, Y int    // monitor position
+	W, H int    // monitor frame size
+	Sel  [4]int // x0, y0, x1, y1 in frame pixels
 }
 
 func lastRegionPath() string {
@@ -148,7 +149,7 @@ func lastRegionPath() string {
 	return filepath.Join(dir, "scrawl", "last-region.json")
 }
 
-// saveLastRegion запоминает область, чтобы следующий запуск показал её сразу.
+// saveLastRegion remembers the area so that the next launch shows it immediately.
 func saveLastRegion(f *screencast.Frame, sel image.Rectangle) {
 	b := f.Img.Bounds()
 	data, err := json.Marshal(lastRegion{
@@ -165,11 +166,11 @@ func saveLastRegion(f *screencast.Frame, sel image.Rectangle) {
 	os.WriteFile(path, data, 0o600)
 }
 
-// forgetLastRegion стирает запомненную область.
+// forgetLastRegion erases the remembered area.
 func forgetLastRegion() { os.Remove(lastRegionPath()) }
 
-// rememberRegion запоминает текущую область, если это не отключено в настройках;
-// при отключённой настройке старая запись стирается, чтобы не осталась лежать.
+// rememberRegion remembers the current area unless this is disabled in the settings;
+// when the setting is off, the old record is erased so that it does not linger.
 func (m *monitor) rememberRegion() {
 	if !m.hasSel {
 		return
@@ -181,8 +182,8 @@ func (m *monitor) rememberRegion() {
 	}
 }
 
-// loadLastRegion возвращает запомненную область, если она относилась к этому
-// монитору с тем же размером кадра и по-прежнему допустима.
+// loadLastRegion returns the remembered area if it belonged to this monitor
+// with the same frame size and is still valid.
 func loadLastRegion(f *screencast.Frame) (image.Rectangle, bool) {
 	data, err := os.ReadFile(lastRegionPath())
 	if err != nil {

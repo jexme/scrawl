@@ -29,7 +29,7 @@ func TestAddListClear(t *testing.T) {
 			t.Errorf("порядок нарушен: %d: %s != %s", i, got[i], added[i])
 		}
 	}
-	// Посторонние файлы не трогаем.
+	// Foreign files are left alone.
 	other := filepath.Join(Dir(), "notes.txt")
 	os.WriteFile(other, []byte("x"), 0o600)
 	if err := Clear(); err != nil {
@@ -43,8 +43,8 @@ func TestAddListClear(t *testing.T) {
 	}
 }
 
-// Быстрые добавления подряд не должны затирать друг друга, даже если часы
-// (на Windows они тикают реже микросекунды) дают одинаковое время.
+// Quick consecutive additions must not overwrite each other, even if the clock (on Windows
+// it ticks less often than once a microsecond) gives the same time.
 func TestAddQuicklyKeepsEveryShotInOrder(t *testing.T) {
 	testenv.Cache(t, t.TempDir())
 	const n = 200

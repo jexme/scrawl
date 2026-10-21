@@ -1,6 +1,6 @@
-// Package x11capture снимает экран напрямую из X11 (сеанс GNOME на Xorg, KDE,
-// XFCE и другие): без портала, диалогов и токенов. На Wayland не работает: там
-// X-сервер показывает только окна XWayland.
+// Package x11capture captures the screen directly from X11 (a GNOME session on Xorg, KDE,
+// XFCE and others): no portal, dialogs or tokens. It does not work on Wayland: there the
+// X server shows only XWayland windows.
 package x11capture
 
 import (
@@ -18,22 +18,22 @@ import (
 	"github.com/jexme/scrawl/internal/screencast"
 )
 
-// IsSession сообщает, что программа запущена в сеансе X11: есть DISPLAY и нет
-// WAYLAND_DISPLAY. Под Wayland с XWayland DISPLAY тоже задан, поэтому смотрим
-// на WAYLAND_DISPLAY.
+// IsSession reports whether the program runs in an X11 session: DISPLAY is set and
+// WAYLAND_DISPLAY is not. Under Wayland with XWayland DISPLAY is set too, so we look
+// at WAYLAND_DISPLAY.
 func IsSession() bool {
 	return os.Getenv("WAYLAND_DISPLAY") == "" && os.Getenv("DISPLAY") != ""
 }
 
-// Monitor — прямоугольник монитора в координатах корневого окна.
+// Monitor is a monitor rectangle in root window coordinates.
 type Monitor struct {
 	Name    string
 	Rect    image.Rectangle
 	Primary bool
 }
 
-// Monitors возвращает мониторы по данным RandR (1.5), слева направо и сверху вниз.
-// Если RandR недоступен, возвращает один «монитор» во весь экран.
+// Monitors returns the monitors from RandR (1.5) data, left to right and top to bottom.
+// If RandR is unavailable, it returns a single "monitor" covering the whole screen.
 func Monitors(c *xgb.Conn) ([]Monitor, error) {
 	root := xproto.Setup(c).DefaultScreen(c).Root
 	if err := randr.Init(c); err == nil {
@@ -68,8 +68,8 @@ func Monitors(c *xgb.Conn) ([]Monitor, error) {
 	return []Monitor{{Rect: image.Rect(0, 0, int(s.WidthInPixels), int(s.HeightInPixels)), Primary: true}}, nil
 }
 
-// pixelFormat проверяет, что корневое окно отдаёт 32 бита на пиксель с обычным
-// порядком каналов (синий, зелёный, красный, пустой байт).
+// pixelFormat checks that the root window provides 32 bits per pixel with the usual
+// channel order (blue, green, red, empty byte).
 func pixelFormat(c *xgb.Conn) error {
 	setup := xproto.Setup(c)
 	screen := setup.DefaultScreen(c)
@@ -92,8 +92,8 @@ func pixelFormat(c *xgb.Conn) error {
 	return nil
 }
 
-// GrabAll снимает все мониторы и возвращает по кадру на монитор. Кадры идут в том
-// же виде, что и от портала: Frame.X и Frame.Y это положение монитора.
+// GrabAll captures all monitors and returns one frame per monitor. The frames come in the
+// same form as from the portal: Frame.X and Frame.Y are the monitor position.
 func GrabAll() ([]screencast.Frame, error) {
 	c, err := xgb.NewConn()
 	if err != nil {
@@ -109,7 +109,8 @@ func GrabAll() ([]screencast.Frame, error) {
 	}
 	root := xproto.Setup(c).DefaultScreen(c).Root
 
-	// Запросы уходят все сразу, ответы читаются потом: мониторы снимаются параллельно на стороне сервера.
+	// All requests are sent at once and the replies are read afterwards: the monitors are
+	// captured in parallel on the server side.
 	cookies := make([]xproto.GetImageCookie, len(mons))
 	for i, m := range mons {
 		cookies[i] = xproto.GetImage(c, xproto.ImageFormatZPixmap, xproto.Drawable(root),
@@ -126,7 +127,7 @@ func GrabAll() ([]screencast.Frame, error) {
 	return frames, nil
 }
 
-// toRGBA переводит пиксели X11 (байты B, G, R, пустой) в RGBA с полной непрозрачностью.
+// toRGBA converts X11 pixels (bytes B, G, R, empty) to fully opaque RGBA.
 func toRGBA(data []byte, w, h int) *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
 	n := min(len(data)/4, w*h)
@@ -139,9 +140,9 @@ func toRGBA(data []byte, w, h int) *image.RGBA {
 	return img
 }
 
-// dropOverlaps убирает мониторы, которые только дублируют другие: с одинаковым
-// прямоугольником (клонированные экраны) и те, что целиком накрывают другой
-// монитор (общий «экран» поверх монитора, добавленного вручную через RandR).
+// dropOverlaps removes monitors that merely duplicate others: those with an identical
+// rectangle (cloned screens) and those that completely cover another monitor
+// (a common "screen" over a monitor added manually via RandR).
 func dropOverlaps(mons []Monitor) []Monitor {
 	var out []Monitor
 	for i, m := range mons {

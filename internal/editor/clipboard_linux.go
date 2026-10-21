@@ -12,12 +12,12 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// clipboardTool выбирает программу буфера обмена по сеансу: в Wayland это
-// wl-copy, в X11 xclip. Возвращает имя команды и аргументы для типа данных.
+// clipboardTool chooses the clipboard program for the session: wl-copy on Wayland,
+// xclip on X11. Returns the command name and arguments for the data type.
 //
-// Если в Wayland нет wl-copy, но есть xclip и X-сервер (XWayland есть почти везде), берём
-// xclip: композитор сводит буфер X11 с буфером Wayland, и вставка работает в обоих мирах.
-// Без обоих программ возвращается ошибка с подсказкой, что поставить.
+// If Wayland has no wl-copy but has xclip and an X server (XWayland is nearly everywhere),
+// use xclip: the compositor syncs the X11 clipboard with the Wayland one, and pasting
+// works in both worlds. With neither program an error is returned with a hint on what to install.
 func clipboardTool(mime string) (name string, args []string, err error) {
 	xclip := []string{"-selection", "clipboard", "-t", mime}
 	if !isX11() {
@@ -35,8 +35,8 @@ func clipboardTool(mime string) (name string, args []string, err error) {
 	return "xclip", xclip, nil
 }
 
-// clipboardCopy кладёт данные в буфер обмена. И wl-copy, и xclip сами уходят в
-// фон и держат буфер, пока его не заменят.
+// clipboardCopy puts data on the clipboard. Both wl-copy and xclip go into the
+// background on their own and hold the clipboard until it is replaced.
 func clipboardCopy(mime string, data []byte) error {
 	name, args, err := clipboardTool(mime)
 	if err != nil {
@@ -47,11 +47,11 @@ func clipboardCopy(mime string, data []byte) error {
 	return cp.Run()
 }
 
-// copyPNG кладёт PNG в буфер обмена.
+// copyPNG puts a PNG on the clipboard.
 func copyPNG(data []byte) error { return clipboardCopy("image/png", data) }
 
-// copyFiles кладёт в буфер обмена список файлов (text/uri-list): так несколько
-// картинок вставляются в чат или письмо как отдельные вложения.
+// copyFiles puts a list of files (text/uri-list) on the clipboard: this way several
+// images paste into a chat or an email as separate attachments.
 func copyFiles(paths []string) error {
 	var list bytes.Buffer
 	for _, p := range paths {

@@ -15,7 +15,7 @@ func TestAcquireTwice(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("первая блокировка: %v, %v", ok, err)
 	}
-	// Сборщик мусора не должен снять блокировку.
+	// The garbage collector must not release the lock.
 	runtime.GC()
 	runtime.GC()
 	ok, err = Acquire("test")
@@ -24,7 +24,7 @@ func TestAcquireTwice(t *testing.T) {
 	}
 }
 
-// Дочерний процесс видит блокировку родителя, как второй запуск программы.
+// A child process sees the parent's lock, like a second launch of the program.
 func TestAcquireAcrossProcesses(t *testing.T) {
 	if os.Getenv("SINGLETON_CHILD") == "1" {
 		ok, _ := Acquire("test-proc")

@@ -18,8 +18,8 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// dcMonitor готовит монитор с выделением посередине кадра и заданным режимом
-// двойного клика.
+// dcMonitor prepares a monitor with a selection in the middle of the frame and the given
+// double-click mode.
 func dcMonitor(t *testing.T, mode settings.DoubleClick) (*monitor, *bool, string) {
 	t.Helper()
 	home := sandbox(t)
@@ -53,8 +53,8 @@ func TestDoubleClickCopies(t *testing.T) {
 	}
 }
 
-// Инструмент по умолчанию после выбора области — стрелка, двойной клик должен
-// работать и с ним, и с пером (без случайной точки на снимке).
+// The default tool after selecting an area is the arrow; double-click must
+// work with it and with the pen (without a stray dot on the shot).
 func TestDoubleClickWorksWithDrawingTools(t *testing.T) {
 	for _, tool := range []annotate.Tool{annotate.ToolArrow, annotate.ToolLine, annotate.ToolRect, annotate.ToolBlur, annotate.ToolPen, annotate.ToolMarker} {
 		m, finished, home := dcMonitor(t, settings.DoubleClickCopy)
@@ -147,7 +147,7 @@ func TestToolDefaultsFromSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Область готова: включается инструмент по умолчанию, его цвет и толщина.
+	// The area is ready: the default tool is enabled, with its color and thickness.
 	m.press(f32.Pt(50, 50))
 	m.release(f32.Pt(250, 200))
 	if m.tool != annotate.ToolArrow {
@@ -156,21 +156,21 @@ func TestToolDefaultsFromSettings(t *testing.T) {
 	if m.color != (color.NRGBA{R: 30, G: 136, B: 229, A: 255}) || m.curWidth() != 9 {
 		t.Errorf("стрелка: цвет %+v толщина %v", m.color, m.curWidth())
 	}
-	// Остальные инструменты без настроек: стандартная толщина и тот же цвет.
+	// The other tools have no settings: the standard thickness and the same color.
 	if got := m.widthOf(annotate.ToolPen); got != annotate.DefaultWidth {
 		t.Errorf("перо без настроек: толщина %v", got)
 	}
-	// Колесо мыши меняет толщину поверх настройки.
+	// The mouse wheel changes the thickness on top of the setting.
 	m.bumpWidth(1)
 	if m.curWidth() != 10 {
 		t.Errorf("после колеса ожидали 10, получили %v", m.curWidth())
 	}
-	// У текста свой цвет по умолчанию.
+	// Text has its own default color.
 	m.setTool(annotate.ToolText)
 	if m.color != (color.NRGBA{R: 251, G: 140, B: 0, A: 255}) || m.curWidth() != 7 {
 		t.Errorf("текст: цвет %+v толщина %v", m.color, m.curWidth())
 	}
-	// Выбрав цвет вручную, пользователь отключает автоцвета на этот запуск.
+	// By picking a color manually, the user turns off the automatic colors for this run.
 	m.color, m.colorPicked = annotate.Palette[3], true
 	m.setTool(annotate.ToolArrow)
 	if m.color != annotate.Palette[3] {
@@ -245,7 +245,7 @@ func TestMarkerOpacityFromSettings(t *testing.T) {
 func TestSaveFileFormat(t *testing.T) {
 	sandbox(t)
 	m, _ := newTestMonitor(t)
-	// Картинка с шумом, чтобы качество JPEG влияло на размер.
+	// A noisy image so that JPEG quality affects the size.
 	img := image.NewRGBA(image.Rect(0, 0, 200, 150))
 	for i := range img.Pix {
 		img.Pix[i] = uint8(i * 7 % 251)
@@ -327,7 +327,7 @@ func TestKeepOpenAfterExport(t *testing.T) {
 	if !strings.HasPrefix(m.toastMsg, "Saved: ") || !strings.HasSuffix(m.toastMsg, ", copied") {
 		t.Errorf("плашка после сохранения и копирования: %q", m.toastMsg)
 	}
-	// Ширина обычной плашки возвращается после смены толщины.
+	// The width of the regular toast is restored after the thickness changes.
 	m.setTool(annotate.ToolPen)
 	m.bumpWidth(1)
 	if m.toastMsg != "" {
@@ -357,7 +357,7 @@ func TestSaveFileDoesNotOverwrite(t *testing.T) {
 	}
 }
 
-// actionFor возвращает действие, на которое сработает нажатие, или "".
+// actionFor returns the action that a key press triggers, or "".
 func actionFor(m *monitor, name key.Name, mods key.Modifiers) string {
 	for _, kb := range m.keys {
 		if kb.binding.Matches(key.Event{Name: name, Modifiers: mods, State: key.Press}) {
@@ -404,7 +404,7 @@ func TestKeysFromSettings(t *testing.T) {
 	if got := actionFor(m, "S", key.ModCtrl|key.ModShift); got != settings.ActionSave {
 		t.Errorf("Ctrl+Shift+S: %q", got)
 	}
-	// «Выход» на Q действительно закрывает оверлей.
+	// "Quit" on Q really closes the overlay.
 	for _, kb := range m.keys {
 		if kb.action == settings.ActionCancel {
 			kb.run()

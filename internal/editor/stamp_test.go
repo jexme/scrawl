@@ -24,8 +24,9 @@ func newStampMonitor(t *testing.T) *monitor {
 	return m
 }
 
-// TestStampNumbers: клик ставит штамп с очередным номером, отмена освобождает последний номер,
-// пока кнопка зажата, штамп можно подвинуть, за границу выделения он не выходит.
+// TestStampNumbers: a click places a stamp with the next number, undo frees the last
+// number, while the button is held the stamp can be moved, and it does not go beyond the
+// selection border.
 func TestStampNumbers(t *testing.T) {
 	m := newStampMonitor(t)
 	click := func(x, y float32) {
@@ -53,16 +54,16 @@ func TestStampNumbers(t *testing.T) {
 		t.Errorf("после отмены номер 3 должен освободиться и достаться новому штампу: %d штампов, последний %q", n, m.shapes[2].Text)
 	}
 
-	// Пока кнопка зажата, штамп едет за курсором; номер остаётся.
+	// While the button is held, the stamp follows the cursor; the number stays.
 	m.press(f32.Pt(60, 60))
 	m.drag(f32.Pt(90, 100))
-	m.drag(f32.Pt(1000, 100)) // за границу выделения
+	m.drag(f32.Pt(1000, 100)) // beyond the selection border
 	m.release(f32.Pt(1000, 100))
 	last := m.shapes[len(m.shapes)-1]
 	if last.Text != "4" || last.Pts[0] != f32.Pt(380, 100) {
 		t.Errorf("перетащенный штамп: %q в %v, ожидали 4 в (380, 100)", last.Text, last.Pts[0])
 	}
-	// Клик вне выделения штампа не ставит.
+	// A click outside the selection places no stamp.
 	n := len(m.shapes)
 	click(5, 5)
 	if len(m.shapes) != n {
@@ -70,8 +71,9 @@ func TestStampNumbers(t *testing.T) {
 	}
 }
 
-// TestRenderStamps рисует штампы разных цветов и номеров: круг закрашен цветом, цифры контрастны.
-// С SCRAWL_TEST_OUT=путь.png результат сохраняется.
+// TestRenderStamps draws stamps of different colours and numbers: the circle is filled
+// with the colour, the digits contrast with it.
+// With SCRAWL_TEST_OUT=path.png the result is saved.
 func TestRenderStamps(t *testing.T) {
 	src := image.NewRGBA(image.Rect(0, 0, 420, 140))
 	for i := 0; i < len(src.Pix); i += 4 {
@@ -103,25 +105,25 @@ func TestRenderStamps(t *testing.T) {
 	}
 	light := func(c color.RGBA) bool { return c.R > 235 && c.G > 235 && c.B > 235 }
 	dark := func(c color.RGBA) bool { return c.R < 60 && c.G < 60 && c.B < 60 }
-	// Красный штамп: слева от цифры круг красный, в центре белые цифры.
+	// Red stamp: to the left of the digit the circle is red, white digits in the centre.
 	if c := out.RGBAAt(40-annotateRadius(4)+4, 70); c.R < 180 || c.G > 90 {
 		t.Errorf("красный штамп не закрашен: %v", c)
 	}
 	if n := count(40, 70, 6, light); n < 8 {
 		t.Errorf("на красном штампе нет белой цифры: %d светлых пикселей", n)
 	}
-	// Жёлтый штамп: светлый фон, цифры тёмные.
+	// Yellow stamp: light background, dark digits.
 	if n := count(110, 70, 6, dark); n < 8 {
 		t.Errorf("на жёлтом штампе нет тёмной цифры: %d тёмных пикселей", n)
 	}
-	// Белый штамп: цифры тёмные. Чёрный штамп: цифры белые.
+	// White stamp: dark digits. Black stamp: white digits.
 	if n := count(180, 70, 8, dark); n < 12 {
 		t.Errorf("на белом штампе нет тёмных цифр: %d", n)
 	}
 	if n := count(250, 70, 9, light); n < 12 {
 		t.Errorf("на чёрном штампе нет белых цифр: %d", n)
 	}
-	// Вне круга фон не тронут.
+	// Outside the circle the background is untouched.
 	if got, want := out.RGBAAt(5, 5), src.RGBAAt(5, 5); got != want {
 		t.Errorf("фон изменился: %v, было %v", got, want)
 	}
@@ -139,7 +141,8 @@ func TestRenderStamps(t *testing.T) {
 
 func annotateRadius(w float32) int { return int(annotate.StampRadius(w)) }
 
-// TestStampDigitsCentered: цифры стоят в середине круга: середина их габарита не дальше двух пикселей от центра.
+// TestStampDigitsCentered: the digits sit in the middle of the circle: the middle of their
+// bounding box is no more than two pixels from the centre.
 func TestStampDigitsCentered(t *testing.T) {
 	src := image.NewRGBA(image.Rect(0, 0, 200, 200))
 	for i := 0; i < len(src.Pix); i += 4 {
@@ -158,7 +161,7 @@ func TestStampDigitsCentered(t *testing.T) {
 			for y := 0; y < 200; y++ {
 				for x := 0; x < 200; x++ {
 					dx, dy := float32(x-100), float32(y-100)
-					if inner := r*0.84 - 2; dx*dx+dy*dy > inner*inner { // внутри цветного круга, без ободка
+					if inner := r*0.84 - 2; dx*dx+dy*dy > inner*inner { // inside the coloured circle, without the rim
 						continue
 					}
 					if c := out.RGBAAt(x, y); c.R > 200 && c.G > 200 && c.B > 200 {
@@ -178,8 +181,8 @@ func TestStampDigitsCentered(t *testing.T) {
 	}
 }
 
-// TestBlurLevelsInEditor: у размытия «−» и «+» двигают уровень 1-6 и упираются в его границы, по
-// умолчанию уровень 2, а плашка называет режим.
+// TestBlurLevelsInEditor: for blur, "−" and "+" move the level within 1-6 and stop at its
+// bounds, the default level is 2, and the toast names the mode.
 func TestBlurLevelsInEditor(t *testing.T) {
 	m := newStampMonitor(t)
 	m.tool = annotate.ToolBlur
@@ -198,7 +201,7 @@ func TestBlurLevelsInEditor(t *testing.T) {
 	if got := m.curWidth(); got != annotate.MinWidth {
 		t.Errorf("после множества «−» уровень %v, ожидали %d", got, annotate.MinWidth)
 	}
-	// Остальные инструменты по-прежнему доходят до 30.
+	// The other tools still go up to 30.
 	m.tool = annotate.ToolPen
 	for i := 0; i < 50; i++ {
 		m.bumpWidth(1)
@@ -208,7 +211,7 @@ func TestBlurLevelsInEditor(t *testing.T) {
 	}
 }
 
-// scrollMonitor делает монитор с ручными часами для проверки прокрутки.
+// scrollMonitor makes a monitor with a manual clock for testing scrolling.
 func scrollMonitor(t *testing.T, tool annotate.Tool) (*monitor, *time.Time) {
 	t.Helper()
 	m := newStampMonitor(t)
@@ -218,23 +221,26 @@ func scrollMonitor(t *testing.T, tool annotate.Tool) (*monitor, *time.Time) {
 	return m, &now
 }
 
-// TestScrollTouchpad: тачпад шлёт мелкие события потоком, но толщина двигается порциями и не
-// перескакивает с 1 на 6 за один жест.
+// TestScrollTouchpad: a touchpad sends small events in a stream, but the thickness moves
+// in steps and does not jump from 1 to 6 in a single gesture.
 func TestScrollTouchpad(t *testing.T) {
 	m, now := scrollMonitor(t, annotate.ToolBlur)
 	m.widths[annotate.ToolBlur] = 1
 
-	// Быстрый жест: двести мелких событий по 3 единицы (минус это прокрутка вверх, то есть «больше») за 0,4 с.
+	// Fast gesture: two hundred small events of 3 units each (minus is scrolling up, that is
+	// "larger") in 0.4 s.
 	for i := 0; i < 200; i++ {
 		*now = now.Add(2 * time.Millisecond)
 		m.scroll(-3)
 	}
-	// 0,4 с между шагами не меньше четверти секунды: не больше двух шагов (раньше было пять).
+	// In 0.4 s with at least a quarter of a second between steps: no more than two steps (it
+	// used to be five).
 	if got := m.curWidth(); got < 2 || got > 3 {
 		t.Errorf("быстрый жест двинул уровень 1 -> %v, ожидали 2 или 3", got)
 	}
 
-	// Инерция после жеста: затухающий хвост (3, 2.85, 2.7... до нуля) уровень почти не двигает.
+	// Inertia after the gesture: a decaying tail (3, 2.85, 2.7... down to zero) barely moves
+	// the level.
 	before := m.curWidth()
 	for v := float32(3); v > 0.05; v *= 0.95 {
 		*now = now.Add(8 * time.Millisecond)
@@ -244,7 +250,8 @@ func TestScrollTouchpad(t *testing.T) {
 		t.Errorf("инерция увела уровень %v -> %v", before, got)
 	}
 
-	// Медленный непрерывный жест (около 100 единиц в секунду) за секунду даёт не больше четырёх шагов.
+	// A slow continuous gesture (about 100 units per second) gives no more than four steps in
+	// a second.
 	m.widths[annotate.ToolBlur] = 1
 	*now = now.Add(time.Second)
 	for i := 0; i < 100; i++ {
@@ -256,7 +263,8 @@ func TestScrollTouchpad(t *testing.T) {
 	}
 }
 
-// TestScrollWheel: щелчок колеса (одно событие около 10 единиц) это ровно один шаг, как раньше.
+// TestScrollWheel: a wheel click (one event of about 10 units) is exactly one step, as
+// before.
 func TestScrollWheel(t *testing.T) {
 	m, now := scrollMonitor(t, annotate.ToolBlur)
 	m.widths[annotate.ToolBlur] = 1
@@ -277,14 +285,14 @@ func TestScrollWheel(t *testing.T) {
 	if got := m.curWidth(); got != annotate.MaxBlurLevel-1 {
 		t.Errorf("щелчок вниз: %v", got)
 	}
-	// Крупное событие (колесо с высоким разрешением даёт и 120) тоже один шаг.
+	// A large event (a high-resolution wheel sends even 120) is also one step.
 	*now = now.Add(400 * time.Millisecond)
 	m.scroll(-120)
 	if got := m.curWidth(); got != annotate.MaxBlurLevel {
 		t.Errorf("крупное событие: %v, ожидали один шаг до %d", got, annotate.MaxBlurLevel)
 	}
 
-	// У инструментов с тонкой шкалой щелчки идут чаще.
+	// Tools with a fine scale step more often.
 	m.tool = annotate.ToolPen
 	m.widths[annotate.ToolPen] = 4
 	for i := 0; i < 5; i++ {
@@ -296,27 +304,27 @@ func TestScrollWheel(t *testing.T) {
 	}
 }
 
-// TestScrollResets: пауза и смена направления сбрасывают накопленное, так что случайное касание
-// не двигает толщину.
+// TestScrollResets: a pause and a change of direction reset the accumulated amount, so an
+// accidental touch does not move the thickness.
 func TestScrollResets(t *testing.T) {
 	m, now := scrollMonitor(t, annotate.ToolBlur)
 	m.widths[annotate.ToolBlur] = 3
 	for i := 0; i < 3; i++ {
 		m.scroll(-7)
 	}
-	m.scroll(7)  // назад: накопленное обнуляется
-	m.scroll(-7) // и снова вперёд
+	m.scroll(7)  // back: the accumulated amount is zeroed
+	m.scroll(-7) // and forward again
 	if got := m.curWidth(); got != 3 {
 		t.Errorf("туда-обратно двинуло толщину: %v", got)
 	}
-	*now = now.Add(time.Second) // долгая пауза: накопленное забыто
+	*now = now.Add(time.Second) // a long pause: the accumulated amount is forgotten
 	for i := 0; i < 5; i++ {
-		m.scroll(-7) // 35 единиц: меньше порции
+		m.scroll(-7) // 35 units: less than a chunk
 	}
 	if got := m.curWidth(); got != 3 {
 		t.Errorf("после паузы накопленное не забылось: %v", got)
 	}
-	m.scroll(-7) // 42: порция набрана
+	m.scroll(-7) // 42: a chunk is collected
 	if got := m.curWidth(); got != 4 {
 		t.Errorf("порция набрана, а уровень %v, ожидали 4", got)
 	}

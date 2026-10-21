@@ -20,20 +20,20 @@ func solid(w, h int, c color.RGBA) *image.RGBA {
 
 func TestComposeSideBySide(t *testing.T) {
 	pad, labelH := composeMetrics(settings.DefaultGlue())
-	// Разная высота: результат берёт самую низкую, без увеличения.
+	// Different heights: the result takes the lowest, without upscaling.
 	a := solid(300, 200, color.RGBA{R: 220, G: 60, B: 60, A: 255})
 	b := solid(240, 160, color.RGBA{R: 60, G: 170, B: 80, A: 255})
 	out, err := compose([]*image.RGBA{a, b}, settings.Default().Glue.Labels(2), annotate.NewShaper(), settings.DefaultGlue())
 	if err != nil {
 		t.Skipf("headless рендер недоступен: %v", err)
 	}
-	// Высота кадра b = 160, ширина a после масштаба = 300*160/200 = 240.
+	// The height of frame b = 160, the width of a after scaling = 300*160/200 = 240.
 	wantW := pad*2 + pad + 240 + 240
 	wantH := pad*2 + labelH + 160
 	if got := out.Bounds().Size(); got != image.Pt(wantW, wantH) {
 		t.Fatalf("размер %v, ожидали %v", got, image.Pt(wantW, wantH))
 	}
-	// В середине первой картинки красный, в середине второй зелёный.
+	// In the middle of the first image it is red, in the middle of the second green.
 	mid := pad + labelH + 80
 	if c := out.RGBAAt(pad+120, mid); c.R < 180 || c.G > 100 {
 		t.Errorf("первая картинка не красная: %v", c)
@@ -41,7 +41,7 @@ func TestComposeSideBySide(t *testing.T) {
 	if c := out.RGBAAt(pad+240+pad+120, mid); c.G < 130 || c.R > 100 {
 		t.Errorf("вторая картинка не зелёная: %v", c)
 	}
-	// Одной картинки мало.
+	// One image is not enough.
 	if _, err := compose([]*image.RGBA{a}, []string{"x"}, annotate.NewShaper(), settings.DefaultGlue()); err == nil {
 		t.Error("одна картинка должна давать ошибку")
 	}
@@ -53,7 +53,7 @@ func TestComposeSideBySide(t *testing.T) {
 
 func TestComposeStacked(t *testing.T) {
 	pad, labelH := composeMetrics(settings.DefaultGlue())
-	// Разная ширина: результат берёт самую узкую, без увеличения.
+	// Different widths: the result takes the narrowest, without upscaling.
 	a := solid(300, 200, color.RGBA{R: 220, G: 60, B: 60, A: 255})
 	b := solid(240, 160, color.RGBA{R: 60, G: 170, B: 80, A: 255})
 	glue := settings.DefaultGlue()
@@ -62,13 +62,13 @@ func TestComposeStacked(t *testing.T) {
 	if err != nil {
 		t.Skipf("headless рендер недоступен: %v", err)
 	}
-	// Ширина b = 240; высота a после масштаба = 200*240/300 = 160.
+	// The width of b = 240; the height of a after scaling = 200*240/300 = 160.
 	wantW := pad*2 + 240
 	wantH := pad*2 + pad + 2*labelH + 160 + 160
 	if got := out.Bounds().Size(); got != image.Pt(wantW, wantH) {
 		t.Fatalf("размер %v, ожидали %v", got, image.Pt(wantW, wantH))
 	}
-	// Красная картинка сверху, зелёная под ней.
+	// The red image on top, the green one under it.
 	if c := out.RGBAAt(pad+120, pad+labelH+80); c.R < 180 || c.G > 100 {
 		t.Errorf("верхняя картинка не красная: %v", c)
 	}
@@ -97,7 +97,7 @@ func TestComposeLook(t *testing.T) {
 	if got, want := out.Bounds().Size(), image.Pt(pad*3+600, pad*2+labelH+200); got != want {
 		t.Fatalf("размер %v, ожидали %v", got, want)
 	}
-	// Угол и промежуток между картинками закрашены тёмным фоном.
+	// The corner and the gap between the images are filled with the dark background.
 	for _, p := range []image.Point{{2, 2}, {pad + 300 + pad/2, pad + labelH + 100}} {
 		if c := out.RGBAAt(p.X, p.Y); c.R != 32 || c.G != 33 || c.B != 36 {
 			t.Errorf("в точке %v ожидали тёмный фон, получили %v", p, c)
@@ -107,7 +107,7 @@ func TestComposeLook(t *testing.T) {
 		t.Errorf("картинка на месте: %v", c)
 	}
 
-	// Нулевой отступ: картинки вплотную, склейка всё равно собирается.
+	// Zero margin: the images touch, the collage is still built.
 	glue.Pad = 0
 	flat, err := compose([]*image.RGBA{a, b}, glue.Labels(2), annotate.NewShaper(), glue)
 	if err != nil {

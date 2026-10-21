@@ -8,7 +8,7 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// where описывает положение единственного оставшегося монитора словами.
+// where describes the position of the single remaining monitor in words.
 func where(m MonitorInfo) string {
 	if m.Primary {
 		return i18n.T("primary")
@@ -19,9 +19,9 @@ func where(m MonitorInfo) string {
 	return i18n.T("right")
 }
 
-// SetupMessage объясняет, что выбрать в очередном диалоге GNOME при настройке
-// мониторов: i — номер диалога с нуля, n — их число, again — предыдущий выбор
-// повторил уже выбранный монитор, left — мониторы, которые ещё не выбраны.
+// SetupMessage explains what to choose in the next GNOME dialog when setting up monitors:
+// i is the dialog number from zero, n is their count, again means the previous choice
+// repeated an already chosen monitor, left is the monitors not yet chosen.
 func SetupMessage(i, n int, again bool, left []MonitorInfo) string {
 	msg := fmt.Sprintf(i18n.T("Dialog %d of %d: "), i+1, n)
 	if again {
@@ -35,16 +35,16 @@ func SetupMessage(i, n int, again bool, left []MonitorInfo) string {
 	return msg + i18n.T(", keep \"Remember this choice\" ticked and press \"Share\"")
 }
 
-// SetupNotify показывает уведомление о настройке мониторов: диалоги GNOME
-// появляются поверх всего, и пользователю нужно подсказать, что в них выбрать.
+// SetupNotify shows a notification about the monitor setup: GNOME dialogs
+// appear on top of everything, and the user needs a hint about what to choose in them.
 func SetupNotify(msg string) {
 	exec.Command("notify-send", "-a", "Scrawl", i18n.T("Monitor setup"), msg).Run()
 }
 
-// SetupMonitors заново выбирает мониторы: показывает диалоги GNOME по одному на
-// монитор и сохраняет токены восстановления. progress получает подсказку к
-// каждому диалогу. Возвращает итог для показа пользователю; ошибка есть, если
-// выбор не удалось сохранить.
+// SetupMonitors re-selects the monitors: it shows GNOME dialogs, one per
+// monitor, and saves the restore tokens. progress receives a hint for
+// each dialog. It returns a summary to show the user; there is an error if
+// the choice could not be saved.
 func SetupMonitors(progress func(string)) (string, error) {
 	p, err := New()
 	if err != nil {

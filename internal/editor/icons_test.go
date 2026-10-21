@@ -13,8 +13,8 @@ import (
 	"gioui.org/op/paint"
 )
 
-// TestIcons рисует все иконки панели на тёмном фоне и проверяет, что каждая
-// что-то нарисовала. С SCRAWL_TEST_OUT=путь картинка сохраняется.
+// TestIcons draws all the panel icons on a dark background and checks that each one
+// drew something. With SCRAWL_TEST_OUT=path the image is saved.
 func TestIcons(t *testing.T) {
 	icons := []struct {
 		name string
@@ -38,7 +38,7 @@ func TestIcons(t *testing.T) {
 	var ops op.Ops
 	paint.Fill(&ops, bg)
 	for i, ic := range icons {
-		// Верхний ряд: размер кнопки панели (34 px), нижний: крупно (72 px).
+		// Top row: the panel button size (34 px), bottom row: enlarged (72 px).
 		st := op.Offset(image.Pt(i*cell+(cell-34)/2, (cell-34)/2)).Push(&ops)
 		ic.fn(&ops, 34, fg)
 		st.Pop()

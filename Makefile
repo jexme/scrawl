@@ -1,12 +1,12 @@
-# Сборка scrawl. Gio берётся из модульного кэша и патчится скриптом
-# scripts/setup-gio.sh, копия Gio в репозиторий не входит.
+# Building scrawl. Gio is taken from the module cache and patched by the script
+# scripts/setup-gio.sh; a copy of Gio is not part of the repository.
 #
-# Для захвата экрана нужны заголовки PipeWire: либо системные
-# (sudo apt install libpipewire-0.3-dev), либо распакованные без sudo командой
-# scripts/fetch-pipewire-headers.sh в .deps/pipewire-dev (подхватываются сами).
+# Screen capture needs the PipeWire headers: either the system ones
+# (sudo apt install libpipewire-0.3-dev), or ones unpacked without sudo by
+# scripts/fetch-pipewire-headers.sh into .deps/pipewire-dev (picked up automatically).
 GO ?= go
 
-# cgo отвергает флаг -fno-strict-overflow, который libpipewire.pc добавляет сам.
+# cgo rejects the -fno-strict-overflow flag that libpipewire.pc adds on its own.
 export CGO_CFLAGS_ALLOW := -fno-strict-overflow
 
 PW_LOCAL := $(CURDIR)/.deps/pipewire-dev
@@ -38,12 +38,12 @@ build: gio
 test: gio
 	$(GO) test ./...
 
-# Пересобирает THIRD_PARTY_NOTICES.md из лицензий зависимостей.
+# Regenerates THIRD_PARTY_NOTICES.md from the dependency licenses.
 notices:
 	python3 scripts/gen-notices.py
 
-# Ставит бинарник и .desktop. В Exec подставляется абсолютный путь: portal
-# сопоставляет приложение с .desktop-файлом только если Exec существует.
+# Installs the binary and the .desktop file. An absolute path is put into Exec: the portal
+# matches an application to a .desktop file only if Exec exists.
 install: build
 	install -Dm755 bin/scrawl $(DESTDIR)$(BINDIR)/scrawl
 	install -d $(DESTDIR)$(APPDIR)
@@ -55,8 +55,8 @@ install: build
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/scrawl $(DESTDIR)$(APPDIR)/$(DESKTOP)
 
-# Архив релиза: бинарник, .desktop, установщик, лицензии и README, плюс SHA-256.
-# Версия берётся из git describe или из VERSION=v1.2.3.
+# Release archive: binary, .desktop, installer, licenses and README, plus SHA-256.
+# The version is taken from git describe or from VERSION=v1.2.3.
 DIST := dist
 PKG = scrawl-$(VERSION)-linux-$(shell $(GO) env GOARCH)
 
@@ -68,11 +68,11 @@ dist: build
 	cd $(DIST) && sha256sum $(PKG).tar.gz > $(PKG).tar.gz.sha256
 	@echo "Готово: $(DIST)/$(PKG).tar.gz"
 
-# Пакет для Debian и Ubuntu: dist/scrawl_ВЕРСИЯ_ARCH.deb.
+# Package for Debian and Ubuntu: dist/scrawl_VERSION_ARCH.deb.
 deb: build
 	packaging/deb.sh "$(VERSION)" "$(shell $(GO) env GOARCH)" $(DIST)
 
-# Включает проверки перед коммитом и отправкой: в историю не должна попасть личная почта.
+# Enables checks before commit and push: a personal email must not get into the history.
 hooks:
 	git config core.hooksPath .githooks
 	@echo "Хуки включены: адрес автора проверяется перед коммитом и перед push."

@@ -1,7 +1,7 @@
-// Package fonts собирает шрифты для текста: встроенные шрифты Go плюс, для китайского,
-// японского и корейского интерфейса, системный шрифт с иероглифами. Свои CJK-шрифты
-// в программу не встроены: они занимают десятки мегабайт, а на рабочем столе
-// с такими языками системный шрифт почти всегда есть.
+// Package fonts assembles fonts for text: the built-in Go fonts plus, for a Chinese,
+// Japanese or Korean interface, a system font with ideographs. Our own CJK fonts
+// are not embedded in the program: they take tens of megabytes, and a desktop
+// with such languages almost always has a system font.
 package fonts
 
 import (
@@ -15,10 +15,10 @@ import (
 	"gioui.org/font/opentype"
 )
 
-// Языки, которым нужен шрифт с иероглифами или хангылем, и их метки для fontconfig.
+// Languages that need a font with ideographs or hangul, and their fontconfig tags.
 var cjkTags = map[string]string{"zh": "zh-cn", "ja": "ja", "ko": "ko"}
 
-// Известные пути, если fontconfig (fc-match) недоступен.
+// Known paths, in case fontconfig (fc-match) is unavailable.
 var knownFiles = []string{
 	"/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
 	"/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
@@ -34,9 +34,9 @@ var (
 	cache = map[string][]font.FontFace{}
 )
 
-// Collection возвращает шрифты для языка lang: встроенные Go и, если язык этого
-// требует и системный шрифт найден, шрифт с иероглифами как запасной. Результат кэшируется:
-// файл шрифта читается один раз за запуск.
+// Collection returns fonts for the language lang: the built-in Go ones and, if the
+// language requires it and a system font is found, the font with ideographs as a fallback.
+// The result is cached: the font file is read once per launch.
 func Collection(lang string) []font.FontFace {
 	base := gofont.Collection()
 	tag, ok := cjkTags[lang]
@@ -53,8 +53,8 @@ func Collection(lang string) []font.FontFace {
 	return append(append([]font.FontFace{}, base...), extra...)
 }
 
-// Available сообщает, найден ли системный шрифт для языка (для языков без
-// особых требований всегда true).
+// Available reports whether a system font is found for the language (always true
+// for languages without special requirements).
 func Available(lang string) bool {
 	tag, ok := cjkTags[lang]
 	if !ok {
@@ -70,7 +70,7 @@ func Available(lang string) bool {
 	return len(extra) > 0
 }
 
-// loadSystem ищет шрифт без засечек для языка и разбирает его.
+// loadSystem finds a sans-serif font for the language and parses it.
 func loadSystem(tag string) []font.FontFace {
 	for _, c := range candidates(tag) {
 		data, err := readFile(c.path)
@@ -94,8 +94,8 @@ type candidate struct {
 	index int
 }
 
-// candidates перечисляет шрифты по убыванию пригодности: сначала выбор fontconfig
-// для нужного языка, потом известные пути.
+// candidates lists fonts in decreasing order of suitability: first the fontconfig choice
+// for the needed language, then the known paths.
 func candidates(tag string) []candidate {
 	var out []candidate
 	if fc, err := exec.LookPath("fc-match"); err == nil {
@@ -113,8 +113,8 @@ func candidates(tag string) []candidate {
 	return out
 }
 
-// Preload в фоне загружает системный шрифт для языка, чтобы его разбор (около
-// 80 мс для CJK) шёл, пока программа ещё получает кадры экрана, а не после.
+// Preload loads the system font for the language in the background so that its parsing (about
+// 80 ms for CJK) runs while the program is still receiving screen frames, not after.
 func Preload(lang string) {
 	if _, ok := cjkTags[lang]; ok {
 		go Available(lang)

@@ -11,10 +11,10 @@ const (
 	permStorePath = "/org/freedesktop/impl/portal/PermissionStore"
 )
 
-// GrantScreenshotPermission выдаёт приложению разрешение на скриншоты в
-// хранилище разрешений xdg-desktop-portal. Оно нужно запасному пути захвата:
-// после регистрации app_id portal перестаёт считать приложение «неизвестным» и
-// без записи отказывает. Вызывать только по явной команде пользователя.
+// GrantScreenshotPermission grants the application permission to take screenshots in the
+// xdg-desktop-portal permission store. The fallback capture path needs it:
+// after app_id is registered, the portal stops treating the application as "unknown" and
+// refuses without a record. Call only on an explicit user command.
 func GrantScreenshotPermission() error {
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {

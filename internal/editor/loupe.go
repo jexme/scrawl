@@ -12,12 +12,12 @@ import (
 	"gioui.org/op/paint"
 )
 
-// Лупа показывает увеличенные пиксели вокруг двигаемого угла или стороны рамки,
-// чтобы выровнять рамку с точностью до пикселя.
+// The magnifier shows enlarged pixels around the corner or side of the frame being moved,
+// to align the frame with pixel precision.
 const (
-	loupeZoom   = 6  // во сколько раз увеличиваются пиксели кадра
-	loupeCells  = 32 // сколько пикселей кадра помещается в лупе по каждой оси (чётное: фокус лежит на линии сетки)
-	loupeGridAt = 6  // сетка между пикселями рисуется, если увеличение не меньше этого
+	loupeZoom   = 6  // how many times the frame pixels are magnified
+	loupeCells  = 32 // frame pixels per axis in the magnifier (even: the focus lies on a grid line)
+	loupeGridAt = 6  // the grid between pixels is drawn if the magnification is at least this
 )
 
 var (
@@ -27,15 +27,16 @@ var (
 	loupeEdgeOut = color.NRGBA{A: 220}
 )
 
-// loupeFocus возвращает точку кадра (на сетке пикселей), к которой прилипает
-// двигаемая сторона рамки: в её центре лупа и рисуется. Для создаваемой рамки это
-// угол под курсором, для изменяемой стороны сама сторона, по другой оси курсор.
+// loupeFocus returns the frame point (on the pixel grid) that the moved side of the frame
+// snaps to: the magnifier is drawn centered on it. For a frame being created it is the
+// corner under the cursor, for an edge being resized the edge itself, and the cursor on
+// the other axis.
 func loupeFocus(sel image.Rectangle, e edge, creating bool, hover f32.Point, bounds image.Rectangle) f32.Point {
 	round := func(v float32, lo, hi int) float32 {
 		return float32(clampInt(int(math.Round(float64(v))), lo, hi))
 	}
 	if creating {
-		// Создаваемая рамка берёт целую часть координаты, как rectOf.
+		// A frame being created takes the integer part of the coordinate, like rectOf.
 		return f32.Pt(
 			float32(clampInt(int(hover.X), bounds.Min.X, bounds.Max.X)),
 			float32(clampInt(int(hover.Y), bounds.Min.Y, bounds.Max.Y)),
@@ -57,9 +58,10 @@ func loupeFocus(sel image.Rectangle, e edge, creating bool, hover f32.Point, bou
 	return f
 }
 
-// loupeDir возвращает, в какую сторону от курсора ставить лупу (по каждой оси -1, 0 или 1):
-// наружу от рамки, чтобы лупа не закрывала то, что выделяют. Для новой рамки это сторона,
-// куда тянут от точки нажатия, для изменяемой сторона двигаемого края.
+// loupeDir returns which way from the cursor to place the magnifier (-1, 0 or 1 on each
+// axis): outward from the frame, so the magnifier does not cover what is being selected.
+// For a new frame it is the side the drag goes toward from the press point, for a resized
+// one the side of the moved edge.
 func loupeDir(e edge, creating bool, start, hover f32.Point) image.Point {
 	if creating {
 		d := image.Pt(1, 1)
@@ -74,9 +76,9 @@ func loupeDir(e edge, creating bool, start, hover f32.Point) image.Point {
 	return image.Pt(e.hx, e.hy)
 }
 
-// loupePlacement ставит квадрат лупы со стороной side рядом с курсором cur в стороне dir
-// (по оси 0 лупа центрируется на курсоре). Не помещается с этой стороны, ставится
-// с противоположной, потом прижимается к окну.
+// loupePlacement places the magnifier square of side side next to the cursor cur on the
+// dir side (on axis 0 the magnifier is centered on the cursor). If it does not fit on that
+// side, it is placed on the opposite one, then pressed against the window.
 func loupePlacement(cur image.Point, side, gap int, win, dir image.Point) image.Rectangle {
 	place := func(c, w, d int) int {
 		switch {
@@ -98,13 +100,14 @@ func loupePlacement(cur image.Point, side, gap int, win, dir image.Point) image.
 	return image.Rect(x, y, x+side, y+side)
 }
 
-// loupeAiming: области ещё нет, курсор над окном, и лупа помогает выбрать стартовую точку.
+// loupeAiming: there is no area yet, the cursor is over the window, and the magnifier
+// helps pick the starting point.
 func (m *monitor) loupeAiming() bool {
 	return !m.hasSel && !m.dragging && m.adjust == adjustNone && m.hoverIn
 }
 
-// loupeActive: лупа нужна, пока целятся в первую точку и пока тянут рамку (новую или
-// готовую), но не при перемещении области целиком и не при рисовании.
+// loupeActive: the magnifier is needed while aiming at the first point and while dragging
+// a frame (new or existing), but not when moving the whole area or drawing.
 func (m *monitor) loupeActive() bool {
 	if !m.store.Get().ShowLoupe {
 		return false
@@ -112,7 +115,7 @@ func (m *monitor) loupeActive() bool {
 	return m.loupeAiming() || m.adjust == adjustResize || m.dragging
 }
 
-// layoutLoupe рисует лупу поверх всего остального. Рисуется в пикселях окна.
+// layoutLoupe draws the magnifier over everything else. Drawn in window pixels.
 func (m *monitor) layoutLoupe(gtx layout.Context, win image.Point, sx, sy float32) {
 	if !m.loupeActive() {
 		return
@@ -135,15 +138,17 @@ func (m *monitor) layoutLoupe(gtx layout.Context, win image.Point, sx, sy float3
 
 	if m.loupeOp == (paint.ImageOp{}) {
 		m.loupeOp = paint.NewImageOp(m.frame.Img)
-		m.loupeOp.Filter = paint.FilterNearest // пиксели остаются квадратами, без сглаживания
+		m.loupeOp.Filter = paint.FilterNearest // pixels stay square, no smoothing
 	}
 
-	// Тонкая тёмная кайма и фон под кадром (за краем экрана кадра нет).
+	// A thin dark border and a background under the frame (there is no frame beyond the screen
+	// edge).
 	paint.FillShape(gtx.Ops, loupeEdgeOut, clip.Rect(box.Inset(-2)).Op())
 	paint.FillShape(gtx.Ops, loupeBG, clip.Rect(box).Op())
 
 	boxClip := clip.Rect(box).Push(gtx.Ops)
-	// Дальше всё в пространстве кадра: фокус в центре лупы, пиксель кадра = zoom пикселей окна.
+	// From here on everything is in frame space: the focus at the magnifier center, a frame
+	// pixel = zoom window pixels.
 	tr := op.Affine(f32.Affine2D{}.
 		Offset(f32.Pt(-focus.X, -focus.Y)).
 		Scale(f32.Pt(0, 0), f32.Pt(zoom, zoom)).
@@ -153,8 +158,9 @@ func (m *monitor) layoutLoupe(gtx layout.Context, win image.Point, sx, sy float3
 	m.loupeOp.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 
-	// Вне выделения затемнено так же, как на экране: видно, какие пиксели попадут в снимок.
-	// Пока рамки нет, пиксели не затемняем: так их проще разглядеть.
+	// Outside the selection it is dimmed the same way as on screen: you can see which pixels
+	// end up in the shot. While there is no frame, pixels are not dimmed: they are easier to
+	// see that way.
 	r := m.sel
 	if !aiming {
 		shade := shadeColor(m.store.Get().DimPercent)
@@ -169,7 +175,7 @@ func (m *monitor) layoutLoupe(gtx layout.Context, win image.Point, sx, sy float3
 	}
 	imgClip.Pop()
 
-	// Сетка между пикселями.
+	// Grid between pixels.
 	if zoom >= loupeGridAt {
 		half := float32(loupeCells/2 + 1)
 		x0, x1 := float32(math.Floor(float64(focus.X-half))), float32(math.Ceil(float64(focus.X+half)))
@@ -188,7 +194,7 @@ func (m *monitor) layoutLoupe(gtx layout.Context, win image.Point, sx, sy float3
 	}
 
 	if !aiming {
-		// Рамка выделения: белая линия на тёмной подложке видна на любом фоне.
+		// Selection frame: a white line on a dark backing is visible on any background.
 		var rect clip.Path
 		rect.Begin(gtx.Ops)
 		rect.MoveTo(f32.Pt(float32(r.Min.X), float32(r.Min.Y)))
@@ -202,7 +208,7 @@ func (m *monitor) layoutLoupe(gtx layout.Context, win image.Point, sx, sy float3
 	}
 	tr.Pop()
 
-	// Крестик в центре: сюда встанет сторона рамки.
+	// Crosshair in the center: the frame side will land here.
 	const arm = 6
 	var cross clip.Path
 	cross.Begin(gtx.Ops)

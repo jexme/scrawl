@@ -1,13 +1,12 @@
-// Package settings хранит пользовательские настройки в JSON-файле
-// ~/.config/scrawl/config.json. Файл можно править руками; отсутствующие
-// и неверные значения заменяются значениями по умолчанию (числа вне допустимого
-// диапазона подрезаются до его границ), а ключи, которых
-// программа не знает (от новой версии или дописанные руками), при записи
-// сохраняются.
+// Package settings stores user settings in the JSON file
+// ~/.config/scrawl/config.json. The file can be edited by hand; missing and invalid
+// values are replaced with defaults (numbers outside the allowed range are clamped
+// to its bounds), and keys the program does not know (from a newer version or added
+// by hand) are preserved on write.
 //
-// Схема задаётся структурой Settings: ключ файла берётся из json-тега поля,
-// значение по умолчанию из Default, проверка в normalize. Новая настройка
-// это новое поле и строка в Default/normalize.
+// The schema is the Settings struct: the file key comes from the field's json tag,
+// the default value from Default, validation from normalize. A new setting is
+// a new field plus a line in Default/normalize.
 package settings
 
 import (
@@ -28,95 +27,97 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// DoubleClick определяет, что делает двойной клик внутри выделенной области.
+// DoubleClick defines what a double click inside the selected area does.
 type DoubleClick string
 
 const (
-	DoubleClickOff      DoubleClick = "off"       // ничего
-	DoubleClickCopy     DoubleClick = "copy"      // скопировать в буфер обмена (по умолчанию)
-	DoubleClickCopySave DoubleClick = "copy_save" // скопировать и сохранить в файл
+	DoubleClickOff      DoubleClick = "off"       // nothing
+	DoubleClickCopy     DoubleClick = "copy"      // copy to the clipboard (default)
+	DoubleClickCopySave DoubleClick = "copy_save" // copy and save to a file
 )
 
-// Enter определяет, что делает клавиша Enter в оверлее.
+// Enter defines what the Enter key does in the overlay.
 type Enter string
 
 const (
-	EnterCopySave Enter = "copy_save" // скопировать и сохранить в файл (по умолчанию)
-	EnterCopy     Enter = "copy"      // только скопировать в буфер обмена
-	EnterSave     Enter = "save"      // только сохранить в файл
+	EnterCopySave Enter = "copy_save" // copy and save to a file (default)
+	EnterCopy     Enter = "copy"      // only copy to the clipboard
+	EnterSave     Enter = "save"      // only save to a file
 )
 
-// Targets сообщает, куда отправлять снимок: в буфер обмена и/или в файл.
+// Targets reports where to send the screenshot: the clipboard and/or a file.
 func (e Enter) Targets() (clipboard, file bool) {
 	return e != EnterSave, e != EnterCopy
 }
 
-// Settings — все настройки.
+// Settings holds all the settings.
 type Settings struct {
 	DoubleClick DoubleClick `json:"double_click"`
 	Enter       Enter       `json:"enter"`
-	// Notifications — показывать уведомления после снимка и действий с подборкой.
-	// Ошибки и подсказки, почему действие не вышло, показываются всегда.
+	// Notifications shows notifications after a screenshot and after collection actions.
+	// Errors and hints about why an action failed are always shown.
 	Notifications bool `json:"notifications"`
-	// RememberRegion — запоминать область снимка и предлагать её при следующем запуске.
+	// RememberRegion remembers the screenshot area and offers it on the next launch.
 	RememberRegion bool `json:"remember_region"`
-	// FilePrefix — начало имени файла скриншота. Пусто: DefaultFilePrefix.
+	// FilePrefix is the start of the screenshot file name. Empty means DefaultFilePrefix.
 	FilePrefix string `json:"file_prefix,omitempty"`
-	// DimPercent — затемнение вне выделенной области, 0-100 %.
+	// DimPercent is the dimming outside the selected area, 0-100 %.
 	DimPercent int `json:"dim_percent"`
-	// Рамка выделения: толщина линии, длина штриха и пауза между штрихами в
-	// пикселях экрана, цвет в виде #RRGGBB.
+	// The selection border: line thickness, dash length and gap between dashes in
+	// screen pixels, colour as #RRGGBB.
 	BorderWidth float64 `json:"border_width"`
 	BorderDash  float64 `json:"border_dash"`
 	BorderGap   float64 `json:"border_gap"`
 	BorderColor string  `json:"border_color"`
-	// HandleRadius — радиус угловых ручек в пикселях экрана; 0 прячет ручки.
+	// HandleRadius is the radius of the corner handles in screen pixels; 0 hides them.
 	HandleRadius float64 `json:"handle_radius"`
-	// ShowSize — показывать подпись «W × H» у выделенной области.
+	// ShowSize shows the "W × H" label next to the selected area.
 	ShowSize bool `json:"show_size"`
-	// CustomColor — свой цвет из палитры на панели инструментов, #RRGGBB; пусто: не выбран.
-	// Записывается самой программой, когда цвет выбрали в оверлее.
+	// CustomColor is the custom colour from the toolbar palette, #RRGGBB; empty means none chosen.
+	// Written by the program itself when a colour is picked in the overlay.
 	CustomColor string `json:"custom_color,omitempty"`
-	// ShowLoupe — показывать лупу с увеличенными пикселями, пока выбирают область и тянут рамку.
+	// ShowLoupe shows a magnifier with enlarged pixels while the area is being selected or
+	// the border is dragged.
 	ShowLoupe bool `json:"show_loupe"`
-	// DefaultTool — инструмент, который включается сразу после выбора области
-	// (одно из ToolNames).
+	// DefaultTool is the tool that is enabled right after the area is selected
+	// (one of ToolNames).
 	DefaultTool string `json:"default_tool"`
-	// Tools — цвет и толщина по умолчанию для каждого инструмента.
+	// Tools holds the default colour and thickness for each tool.
 	Tools ToolStyles `json:"tools"`
-	// Palette — цвета панели инструментов, #RRGGBB.
+	// Palette holds the toolbar colours, #RRGGBB.
 	Palette [PaletteSize]string `json:"palette"`
-	// MarkerOpacity — непрозрачность маркера, 5-100 %.
+	// MarkerOpacity is the marker opacity, 5-100 %.
 	MarkerOpacity int `json:"marker_opacity"`
-	// Glue — склейка «было/стало».
+	// Glue holds the "before/after" collage settings.
 	Glue Glue `json:"glue"`
-	// Format — формат сохраняемых файлов; в буфер обмена всегда идёт PNG.
+	// Format is the format of saved files; the clipboard always gets PNG.
 	Format FileFormat `json:"format"`
-	// JPEGQuality — качество JPEG, 1-100.
+	// JPEGQuality is the JPEG quality, 1-100.
 	JPEGQuality int `json:"jpeg_quality"`
-	// KeepOpen — после копирования или сохранения не закрывать оверлей, а дать
-	// продолжить правку. Выход по Esc.
+	// KeepOpen keeps the overlay open after copying or saving so editing can continue.
+	// Leave with Esc.
 	KeepOpen bool `json:"keep_open"`
-	// Language — язык интерфейса: "auto" (по системе), "ru" или "en".
+	// Language is the interface language: "auto" (follow the system), "ru" or "en".
 	Language string `json:"language"`
-	// CheckUpdates — спрашивать GitHub о новой версии при старте значка и окна
-	// настроек. Единственный выход программы в интернет; по умолчанию выключено.
+	// CheckUpdates asks GitHub about a new version when the tray icon and the settings
+	// window start. The program's only access to the internet; off by default.
 	CheckUpdates bool `json:"check_updates"`
-	// Keys — клавиши действий оверлея; пусто: по умолчанию.
+	// Keys holds the overlay action keys; empty means the defaults.
 	Keys Keys `json:"keys"`
-	// IncludeCursor — рисовать курсор мыши в снимке (только при захвате через PipeWire).
+	// IncludeCursor draws the mouse cursor in the screenshot (only for PipeWire capture).
 	IncludeCursor bool `json:"include_cursor"`
-	// SaveDir — каталог для сохранения скриншотов. Пусто: ~/Pictures/Screenshots.
+	// SaveDir is the directory for saving screenshots. Empty means ~/Pictures/Screenshots.
 	SaveDir string `json:"save_dir,omitempty"`
 }
 
-// Default возвращает настройки по умолчанию.
+// Default returns the default settings.
 func Default() Settings {
 	return Settings{DoubleClick: DoubleClickCopy, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
 		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, ShowLoupe: true, DefaultTool: "select", Palette: DefaultPalette, MarkerOpacity: 43, Glue: DefaultGlue(), Format: FormatPNG, JPEGQuality: 90, Language: i18n.Auto}
 }
 
-// Имена папки настроек: нынешняя и от прежнего названия программы (screen-editor).
+// Settings directory names: the current one and the one from the program's former name
+// (screen-editor).
 const (
 	dirName       = "scrawl"
 	legacyDirName = "screen-editor"
@@ -130,21 +131,21 @@ func configFile(dirName string) string {
 	return filepath.Join(dir, dirName, "config.json")
 }
 
-// Path возвращает путь к файлу настроек.
+// Path returns the path to the settings file.
 func Path() string { return configFile(dirName) }
 
-// LegacyPath возвращает путь к файлу настроек прежнего названия программы. Из него
-// настройки читаются, пока нового файла нет; сам он не меняется и не удаляется.
+// LegacyPath returns the path to the settings file of the program's former name.
+// Settings are read from it while the new file does not exist; it is never changed or deleted.
 func LegacyPath() string { return configFile(legacyDirName) }
 
-// valid проверяет значение двойного клика.
+// valid checks the double click value.
 func (d DoubleClick) valid() bool {
 	return d == DoubleClickOff || d == DoubleClickCopy || d == DoubleClickCopySave
 }
 
 func (e Enter) valid() bool { return e == EnterCopySave || e == EnterCopy || e == EnterSave }
 
-// normalize заменяет неверные значения на значения по умолчанию.
+// normalize replaces invalid values with defaults.
 func (s *Settings) normalize() {
 	def := Default()
 	if !s.DoubleClick.valid() {
@@ -164,7 +165,7 @@ func (s *Settings) normalize() {
 	normalizePalette(&s.Palette)
 	s.Glue.normalize()
 	if canon, ok := i18n.Normalize(s.Language); ok {
-		s.Language = canon // «zh-CN» и «pt_BR» записываются как zh и pt
+		s.Language = canon // "zh-CN" and "pt_BR" are stored as zh and pt
 	} else {
 		s.Language = def.Language
 	}
@@ -193,7 +194,7 @@ func (s *Settings) normalize() {
 	}
 }
 
-// keyOf возвращает ключ файла для поля структуры, "" если поле в файл не пишется.
+// keyOf returns the file key for a struct field, or "" if the field is not written to the file.
 func keyOf(f reflect.StructField) string {
 	name, _, _ := strings.Cut(f.Tag.Get("json"), ",")
 	if name == "-" {
@@ -202,8 +203,8 @@ func keyOf(f reflect.StructField) string {
 	return name
 }
 
-// readRaw читает файл как набор ключей со значениями без разбора. Нет файла,
-// он не JSON-объект или повреждён: ok == false.
+// readRaw reads the file as a set of keys with undecoded values. No file, not a JSON
+// object, or corrupted: ok == false.
 func readRaw(path string) (raw map[string]json.RawMessage, exists, ok bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -215,9 +216,9 @@ func readRaw(path string) (raw map[string]json.RawMessage, exists, ok bool) {
 	return raw, true, true
 }
 
-// decodeStruct разбирает каждое поле структуры по его ключу отдельно: поле с
-// неверным значением остаётся как было. Вложенные структуры разбираются так же,
-// поэтому одна ошибка не портит соседние значения.
+// decodeStruct decodes each struct field by its own key: a field with an invalid
+// value stays as it was. Nested structs are decoded the same way, so one error
+// does not spoil neighbouring values.
 func decodeStruct(v reflect.Value, raw map[string]json.RawMessage) {
 	for i := 0; i < v.NumField(); i++ {
 		key := keyOf(v.Type().Field(i))
@@ -240,10 +241,10 @@ func decodeStruct(v reflect.Value, raw map[string]json.RawMessage) {
 	}
 }
 
-// readConfigRaw читает файл настроек, а если его ещё нет, то файл прежнего
-// названия программы. Из прежнего файла возвращается только содержимое:
-// exists для него false, поэтому запись не принимает его за повреждённый файл
-// нового пути.
+// readConfigRaw reads the settings file, or, if it does not exist yet, the file of the
+// program's former name. From the former file only the contents are returned:
+// exists is false for it, so a write does not mistake it for a corrupted file at
+// the new path.
 func readConfigRaw() (raw map[string]json.RawMessage, exists, ok bool) {
 	raw, exists, ok = readRaw(Path())
 	if exists {
@@ -255,9 +256,9 @@ func readConfigRaw() (raw map[string]json.RawMessage, exists, ok bool) {
 	return nil, false, false
 }
 
-// Load читает настройки из файла. Каждый ключ разбирается отдельно: отсутствующий
-// или неверный по типу ключ получает значение по умолчанию и не портит остальные.
-// Нет файла или он повреждён: настройки по умолчанию.
+// Load reads the settings from the file. Each key is decoded separately: a missing key
+// or one of the wrong type gets its default value and does not spoil the others.
+// No file or a corrupted one: default settings.
 func Load() Settings {
 	s := Default()
 	raw, _, ok := readConfigRaw()
@@ -269,10 +270,10 @@ func Load() Settings {
 	return s
 }
 
-// Save записывает настройки в файл атомарно: сначала во временный файл, потом
-// переименование, чтобы оборвавшаяся запись не оставила битый файл. Свои ключи
-// перезаписываются, чужие остаются как были. Нечитаемый файл перед этим
-// сохраняется рядом как config.json.bak, чтобы не потерять правки руками.
+// Save writes the settings to the file atomically: first to a temporary file, then a
+// rename, so an interrupted write does not leave a broken file. Our own keys are
+// overwritten, foreign ones stay as they were. An unreadable file is first saved
+// alongside as config.json.bak so that hand edits are not lost.
 func Save(s Settings) error {
 	s.normalize()
 	path := Path()
@@ -289,7 +290,7 @@ func Save(s Settings) error {
 	}
 	t := reflect.TypeOf(s)
 	for i := 0; i < t.NumField(); i++ {
-		delete(merged, keyOf(t.Field(i))) // поля с omitempty не должны оставлять старое значение
+		delete(merged, keyOf(t.Field(i))) // omitempty fields must not leave the old value behind
 	}
 	own, err := json.Marshal(s)
 	if err != nil {
@@ -322,25 +323,25 @@ func Save(s Settings) error {
 	return os.Rename(tmp.Name(), path)
 }
 
-// Store — общие настройки процесса: все окна читают и меняют одни и те же
-// значения, а каждое изменение сразу пишется на диск.
+// Store holds the process-wide settings: all windows read and change the same
+// values, and every change is written to disk immediately.
 type Store struct {
 	mu sync.Mutex
 	s  Settings
 }
 
-// NewStore загружает настройки с диска.
+// NewStore loads the settings from disk.
 func NewStore() *Store { return &Store{s: Load()} }
 
-// Get возвращает текущие настройки.
+// Get returns the current settings.
 func (st *Store) Get() Settings {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 	return st.s
 }
 
-// Update применяет изменение и сохраняет результат (если оно что-то изменило). Если запись на диск не
-// удалась, в памяти настройка всё равно меняется, а ошибка возвращается.
+// Update applies a change and saves the result (if it changed anything). If writing to
+// disk fails, the setting still changes in memory and the error is returned.
 func (st *Store) Update(change func(*Settings)) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
@@ -348,12 +349,12 @@ func (st *Store) Update(change func(*Settings)) error {
 	change(&st.s)
 	st.s.normalize()
 	if st.s == before {
-		return nil // ничего не изменилось: файл не трогаем
+		return nil // nothing changed: leave the file alone
 	}
 	return Save(st.s)
 }
 
-// Границы значений рамки выделения.
+// Bounds of the selection border values.
 const (
 	MinBorderWidth, MaxBorderWidth = 0.5, 4
 	MinBorderDash, MaxBorderDash   = 1, 20
@@ -361,7 +362,7 @@ const (
 	MaxHandleRadius                = 10
 )
 
-// ParseColor разбирает цвет вида #RRGGBB (решётка необязательна).
+// ParseColor parses a colour of the form #RRGGBB (the # is optional).
 func ParseColor(s string) (color.NRGBA, error) {
 	hex := strings.TrimPrefix(strings.TrimSpace(s), "#")
 	if len(hex) != 6 {
@@ -374,10 +375,10 @@ func ParseColor(s string) (color.NRGBA, error) {
 	return color.NRGBA{R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v), A: 255}, nil
 }
 
-// FormatColor записывает цвет как #RRGGBB.
+// FormatColor writes a colour as #RRGGBB.
 func FormatColor(c color.NRGBA) string { return fmt.Sprintf("#%02X%02X%02X", c.R, c.G, c.B) }
 
-// BorderNRGBA возвращает цвет рамки (после normalize он всегда верный).
+// BorderNRGBA returns the border colour (always valid after normalize).
 func (s Settings) BorderNRGBA() color.NRGBA {
 	c, err := ParseColor(s.BorderColor)
 	if err != nil {
@@ -386,24 +387,24 @@ func (s Settings) BorderNRGBA() color.NRGBA {
 	return c
 }
 
-// MinMarkerOpacity — наименьшая непрозрачность маркера в процентах: ниже его не видно.
+// MinMarkerOpacity is the lowest marker opacity in percent: below it the marker is invisible.
 const MinMarkerOpacity = 5
 
-// MarkerAlpha возвращает непрозрачность маркера как альфа-канал 0-255.
+// MarkerAlpha returns the marker opacity as a 0-255 alpha channel.
 func (s Settings) MarkerAlpha() uint8 {
 	return uint8(math.Round(float64(s.MarkerOpacity) * 255 / 100))
 }
 
-// DefaultFilePrefix — начало имени файла, если своё не задано.
+// DefaultFilePrefix is the start of the file name when none is set.
 const DefaultFilePrefix = "scrawl"
 
-// StampLayout — формат даты и времени в имени файла.
+// StampLayout is the date and time format used in the file name.
 const StampLayout = "20060102-150405"
 
 const maxFilePrefix = 60
 
-// ValidateFilePrefix проверяет начало имени файла: пусто (значит по умолчанию) или
-// текст без разделителей пути и управляющих символов, не длиннее 60 знаков.
+// ValidateFilePrefix checks the start of the file name: empty (meaning the default) or
+// text without path separators and control characters, at most 60 characters.
 func ValidateFilePrefix(p string) error {
 	if utf8.RuneCountInString(p) > maxFilePrefix {
 		return fmt.Errorf(i18n.T("at most %d characters"), maxFilePrefix)
@@ -416,7 +417,7 @@ func ValidateFilePrefix(p string) error {
 	return nil
 }
 
-// Prefix возвращает начало имени файла с учётом значения по умолчанию.
+// Prefix returns the start of the file name, taking the default into account.
 func (s Settings) Prefix() string {
 	if s.FilePrefix == "" {
 		return DefaultFilePrefix
@@ -424,15 +425,15 @@ func (s Settings) Prefix() string {
 	return s.FilePrefix
 }
 
-// FileFormat — формат файла скриншота.
+// FileFormat is the screenshot file format.
 type FileFormat string
 
 const (
-	FormatPNG  FileFormat = "png"  // без потерь (по умолчанию)
-	FormatJPEG FileFormat = "jpeg" // меньше размер, есть потери
+	FormatPNG  FileFormat = "png"  // lossless (default)
+	FormatJPEG FileFormat = "jpeg" // smaller size, lossy
 )
 
-// Ext возвращает расширение файла вместе с точкой.
+// Ext returns the file extension including the dot.
 func (s Settings) Ext() string {
 	if s.Format == FormatJPEG {
 		return ".jpg"
@@ -440,8 +441,8 @@ func (s Settings) Ext() string {
 	return ".png"
 }
 
-// OutputDir возвращает каталог для скриншотов: из настроек или
-// ~/Pictures/Screenshots, если в настройках пусто. Каталог создаётся.
+// OutputDir returns the directory for screenshots: from the settings or
+// ~/Pictures/Screenshots if the setting is empty. The directory is created.
 func (s Settings) OutputDir() (string, error) {
 	dir, err := ExpandDir(s.SaveDir)
 	if err != nil {
@@ -457,16 +458,16 @@ func (s Settings) OutputDir() (string, error) {
 	return dir, os.MkdirAll(dir, 0o755)
 }
 
-// FileName возвращает имя файла скриншота для отметки времени stamp (StampLayout).
+// FileName returns the screenshot file name for the timestamp stamp (StampLayout).
 func (s Settings) FileName(stamp string) string { return s.Prefix() + "-" + stamp + s.Ext() }
 
-// NumberedFileName возвращает имя n-го файла набора с общей отметкой времени.
+// NumberedFileName returns the name of the n-th file of a set sharing one timestamp.
 func (s Settings) NumberedFileName(stamp string, n int) string {
 	return fmt.Sprintf("%s-%s-%d%s", s.Prefix(), stamp, n, s.Ext())
 }
 
-// ValidateSaveDir проверяет значение папки сохранения: пусто (значит папка по
-// умолчанию), абсолютный путь или путь от домашнего каталога (~ и ~/...).
+// ValidateSaveDir checks the save directory value: empty (meaning the default
+// directory), an absolute path or a path from the home directory (~ and ~/...).
 func ValidateSaveDir(dir string) error {
 	if dir == "" || dir == "~" || strings.HasPrefix(dir, "~/") || filepath.IsAbs(dir) {
 		return nil
@@ -474,8 +475,8 @@ func ValidateSaveDir(dir string) error {
 	return errors.New(i18n.T("the path must be absolute or start with ~/"))
 }
 
-// ExpandDir раскрывает ~ в начале пути до домашнего каталога. Пустая строка
-// остаётся пустой: это папка по умолчанию.
+// ExpandDir expands a leading ~ to the home directory. An empty string stays empty:
+// it means the default directory.
 func ExpandDir(dir string) (string, error) {
 	if dir != "~" && !strings.HasPrefix(dir, "~/") {
 		return dir, nil

@@ -1,10 +1,11 @@
 name: APT repository
 
-# Собирает подписанный apt-репозиторий из .deb всех релизов и публикует на GitHub Pages.
-# Вызывается из release.yml после выхода релиза; запускается и вручную:
+# Builds a signed apt repository from the .deb files of all releases and publishes it to
+# GitHub Pages. Called from release.yml after a release comes out; can also be run
+# manually:
 #   gh workflow run apt-repo.yml
-# Нужен секрет APT_GPG_PRIVATE_KEY (и APT_GPG_PASSPHRASE, если у ключа есть пароль):
-# без него шаги пропускаются, а workflow остаётся зелёным.
+# Requires the secret APT_GPG_PRIVATE_KEY (and APT_GPG_PASSPHRASE if the key has a
+# passphrase): without it the steps are skipped, and the workflow stays green.
 on:
   workflow_call:
   workflow_dispatch:

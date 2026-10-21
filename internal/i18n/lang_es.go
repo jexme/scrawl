@@ -1,6 +1,6 @@
 package i18n
 
-// es — перевод интерфейса: испанский. Ключ это английский текст из кода.
+// es is the interface translation: Spanish. The key is the English text from the code.
 var es = map[string]string{
 	"pick the monitors again (shows GNOME dialogs)": "elegir de nuevo los monitores (muestra diálogos de GNOME)",
 	"print timings": "mostrar los tiempos",

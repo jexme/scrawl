@@ -1,6 +1,6 @@
-// Package screencast получает кадры экрана через xdg-desktop-portal ScreenCast
-// и PipeWire. D-Bus часть делает Go, кадр читает клиент libpipewire
-// (internal/pwcapture) из выданного порталом fd.
+// Package screencast gets screen frames through the xdg-desktop-portal ScreenCast
+// and PipeWire. Go handles the D-Bus part, and the libpipewire client
+// (internal/pwcapture) reads the frame from the fd handed out by the portal.
 package screencast
 
 import (
@@ -29,12 +29,12 @@ const (
 	sessIface  = "org.freedesktop.portal.Session"
 )
 
-// AppID — идентификатор приложения для portal. Ему должен соответствовать
-// файл AppID+".desktop" (см. packaging/): без зарегистрированного app_id
-// xdg-desktop-portal не выдаёт restore_token и показывает диалог каждый раз.
+// AppID is the application identifier for the portal. The file AppID+".desktop"
+// (see packaging/) must match it: without a registered app_id
+// xdg-desktop-portal does not issue a restore_token and shows the dialog every time.
 const AppID = "io.github.jexme.Scrawl"
 
-// Portal — подключение к session bus для вызовов ScreenCast.
+// Portal is a connection to the session bus for ScreenCast calls.
 type Portal struct {
 	conn   *dbus.Conn
 	sender string
@@ -43,29 +43,30 @@ type Portal struct {
 	mu      sync.Mutex
 	waiters map[dbus.ObjectPath]chan *dbus.Signal
 
-	// remoteMu делает вызовы OpenPipeWireRemote последовательными.
+	// remoteMu serializes OpenPipeWireRemote calls.
 	remoteMu sync.Mutex
 
-	// Registered сообщает, принял ли portal регистрацию app_id.
-	// Если нет (старый portal), restore_token работать не будет.
+	// Registered reports whether the portal accepted the app_id registration.
+	// If not (an old portal), restore_token will not work.
 	Registered bool
 
-	// OldPortal — portal старше 1.21: интерфейса Registry в нём нет вовсе. Это не
-	// сбой, а особенность версии: app_id такой portal берёт из systemd-scope процесса.
+	// OldPortal means a portal older than 1.21: it has no Registry interface at all. This is
+	// not a failure but a version quirk: such a portal takes the app_id from the process's
+	// systemd scope.
 	OldPortal bool
 
-	// IncludeCursor просит portal рисовать курсор мыши прямо в кадре. Задаётся
-	// до OpenAll: режим курсора выбирается при создании сессии.
+	// IncludeCursor asks the portal to draw the mouse cursor right into the frame. Set
+	// before OpenAll: the cursor mode is chosen when the session is created.
 	IncludeCursor bool
 }
 
-// Режимы курсора ScreenCast portal (cursor_mode).
+// ScreenCast portal cursor modes (cursor_mode).
 const (
-	cursorHidden   uint32 = 1 // курсор не попадает в кадр
-	cursorEmbedded uint32 = 2 // курсор нарисован в кадре
+	cursorHidden   uint32 = 1 // the cursor is not in the frame
+	cursorEmbedded uint32 = 2 // the cursor is drawn into the frame
 )
 
-// cursorMode возвращает значение cursor_mode для SelectSources.
+// cursorMode returns the cursor_mode value for SelectSources.
 func cursorMode(include bool) uint32 {
 	if include {
 		return cursorEmbedded
@@ -78,28 +79,28 @@ type stream struct {
 	Props map[string]dbus.Variant
 }
 
-// Session — запущенная ScreenCast-сессия. Пока она жива, новый кадр берётся быстро.
+// Session is a running ScreenCast session. While it is alive, a new frame is fetched quickly.
 type Session struct {
 	p       *Portal
 	handle  string
 	streams []stream
 }
 
-// Frame — один кадр одного монитора в RGBA.
+// Frame is a single frame of one monitor in RGBA.
 type Frame struct {
 	NodeID uint32
-	X, Y   int // позиция монитора в логических координатах, если портал её отдал
+	X, Y   int // monitor position in logical coordinates, if the portal provided it
 	Img    *image.RGBA
 }
 
-// New подключается к session bus и регистрирует AppID в portal.
+// New connects to the session bus and registers AppID with the portal.
 func New() (*Portal, error) {
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
 		return nil, err
 	}
-	// Регистрация должна идти раньше любых других вызовов portal на этом соединении.
-	// Таймаут короткий: если portal завис, лучше работать без регистрации, чем висеть.
+	// Registration must come before any other portal calls on this connection. The timeout is
+	// short: if the portal hangs, it is better to work without registration than to hang.
 	regCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	regErr := conn.Object(portalDest, portalPath).
@@ -122,8 +123,8 @@ func New() (*Portal, error) {
 	return p, nil
 }
 
-// isMissingRegistry сообщает, что portal ответил «такого метода нет», то есть он
-// старше 1.21 и Registry не знает, а не завис.
+// isMissingRegistry reports that the portal answered "no such method", meaning it is
+// older than 1.21 and does not know Registry, rather than hung.
 func isMissingRegistry(err error) bool {
 	var derr dbus.Error
 	if !errors.As(err, &derr) {
@@ -138,8 +139,8 @@ func isMissingRegistry(err error) bool {
 	return false
 }
 
-// dispatch раздаёт сигналы Response по ожидающим запросам. Это позволяет
-// запускать несколько сессий параллельно.
+// dispatch distributes Response signals to the pending requests. This allows
+// running several sessions in parallel.
 func (p *Portal) dispatch(ch <-chan *dbus.Signal) {
 	for sig := range ch {
 		if sig.Name != reqIface+".Response" {
@@ -154,10 +155,10 @@ func (p *Portal) dispatch(ch <-chan *dbus.Signal) {
 	}
 }
 
-// Close закрывает соединение с D-Bus.
+// Close closes the D-Bus connection.
 func (p *Portal) Close() error { return p.conn.Close() }
 
-// TokenPath возвращает путь к файлу с restore_token.
+// TokenPath returns the path to the restore_token file.
 func TokenPath() string {
 	dir, err := os.UserCacheDir()
 	if err != nil {
@@ -166,7 +167,7 @@ func TokenPath() string {
 	return filepath.Join(dir, "scrawl", "screencast.token")
 }
 
-// LoadTokens читает сохранённые restore_token, по одному на монитор.
+// LoadTokens reads the saved restore_tokens, one per monitor.
 func LoadTokens() []string {
 	b, err := os.ReadFile(TokenPath())
 	if err != nil {
@@ -181,7 +182,7 @@ func LoadTokens() []string {
 	return out
 }
 
-// SaveTokens сохраняет restore_token, чтобы следующий запуск обошёлся без диалога.
+// SaveTokens saves the restore_tokens so the next launch needs no dialog.
 func SaveTokens(tokens []string) error {
 	path := TokenPath()
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
@@ -190,10 +191,10 @@ func SaveTokens(tokens []string) error {
 	return os.WriteFile(path, []byte(strings.Join(tokens, "\n")+"\n"), 0o600)
 }
 
-// request вызывает метод ScreenCast, возвращающий Request, и ждёт его Response.
+// request calls a ScreenCast method that returns a Request and waits for its Response.
 func (p *Portal) request(method string, timeout time.Duration, lead []any, extra map[string]dbus.Variant) (map[string]dbus.Variant, error) {
 	if !strings.Contains(method, ".") {
-		method = scIface + "." + method // короткое имя считается методом ScreenCast
+		method = scIface + "." + method // a short name is treated as a ScreenCast method
 	}
 	token := fmt.Sprintf("se%d_%d", os.Getpid(), p.n.Add(1))
 	opts := map[string]dbus.Variant{"handle_token": dbus.MakeVariant(token)}
@@ -202,7 +203,7 @@ func (p *Portal) request(method string, timeout time.Duration, lead []any, extra
 	}
 	reqPath := dbus.ObjectPath(fmt.Sprintf("/org/freedesktop/portal/desktop/request/%s/%s", p.sender, token))
 
-	// Ожидание регистрируется до вызова, иначе Response можно пропустить.
+	// The wait is registered before the call, otherwise the Response could be missed.
 	w := make(chan *dbus.Signal, 1)
 	p.mu.Lock()
 	p.waiters[reqPath] = w
@@ -230,8 +231,8 @@ func (p *Portal) request(method string, timeout time.Duration, lead []any, extra
 	}
 }
 
-// NewSession запускает сессию. С непустым restore диалог выбора экрана не
-// показывается. Новый restore_token (если портал его отдал) возвращается вторым значением.
+// NewSession starts a session. With a non-empty restore the screen selection dialog is not
+// shown. The new restore_token (if the portal returned one) is returned as the second value.
 func (p *Portal) NewSession(restore string) (*Session, string, error) {
 	res, err := p.request("CreateSession", 10*time.Second, nil, map[string]dbus.Variant{
 		"session_handle_token": dbus.MakeVariant(fmt.Sprintf("sess%d_%d", os.Getpid(), p.n.Add(1))),
@@ -249,7 +250,7 @@ func (p *Portal) NewSession(restore string) (*Session, string, error) {
 		"types":        dbus.MakeVariant(uint32(1)), // monitor
 		"multiple":     dbus.MakeVariant(true),
 		"cursor_mode":  dbus.MakeVariant(cursorMode(p.IncludeCursor)),
-		"persist_mode": dbus.MakeVariant(uint32(2)), // помнить выбор
+		"persist_mode": dbus.MakeVariant(uint32(2)), // remember the choice
 	}
 	if restore != "" {
 		sel["restore_token"] = dbus.MakeVariant(restore)
@@ -258,8 +259,9 @@ func (p *Portal) NewSession(restore string) (*Session, string, error) {
 		return nil, "", err
 	}
 
-	// Диалог выбора ждёт пользователя, поэтому без токена таймаут большой. С токеном
-	// диалога быть не должно: если portal молчит, лучше сообщить об ошибке.
+	// The selection dialog waits for the user, so without a token the timeout is long. With a
+	// token there should be no dialog: if the portal is silent, it is better to report an
+	// error.
 	startTimeout := 120 * time.Second
 	if restore != "" {
 		startTimeout = 15 * time.Second
@@ -284,12 +286,12 @@ func (p *Portal) NewSession(restore string) (*Session, string, error) {
 	return s, newToken, nil
 }
 
-// Close закрывает сессию.
+// Close closes the session.
 func (s *Session) Close() {
 	s.p.conn.Object(portalDest, dbus.ObjectPath(s.handle)).Call(sessIface+".Close", 0)
 }
 
-// Streams возвращает число потоков (мониторов) в сессии.
+// Streams returns the number of streams (monitors) in the session.
 func (s *Session) Streams() int { return len(s.streams) }
 
 func (s *Session) openRemote() (*os.File, error) {
@@ -304,9 +306,9 @@ func (s *Session) openRemote() (*os.File, error) {
 	return os.NewFile(uintptr(fd), "pipewire-remote"), nil
 }
 
-// Grab получает по одному кадру со всех мониторов параллельно. Кадр, который не
-// пришёл за deadline, считается неудачей: Mutter отдаёт кадры только когда на
-// мониторе есть перерисовка, и на статичном экране поток может молчать.
+// Grab gets one frame from every monitor in parallel. A frame that does not
+// arrive by deadline counts as a failure: Mutter delivers frames only when the
+// monitor is redrawn, and on a static screen the stream may stay silent.
 func (s *Session) Grab(deadline time.Duration) ([]Frame, error) {
 	files := make([]*os.File, len(s.streams))
 	for i := range s.streams {
@@ -336,7 +338,7 @@ func (s *Session) Grab(deadline time.Duration) ([]Frame, error) {
 	return frames, nil
 }
 
-// pair достаёт (int32, int32) из свойства потока вида "(ii)".
+// pair extracts (int32, int32) from a stream property of the form "(ii)".
 func pair(props map[string]dbus.Variant, key string) (int, int, bool) {
 	v, ok := props[key]
 	if !ok {
@@ -351,8 +353,8 @@ func pair(props map[string]dbus.Variant, key string) (int, int, bool) {
 	return int(a), int(b), ok1 && ok2
 }
 
-// grab читает один кадр из PipeWire-узла. remote закрывается: библиотека PipeWire
-// получает собственную копию fd и сама закрывает её.
+// grab reads one frame from a PipeWire node. remote is closed: the PipeWire library
+// gets its own copy of the fd and closes it itself.
 func grab(st stream, remote *os.File, timeout time.Duration) (Frame, error) {
 	f := Frame{NodeID: st.ID}
 	f.X, f.Y, _ = pair(st.Props, "position")

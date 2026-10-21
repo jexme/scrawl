@@ -18,8 +18,8 @@ import (
 	"github.com/jexme/scrawl/internal/x11capture"
 )
 
-// Действия окна, которые вызывают внешние службы (portal, gsettings). Тесты
-// подменяют их, чтобы не трогать настройки системы.
+// Window actions that call external services (portal, gsettings). Tests
+// replace them so as not to touch the system settings.
 var (
 	x11Session      = x11capture.IsSession
 	onWindows       = runtime.GOOS == "windows"
@@ -35,9 +35,9 @@ var (
 	autostartOff    = autostart.Disable
 )
 
-// task — кнопка, запускающая действие в фоне, и строка с результатом под ней.
-// Действие может долго ждать пользователя (диалоги portal), поэтому окно не
-// блокируется: состояние меняется из другой горутины, а окно перерисовывается.
+// task is a button that starts an action in the background, and a result line under it.
+// The action may wait on the user for a long time (portal dialogs), so the window does not
+// block: the state is changed from another goroutine and the window is redrawn.
 type task struct {
 	btn widget.Clickable
 
@@ -59,8 +59,8 @@ func (t *task) set(msg string, failed bool) {
 	t.mu.Unlock()
 }
 
-// start запускает run в фоне, если действие ещё не идёт. run получает функцию,
-// которой можно сообщать о ходе работы, и возвращает итоговое сообщение.
+// start runs run in the background if the action is not already in progress. run receives
+// a function for reporting progress and returns the final message.
 func (s *state) start(t *task, run func(progress func(string)) (string, error)) {
 	t.mu.Lock()
 	if t.running {
@@ -87,14 +87,14 @@ func (s *state) start(t *task, run func(progress func(string)) (string, error)) 
 	}()
 }
 
-// redraw просит окно перерисоваться; до открытия окна и в тестах ничего не делает.
+// redraw asks the window to redraw; does nothing before the window is open and in tests.
 func (s *state) redraw() {
 	if s.invalidate != nil {
 		s.invalidate()
 	}
 }
 
-// taskControl рисует кнопку действия и под ней сообщение о ходе или результате.
+// taskControl draws the action button and, under it, a message about progress or the result.
 func (s *state) taskControl(t *task, label string) layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		msg, failed, running := t.status()

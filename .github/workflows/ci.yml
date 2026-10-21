@@ -8,7 +8,8 @@ on:
 permissions:
   contents: read
 
-# Новый пуш в ту же ветку отменяет ещё идущий запуск: старый результат уже не нужен.
+# A new push to the same branch cancels a run that is still going: the old result is no
+# longer needed.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -19,10 +20,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # для проверки адресов авторов по всей истории
+          fetch-depth: 0 # to check author addresses across the whole history
 
-      # В публичной истории только noreply-адреса. Проверяем при пуше в любую ветку (чужие
-      # pull request приходят со своими адресами, их это не касается).
+      # The public history has only noreply addresses. Checked on a push to any branch (other
+      # people's pull requests come with their own addresses, this does not concern them).
       - name: Адреса авторов
         if: github.event_name == 'push'
         run: |
@@ -48,13 +49,15 @@ jobs:
           make gio
           go vet ./...
 
-      # Тесты рисуют через headless Gio (EGL). Без GPU это идёт через программный Mesa
-      # (surfaceless EGL), xvfb нужен тестам X11; тесты, которым рисовать нечем, сами себя пропускают.
+      # The tests draw through headless Gio (EGL). Without a GPU this goes through software Mesa
+      # (surfaceless EGL), xvfb is needed by the X11 tests; tests that have nothing to draw with
+      # skip themselves.
       - name: Тесты
         run: xvfb-run -a make test
         env:
           LIBGL_ALWAYS_SOFTWARE: "1"
-          # Headless-рендер идёт без окна: surfaceless не зависит от того, умеет ли Xvfb DRI.
+          # Headless rendering runs without a window: surfaceless does not depend on whether Xvfb
+          # supports DRI.
           EGL_PLATFORM: surfaceless
 
       - name: Сборка
@@ -62,13 +65,13 @@ jobs:
           make build
           ./bin/scrawl -version
 
-  # Windows собираем и тестируем на настоящем Windows: тесты не привязаны к Linux
-  # (папки пользователя подменяются через internal/testenv), а сборка идёт тем же скриптом,
-  # что и релиз. Подробности в docs/WINDOWS.md.
+  # Windows is built and tested on real Windows: the tests are not tied to Linux
+  # (user folders are replaced via internal/testenv), and the build uses the same script
+  # as the release. Details in docs/WINDOWS.md.
   windows:
     runs-on: windows-latest
     env:
-      CGO_ENABLED: "0" # на раннере есть gcc, но Windows-сборке cgo не нужен (и C-файлы Linux-пакетов ему мешают)
+      CGO_ENABLED: "0" # runner has gcc, but the Windows build needs no cgo (and Linux packages' C files get in the way)
     steps:
       - uses: actions/checkout@v7
 

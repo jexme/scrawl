@@ -12,7 +12,7 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// renderCurrent рендерит выделение с аннотациями в PNG.
+// renderCurrent renders the selection with annotations to PNG.
 func (m *monitor) renderCurrent() ([]byte, *image.RGBA, error) {
 	if m.editing {
 		m.commitText()
@@ -28,8 +28,8 @@ func (m *monitor) renderCurrent() ([]byte, *image.RGBA, error) {
 	return data, img, nil
 }
 
-// addToCollection кладёт выделение в подборку и закрывает оверлей: следующий
-// запуск покажет плашку подборки.
+// addToCollection puts the selection into the collection and closes the overlay: the next
+// launch will show the collection bar.
 func (m *monitor) addToCollection() {
 	if !m.hasSel {
 		notify(i18n.T("Collection"), i18n.T("Select an area first"))
@@ -48,8 +48,8 @@ func (m *monitor) addToCollection() {
 	m.quit()
 }
 
-// collected возвращает картинки подборки и, если есть выделение, текущую
-// область последней.
+// collected returns the collection images and, if there is a selection, the current
+// area as the last one.
 func (m *monitor) collected() (paths []string, current []byte, imgs []*image.RGBA, err error) {
 	paths, err = collection.List()
 	if err != nil {
@@ -70,8 +70,8 @@ func (m *monitor) collected() (paths []string, current []byte, imgs []*image.RGB
 	return paths, current, imgs, nil
 }
 
-// glueCollection склеивает подборку (и текущую область, если она выделена) в
-// одну картинку, сохраняет её, копирует в буфер обмена и очищает подборку.
+// glueCollection glues the collection (and the current area, if one is selected) into
+// one image, saves it, copies it to the clipboard and clears the collection.
 func (m *monitor) glueCollection() {
 	_, _, imgs, err := m.collected()
 	if err != nil {
@@ -111,9 +111,9 @@ func (m *monitor) glueCollection() {
 	m.quit()
 }
 
-// sendSeparately сохраняет картинки подборки (и текущую область) отдельными
-// файлами и кладёт в буфер обмена список файлов: в чат они вставятся как
-// отдельные вложения.
+// sendSeparately saves the collection images (and the current area) as separate
+// files and puts the file list on the clipboard: in a chat they are pasted as
+// separate attachments.
 func (m *monitor) sendSeparately() {
 	paths, current, _, err := m.collected()
 	if err != nil {
@@ -137,7 +137,7 @@ func (m *monitor) sendSeparately() {
 		return
 	}
 
-	// Файлы одного набора различаются суффиксом, имя берём по текущему времени.
+	// Files of one set differ by a suffix, the name is taken from the current time.
 	stamp := time.Now().Format(settings.StampLayout)
 	var saved []string
 	for i, data := range datas {
@@ -161,7 +161,7 @@ func (m *monitor) sendSeparately() {
 	m.quit()
 }
 
-// clearCollection очищает подборку и обновляет плашку.
+// clearCollection clears the collection and updates the bar.
 func (m *monitor) clearCollection() {
 	if err := collection.Clear(); err != nil {
 		fail(i18n.T("clearing the collection"), err)

@@ -11,8 +11,7 @@ import (
 	"gioui.org/op/paint"
 )
 
-// TestDashedRect рисует пунктирную рамку и проверяет, что на линии есть и
-// штрихи, и паузы.
+// TestDashedRect draws a dashed border and checks that the line has both dashes and gaps.
 func TestDashedRect(t *testing.T) {
 	const W, H = 300, 200
 	win, err := headless.NewWindow(W, H)
@@ -33,7 +32,8 @@ func TestDashedRect(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Рамка лежит снаружи области: сами пиксели границы и всё внутри остаются нетронутыми.
+	// The border lies outside the area: the border pixels themselves and everything inside
+	// stay untouched.
 	for x := r.Min.X; x < r.Max.X; x++ {
 		for _, y := range []int{r.Min.Y, r.Min.Y + 1, r.Max.Y - 1} {
 			if got := out.RGBAAt(x, y).R; got != 0 {
@@ -42,7 +42,7 @@ func TestDashedRect(t *testing.T) {
 		}
 	}
 
-	// Верхняя сторона (полоса над областью): идём вдоль неё и считаем переходы светлый/тёмный.
+	// The top side (the strip above the area): walk along it and count light/dark transitions.
 	lit, transitions := 0, 0
 	prev := false
 	for x := r.Min.X + 10; x < r.Max.X-10; x++ {
@@ -67,9 +67,9 @@ func TestDashedRect(t *testing.T) {
 	}
 }
 
-// TestDashedRectLeavesInsideFlat: на ровном фоне внутри рамки не должно появляться
-// полос. Обводка пути из сотен коротких штрихов подмешивала к пикселям +1…+2 уровня
-// колонками, на тёмном фоне это видно глазом.
+// TestDashedRectLeavesInsideFlat: on a flat background inside the border there must be no
+// streaks. A stroke of a path made of hundreds of short dashes added +1...+2 levels to
+// pixels in columns, which is visible to the eye on a dark background.
 func TestDashedRectLeavesInsideFlat(t *testing.T) {
 	const W, H = 800, 500
 	win, err := headless.NewWindow(W, H)

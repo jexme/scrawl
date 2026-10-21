@@ -1,6 +1,6 @@
-// genicon записывает packaging/windows/scrawl.ico: значок scrawl.exe из того же рисунка, что и значок в
-// трее (tray.Framed). Запуск: go run ./scripts/genicon. Файл лежит в репозитории, перегенерировать
-// его нужно только при смене рисунка.
+// genicon writes packaging/windows/scrawl.ico: the scrawl.exe icon from the same drawing
+// as the tray icon (tray.Framed). Run: go run ./scripts/genicon. The file is kept in the
+// repository and needs regenerating only when the drawing changes.
 package main
 
 import (
@@ -25,17 +25,18 @@ func main() {
 		images = append(images, b.Bytes())
 	}
 
-	// ICO: заголовок, таблица записей, затем PNG-данные (формат понимает Windows Vista и новее).
+	// ICO: header, table of entries, then PNG data (the format is understood by Windows Vista
+	// and newer).
 	var out bytes.Buffer
 	binary.Write(&out, binary.LittleEndian, [3]uint16{0, 1, uint16(len(sizes))})
 	offset := 6 + 16*len(sizes)
 	for i, s := range sizes {
 		dim := byte(s)
 		if s >= 256 {
-			dim = 0 // 0 означает 256
+			dim = 0 // 0 means 256
 		}
 		out.Write([]byte{dim, dim, 0, 0})
-		binary.Write(&out, binary.LittleEndian, [2]uint16{1, 32}) // плоскости, бит на пиксель
+		binary.Write(&out, binary.LittleEndian, [2]uint16{1, 32}) // planes, bits per pixel
 		binary.Write(&out, binary.LittleEndian, [2]uint32{uint32(len(images[i])), uint32(offset)})
 		offset += len(images[i])
 	}

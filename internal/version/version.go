@@ -1,16 +1,17 @@
-// Package version хранит версию сборки. Makefile подставляет её через -ldflags
-// из `git describe`; без этого берётся ревизия из данных сборки Go.
+// Package version holds the build version. The Makefile sets it through -ldflags from `git
+// describe`; without that, the revision from the Go build data is used.
 package version
 
 import "runtime/debug"
 
-// Version задаётся при сборке: -ldflags "-X .../internal/version.Version=v0.1.0".
+// Version is set at build time: -ldflags "-X .../internal/version.Version=v0.1.0".
 var Version = ""
 
-// Home — страница проекта для раздела «О программе».
+// Home is the project page for the "About" section.
 const Home = "https://github.com/jexme/scrawl"
 
-// String возвращает версию сборки: заданную явно, иначе по ревизии git, иначе "dev".
+// String returns the build version: the one set explicitly, otherwise from the git
+// revision, otherwise "dev".
 func String() string {
 	if Version != "" {
 		return Version

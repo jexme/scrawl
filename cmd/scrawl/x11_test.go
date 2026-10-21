@@ -18,19 +18,19 @@ import (
 	"github.com/jezek/xgb/xproto"
 )
 
-// wmLog — что оконный менеджер-заглушка увидел от программы.
+// wmLog records what the stub window manager saw from the program.
 type wmLog struct {
 	mu         sync.Mutex
 	mapped     map[xproto.Window]bool
-	moved      map[xproto.Window]image.Point // положение из ConfigureRequest
-	fullscreen map[xproto.Window]bool        // пришёл запрос _NET_WM_STATE_FULLSCREEN
+	moved      map[xproto.Window]image.Point // position from ConfigureRequest
+	fullscreen map[xproto.Window]bool        // a _NET_WM_STATE_FULLSCREEN request arrived
 }
 
-// runFakeWM занимает корневое окно как оконный менеджер (SubstructureRedirect) и
-// ведёт себя как EWMH-совместимый: показывает окна, выполняет их просьбы о
-// положении и, получив запрос полноэкранного режима, растягивает окно на монитор,
-// где оно стоит. Так проверяется клиентская сторона протокола: что программа
-// просит у менеджера. Сам менеджер (mutter, kwin) этим не проверяется.
+// runFakeWM takes over the root window as a window manager (SubstructureRedirect) and
+// behaves like an EWMH-compliant one: it maps windows, honours their position requests and,
+// on a fullscreen request, stretches the window over the monitor it is on. This checks
+// the client side of the protocol: what the program asks the manager for. The manager
+// itself (mutter, kwin) is not tested this way.
 func runFakeWM(t *testing.T, display string, monitors []image.Rectangle) *wmLog {
 	t.Helper()
 	c, err := xgb.NewConnDisplay(display)
@@ -90,7 +90,7 @@ func runFakeWM(t *testing.T, display string, monitors []image.Rectangle) *wmLog 
 				data := e.Data.Data32
 				if e.Type == wmState && data[0] == 1 && (xproto.Atom(data[1]) == fullscreen || xproto.Atom(data[2]) == fullscreen) {
 					log.fullscreen[e.Window] = true
-					// Растянуть на монитор, где стоит левый верхний угол окна.
+					// Stretch over the monitor where the window's top-left corner is.
 					if g, err := xproto.GetGeometry(c, xproto.Drawable(e.Window)).Reply(); err == nil {
 						for _, m := range monitors {
 							if image.Pt(int(g.X), int(g.Y)).In(m) {
@@ -108,10 +108,10 @@ func runFakeWM(t *testing.T, display string, monitors []image.Rectangle) *wmLog 
 	return log
 }
 
-// TestOverlayWindowsPerMonitorOnX11 запускает настоящую программу в сеансе X11 (Xvfb с двумя
-// мониторами RandR) и проверяет, что на каждый монитор открывается окно, которое просит
-// полноэкранный режим именно на нём. Программа под Xvfb может упасть при инициализации EGL
-// (у Xvfb нет DRI), но к этому моменту окна уже созданы и расставлены: проверяется это.
+// TestOverlayWindowsPerMonitorOnX11 runs the real program in an X11 session (Xvfb with two
+// RandR monitors) and checks that a window opens on each monitor and asks for fullscreen
+// exactly there. Under Xvfb the program may crash during EGL initialisation (Xvfb has no
+// DRI), but by then the windows are already created and placed: that is what is checked.
 func TestOverlayWindowsPerMonitorOnX11(t *testing.T) {
 	if testing.Short() {
 		t.Skip("долгий тест: собирает программу")
@@ -144,7 +144,7 @@ func TestOverlayWindowsPerMonitorOnX11(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	}
 
-	// Два монитора RandR, как у человека с двумя экранами.
+	// Two RandR monitors, like a person with two screens.
 	left, right := image.Rect(0, 0, 800, 600), image.Rect(800, 0, 1600, 600)
 	func() {
 		c, err := xgb.NewConnDisplay(display)
@@ -169,7 +169,7 @@ func TestOverlayWindowsPerMonitorOnX11(t *testing.T) {
 	}()
 	log := runFakeWM(t, display, []image.Rectangle{left, right})
 
-	// Wayland прячем: libwayland без WAYLAND_DISPLAY всё равно ищет wayland-0 в XDG_RUNTIME_DIR.
+	// Hide Wayland: libwayland without WAYLAND_DISPLAY still looks for wayland-0 in XDG_RUNTIME_DIR.
 	env := []string{"HOME=" + dir, "XDG_CONFIG_HOME=" + dir, "XDG_CACHE_HOME=" + dir, "XDG_RUNTIME_DIR=" + dir,
 		"DISPLAY=" + display, "PATH=" + os.Getenv("PATH"), "LIBGL_ALWAYS_SOFTWARE=1"}
 	app := exec.Command(bin, "-fresh", "-exit-after", "3s")
@@ -190,7 +190,7 @@ func TestOverlayWindowsPerMonitorOnX11(t *testing.T) {
 		}
 		select {
 		case <-done:
-			// Программа вышла или упала: смотрим, что успели.
+			// The program exited or crashed: look at what it managed to do.
 			log.mu.Lock()
 			ready = len(log.fullscreen) >= 2
 			log.mu.Unlock()

@@ -1,6 +1,6 @@
 package i18n
 
-// de — перевод интерфейса: немецкий. Ключ это английский текст из кода.
+// de is the interface translation: German. The key is the English text from the code.
 var de = map[string]string{
 	"pick the monitors again (shows GNOME dialogs)": "Monitore neu auswählen (zeigt GNOME-Dialoge)",
 	"print timings": "Zeitmessungen ausgeben",

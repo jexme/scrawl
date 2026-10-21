@@ -1,7 +1,7 @@
 #!/bin/sh
-# Готовит third_party/gio: исходники Gio той версии, что в go.mod, плюс наш патч
-# third_party/gio.patch (app.FullscreenAt: fullscreen на нужном мониторе Wayland).
-# Повторный запуск ничего не делает, пока версия и патч не менялись; -f пересоздаёт.
+# Prepares third_party/gio: the Gio sources of the version in go.mod, plus our patch
+# third_party/gio.patch (app.FullscreenAt: fullscreen on the right Wayland monitor).
+# A repeated run does nothing while the version and the patch are unchanged; -f recreates.
 set -eu
 
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -18,13 +18,14 @@ if [ -f "$marker" ] && [ "$(cat "$marker")" = "$want" ] && [ "${1:-}" != "-f" ];
 	exit 0
 fi
 
-# Скачиваем из временного каталога: в корне проекта go.mod ссылается на third_party/gio,
-# которого может ещё не быть.
+# We download from a temporary directory: in the project root go.mod points to
+# third_party/gio, which may not exist yet.
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 (cd "$tmp" && go mod download "gioui.org@$ver") || true
 src=$(cd "$tmp" && go list -m -f '{{.Dir}}' "gioui.org@$ver" 2>/dev/null | head -n 1)
-# Под Git Bash на Windows Go отдаёт путь вида C:\Users\...: cp и patch ждут Unix-вид.
+# Under Git Bash on Windows Go returns a path like C:\Users\...: cp and patch expect the
+# Unix form.
 if [ -n "$src" ] && command -v cygpath >/dev/null 2>&1; then src=$(cygpath -u "$src"); fi
 [ -d "$src" ] || { echo "не удалось скачать gioui.org@$ver" >&2; exit 1; }
 

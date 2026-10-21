@@ -2,5 +2,5 @@
 
 package singleton
 
-// Acquire пока ничего не блокирует на этой платформе (для Windows нужен именованный мьютекс).
+// Acquire does not block anything on this platform yet (Windows needs a named mutex).
 func Acquire(string) (bool, error) { return true, nil }

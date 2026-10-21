@@ -1,8 +1,8 @@
-// Package i18n переводит тексты интерфейса. Исходный язык английский: в коде тексты
-// записаны по-английски и обёрнуты в T, а остальные языки берутся из каталогов
-// (lang_ru.go, lang_de.go и так далее; ключ это английский текст). Текст, которого нет
-// в каталоге языка, показывается как есть, то есть по-английски, поэтому забытая строка
-// не ломает программу, а тест полноты (i18n_test.go) такие строки находит.
+// Package i18n translates interface texts. The source language is English: texts in the code
+// are written in English and wrapped in T, and the other languages come from catalogs
+// (lang_ru.go, lang_de.go and so on; the key is the English text). A text missing from
+// a language catalog is shown as is, that is, in English, so a forgotten string
+// does not break the program, and the completeness test (i18n_test.go) finds such strings.
 package i18n
 
 import (
@@ -12,45 +12,45 @@ import (
 	"sync/atomic"
 )
 
-// Коды языков настройки language.
+// Language codes of the language setting.
 const (
-	Auto = "auto" // по языку системы
+	Auto = "auto" // follow the system language
 	RU   = "ru"
 	EN   = "en"
-	ZH   = "zh" // китайский (упрощённый)
+	ZH   = "zh" // Chinese (Simplified)
 	ES   = "es"
-	PT   = "pt" // португальский (Бразилия)
+	PT   = "pt" // Portuguese (Brazil)
 	JA   = "ja"
 	DE   = "de"
 	FR   = "fr"
 	KO   = "ko"
 )
 
-// LanguageInfo описывает язык интерфейса: код для настройки и название на нём самом.
+// LanguageInfo describes an interface language: the code for the setting and its own name.
 type LanguageInfo struct {
 	Code string
-	Name string // как язык называется сам: его нужно узнать, даже не зная остального интерфейса
-	Hint string // латинская подпись для письменностей, которых может не быть в шрифте
+	Name string // the language's own name: it must be recognizable without knowing the rest of the UI
+	Hint string // Latin caption for scripts that may be missing from the font
 }
 
-// Languages — все языки интерфейса в порядке показа.
+// Languages lists all interface languages in display order.
 var Languages = []LanguageInfo{
 	{RU, "Русский", ""}, {EN, "English", ""}, {ZH, "简体中文", "Chinese"}, {ES, "Español", ""},
 	{PT, "Português (Brasil)", ""}, {JA, "日本語", "Japanese"}, {DE, "Deutsch", ""}, {FR, "Français", ""}, {KO, "한국어", "Korean"},
 }
 
-// catalogs — переводы с английского: английский язык исходный и каталога не имеет.
+// catalogs are translations from English: English is the source language and has no catalog.
 var catalogs = map[string]map[string]string{
 	RU: ru, ZH: zh, ES: es, PT: pt, JA: ja, DE: de, FR: fr, KO: ko,
 }
 
-var current atomic.Value // string: код языка из Languages
+var current atomic.Value // string: a language code from Languages
 
 func init() { current.Store(EN) }
 
-// Normalize приводит запись языка к коду из настройки: "auto", "ru", "en", "zh",
-// "es", "pt", "ja", "de", "fr", "ko". Понимает региональные записи ("zh-CN",
-// "pt_BR", "ru_RU.UTF-8"). Второе значение false, если язык неизвестен.
+// Normalize converts a language entry to a code from the setting: "auto", "ru", "en", "zh",
+// "es", "pt", "ja", "de", "fr", "ko". It understands regional forms ("zh-CN",
+// "pt_BR", "ru_RU.UTF-8"). The second value is false if the language is unknown.
 func Normalize(code string) (string, bool) {
 	v := strings.ToLower(strings.TrimSpace(code))
 	if v == Auto {
@@ -67,9 +67,9 @@ func Normalize(code string) (string, bool) {
 	return "", false
 }
 
-// SetLanguage выбирает язык: код из Languages или "auto" (по LC_ALL, LC_MESSAGES,
-// LANGUAGE и LANG: известная локаль даёт свой язык, любая другая английский).
-// Неизвестное значение считается "auto".
+// SetLanguage selects the language: a code from Languages or "auto" (by LC_ALL, LC_MESSAGES,
+// LANGUAGE and LANG: a known locale gives its own language, any other gives English).
+// An unknown value is treated as "auto".
 func SetLanguage(code string) {
 	if canon, ok := Normalize(code); ok && canon != Auto {
 		current.Store(canon)
@@ -78,29 +78,29 @@ func SetLanguage(code string) {
 	current.Store(detect(os.Getenv))
 }
 
-// Language возвращает действующий язык: код из Languages.
+// Language returns the effective language: a code from Languages.
 func Language() string { return current.Load().(string) }
 
-// detect определяет язык по переменным окружения.
+// detect determines the language from environment variables.
 func detect(getenv func(string) string) string {
 	for _, name := range []string{"LC_ALL", "LC_MESSAGES", "LANGUAGE", "LANG"} {
 		v := getenv(name)
 		if v == "" || v == "C" || v == "POSIX" || strings.EqualFold(v, "c") || strings.EqualFold(v, "posix") {
 			continue
 		}
-		// В LANGUAGE языки идут списком через двоеточие: берём первый известный.
+		// LANGUAGE holds a colon-separated list of languages: take the first known one.
 		for _, part := range strings.Split(v, ":") {
 			if canon, ok := Normalize(part); ok && canon != Auto {
 				return canon
 			}
 		}
-		return EN // локаль задана, но такого перевода нет
+		return EN // the locale is set, but there is no such translation
 	}
 	return EN
 }
 
-// T возвращает перевод английского текста на действующий язык. Нет перевода на этот
-// язык (или язык английский): сам текст.
+// T returns the translation of an English text into the effective language. With no
+// translation for that language (or when the language is English): the text itself.
 func T(text string) string {
 	if v, ok := catalogs[Language()][text]; ok {
 		return v
@@ -108,8 +108,8 @@ func T(text string) string {
 	return text
 }
 
-// Tf переводит формат и подставляет аргументы.
+// Tf translates a format and substitutes the arguments.
 func Tf(format string, args ...any) string { return fmt.Sprintf(T(format), args...) }
 
-// Errorf переводит формат и создаёт ошибку; %w работает как в fmt.Errorf.
+// Errorf translates a format and creates an error; %w works as in fmt.Errorf.
 func Errorf(format string, args ...any) error { return fmt.Errorf(T(format), args...) }

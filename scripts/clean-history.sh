@@ -1,12 +1,12 @@
 #!/bin/sh
-# Готовит чистую историю для публикации в локальной ветке clean/main: убирает из
-# всех коммитов копию Gio (third_party/gio/), заменяет личный email автора и
-# стирает его же из текста файлов (заменой на old@example.com).
-# Исходные ветки и origin не меняются, ничего не пушится. Нужен git-filter-repo.
+# Prepares a clean history for publication in the local branch clean/main: removes the copy of
+# Gio (third_party/gio/) from all commits, replaces the author's personal email and
+# erases that same email from file contents (replacing it with old@example.com).
+# The source branches and origin are not changed, nothing is pushed. Needs git-filter-repo.
 #
-# Использование: scripts/clean-history.sh ИМЯ НОВЫЙ_EMAIL СТАРЫЙ_EMAIL [ВЕТКА]
+# Usage: scripts/clean-history.sh NAME NEW_EMAIL OLD_EMAIL [BRANCH]
 #   scripts/clean-history.sh jexme 12345+jexme@users.noreply.github.com old@example.com
-# Ветка по умолчанию текущая. Результат: git push НОВЫЙ_РЕПОЗИТОРИЙ clean/main:main
+# The default branch is the current one. Result: git push NEW_REPOSITORY clean/main:main
 set -eu
 
 [ $# -ge 3 ] || { sed -n '2,11p' "$0"; exit 1; }
@@ -21,7 +21,7 @@ echo "$name <$new> <$old>" > "$tmp/mailmap"
 echo "$old==>old@example.com" > "$tmp/replace"
 (cd "$tmp/clean" && git filter-repo --force --path third_party/gio/ --invert-paths --mailmap "$tmp/mailmap" --replace-text "$tmp/replace" 2>&1 | tail -1)
 
-# Проверки: копии Gio и старого адреса быть не должно.
+# Checks: there must be neither a copy of Gio nor the old address.
 cd "$tmp/clean"
 if git log --name-only --format= | grep -q '^third_party/gio/'; then echo "в истории осталась копия Gio" >&2; exit 1; fi
 if git log --format='%ae %ce' | grep -q "$old"; then echo "в истории остался старый email" >&2; exit 1; fi

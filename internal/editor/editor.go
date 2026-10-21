@@ -1,5 +1,5 @@
-// Package editor показывает замороженный кадр на весь монитор, даёт выделить
-// область, нарисовать аннотации и сохранить результат.
+// Package editor shows a frozen frame across the whole monitor, lets the user select a
+// region, draw annotations and save the result.
 package editor
 
 import (
@@ -37,13 +37,13 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// Config — параметры запуска редактора.
+// Config holds the editor launch parameters.
 type Config struct {
 	Frames  []screencast.Frame
-	Finish  func()    // освобождает ресурсы и завершает процесс
-	T0      time.Time // момент «нажатия хоткея» для замеров
+	Finish  func()    // releases resources and exits the process
+	T0      time.Time // the moment of the "hotkey press", for timing measurements
 	Verbose bool
-	Fresh   bool // не предлагать область предыдущего скриншота
+	Fresh   bool // do not suggest the region of the previous screenshot
 }
 
 var (
@@ -52,22 +52,21 @@ var (
 	identity  = unit.Metric{PxPerDp: 1, PxPerSp: 1}
 )
 
-// shadeColor возвращает цвет затемнения вне области для процента 0-100.
+// shadeColor returns the dimming colour outside the selection for a percentage of 0-100.
 func shadeColor(percent int) color.NRGBA {
 	return color.NRGBA{A: uint8(math.Round(float64(min(max(percent, 0), 100)) * 255 / 100))}
 }
 
-// Режимы правки готовой области.
+// Editing modes for a finished region.
 const (
 	adjustNone = iota
 	adjustResize
 	adjustMove
 )
 
-// Run открывает по fullscreen-окну на каждый кадр. Вызывающий должен после
-// этого вызвать app.Main().
+// Run opens one fullscreen window per frame. The caller must call app.Main() afterwards.
 //
-// Возвращает функцию, которая закрывает все окна так же, как их закрывает пользователь.
+// It returns a function that closes all windows the same way the user closes them.
 func Run(cfg Config) (closeAll func()) {
 	app.ID = screencast.AppID
 	var once sync.Once
@@ -78,7 +77,7 @@ func Run(cfg Config) (closeAll func()) {
 	}
 	alive := new(atomic.Int32)
 	alive.Store(int32(len(monitors)))
-	store := settings.NewStore() // общие настройки для всех окон
+	store := settings.NewStore() // settings shared by all windows
 	for _, m := range monitors {
 		m.peers = monitors
 		m.alive = alive
@@ -91,90 +90,94 @@ func Run(cfg Config) (closeAll func()) {
 	return monitors[0].closeWindows
 }
 
-// monitor — окно-оверлей одного монитора со своим состоянием редактирования.
+// monitor is the overlay window of one monitor with its own editing state.
 type monitor struct {
 	cfg    Config
 	frame  *screencast.Frame
 	finish func()
 	shaper *text.Shaper
-	env    annotate.Env // шрифт и размытие для отрисовки аннотаций
+	env    annotate.Env // font and blur for drawing annotations
 	bar    *toolbar
 
-	// peers — все окна-оверлеи (включая это). Активна одна область на все мониторы:
-	// когда выделение начинается в одном окне, остальные сбрасываются.
+	// peers are all overlay windows (including this one). There is one active region across
+	// all monitors: when a selection starts in one window, the others are reset.
 	peers []*monitor
-	alive *atomic.Int32 // сколько окон ещё не закрыто
+	alive *atomic.Int32 // how many windows are not closed yet
 	win   atomic.Pointer[app.Window]
-	reset atomic.Bool // другое окно забрало выделение, нужно сбросить своё
+	reset atomic.Bool // another window took the selection, so this one must reset its own
 
 	imageOp paint.ImageOp
-	loupeOp paint.ImageOp // тот же кадр с выборкой по ближайшему пикселю, создаётся при первом показе лупы
-	canvas  int           // тег холста
+	loupeOp paint.ImageOp // the same frame with nearest-pixel sampling, created when the magnifier is first shown
+	canvas  int           // canvas tag
 
-	// Выделение в пикселях кадра.
+	// Selection in frame pixels.
 	sel      image.Rectangle
 	hasSel   bool
 	dragging bool
 	selStart f32.Point
 
-	// Изменение размера и перемещение готовой области.
+	// Resizing and moving the finished region.
 	adjust      int
 	adjEdge     edge
 	adjStartSel image.Rectangle
 	adjStartPt  f32.Point
-	hover       f32.Point // последнее положение курсора, пиксели кадра
+	hover       f32.Point // last cursor position, in frame pixels
 
-	// Накопленная прокрутка колеса или тачпада и время последнего шага толщины.
+	// Accumulated wheel or touchpad scroll and the time of the last thickness step.
 	scrollAcc  float32
 	scrollSeen time.Time
 	scrollStep time.Time
-	clock      func() time.Time // подмена времени в тестах
-	hoverIn    bool             // курсор сейчас над этим окном (на другом мониторе лупа не нужна)
+	clock      func() time.Time // time source, replaced in tests
+	hoverIn    bool             // the cursor is over this window now (the magnifier is not needed on another monitor)
 
-	// Настройки (общие для окон) и двойной клик.
+	// Settings (shared between windows) and double click.
 	store        *settings.Store
 	lastClickAt  time.Time
 	lastClickPos f32.Point
 
-	// Подборка скриншотов («было/стало»).
-	queued int // сколько картинок накоплено на диске
+	// Collection of screenshots ("before/after").
+	queued int // how many images have accumulated on disk
 	dock   dock
 
-	// Положение элементов в пикселях окна: нужно, чтобы док не перекрывал выделение и панель.
+	// Positions of elements in window pixels: needed so the dock overlaps neither the
+	// selection nor the toolbar.
 	selWin   image.Rectangle
-	barRect  image.Rectangle // панель целиком (оба ряда, если виден второй)
-	mainRow  image.Rectangle // основной ряд
-	barSpace image.Rectangle // место под оба ряда, даже если второй скрыт: док его не перекрывает
-	barBelow bool            // панель под выделением (второй ряд ниже основного), иначе над ним
+	barRect  image.Rectangle // the whole toolbar (both rows if the second one is visible)
+	mainRow  image.Rectangle // main row
+	barSpace image.Rectangle // room for both rows even if the second is hidden: the dock does not overlap it
+	barBelow bool            // toolbar is below the selection (second row below the main one), otherwise above it
 
-	// Меню «⋯» на панели.
+	// Menu "⋯" on the toolbar.
 	menuOpen   bool
-	menuAnchor int // середина кнопки «⋯» в пикселях окна
+	menuAnchor int // centre of the "⋯" button in window pixels
 
-	// Плашка с новым значением силы инструмента.
+	// Toast with the new value of the tool strength.
 	toastUntil time.Time
 	toastTool  annotate.Tool
 	toastValue int
-	toastMsg   string // готовый текст плашки вместо «Толщина: N»
+	toastMsg   string // ready-made toast text instead of "Thickness: N"
 
-	// Область предыдущего скриншота: не подставляется сама, возвращается по кнопке или клавише R.
+	// Region of the previous screenshot: it is not applied automatically, it comes back with a
+	// button or the R key.
 	last    image.Rectangle
 	hasLast bool
 	lastBtn widget.Clickable
-	tol     float32 // допуск попадания в ручку, пиксели кадра
+	tol     float32 // hit tolerance for a handle, in frame pixels
 
 	tool  annotate.Tool
 	color color.NRGBA
-	// Свой цвет из палитры панели: запоминается в настройках. pick — окошко его выбора.
+	// Custom colour from the toolbar palette: remembered in settings. pick is its chooser
+	// popup.
 	customColor color.NRGBA
 	hasCustom   bool
 	pick        picker
-	pickAnchor  int                               // середина кнопки своего цвета в пикселях окна
-	keys        []keyBinding                      // клавиши оверлея по настройкам
-	palette     [settings.PaletteSize]color.NRGBA // цвета панели из настроек
-	// colorPicked: цвет выбран в панели вручную, цвета инструментов из настроек больше не применяются.
+	pickAnchor  int                               // centre of the custom colour button in window pixels
+	keys        []keyBinding                      // overlay keys from settings
+	palette     [settings.PaletteSize]color.NRGBA // toolbar colours from settings
+	// colorPicked: the colour was chosen manually in the toolbar, the tool colours from
+	// settings no longer apply.
 	colorPicked bool
-	widths      map[annotate.Tool]float32 // толщина или сила для каждого инструмента отдельно
+	widths      map[annotate.Tool]float32 // thickness or strength for each tool separately
 	shapes      []annotate.Shape
 	cur         *annotate.Shape
 
@@ -210,8 +213,8 @@ func newMonitor(cfg Config, f *screencast.Frame, finish func()) *monitor {
 	}
 	if !cfg.Fresh && m.store.Get().RememberRegion {
 		m.last, m.hasLast = loadLastRegion(f)
-		// Если собирают подборку («было/стало»), снимать «стало» нужно в том же
-		// месте: прошлая область выставляется сразу.
+		// If a collection ("before/after") is being assembled, the "after" shot has to be taken in
+		// the same place: the previous region is applied right away.
 		if m.hasLast && m.queued > 0 {
 			m.sel, m.hasSel = m.last, true
 			m.useDefaultTool()
@@ -228,8 +231,8 @@ func (m *monitor) loop() {
 	for {
 		switch e := w.Event().(type) {
 		case app.DestroyEvent:
-			// Окно закрыто (нами или композитором): запоминаем область, закрываем
-			// остальные окна и завершаем работу, когда закрыты все.
+			// The window was closed (by us or by the compositor): remember the region, close the other
+			// windows and exit once all of them are closed.
 			m.rememberRegion()
 			if m.alive.Add(-1) <= 0 {
 				m.finish()
@@ -258,9 +261,8 @@ func (m *monitor) frameSize() image.Point {
 	return image.Pt(b.Dx(), b.Dy())
 }
 
-// layout обрабатывает ввод и рисует один кадр окна. Порядок важен: области
-// ввода, зарегистрированные позже, лежат выше (редактор текста и панель
-// инструментов выше холста).
+// layout handles input and draws one frame of the window. Order matters: input areas
+// registered later lie above (the text editor and the toolbar are above the canvas).
 func (m *monitor) layout(gtx layout.Context, win image.Point) {
 	fs := m.frameSize()
 	sx := float32(win.X) / float32(fs.X)
@@ -274,7 +276,7 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 	m.handleKeys(gtx)
 	m.handlePointer(gtx, toFrame)
 
-	// Холст: область ввода на всё окно.
+	// Canvas: an input area covering the whole window.
 	area := clip.Rect(image.Rectangle{Max: win}).Push(gtx.Ops)
 	event.Op(gtx.Ops, &m.canvas)
 	m.cursor().Add(gtx.Ops)
@@ -285,7 +287,7 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 		m.focusCanvas = false
 	}
 
-	// Сцена в пространстве кадра, масштабируется на окно.
+	// The scene is in frame space and is scaled to the window.
 	scale := op.Affine(f32.Affine2D{}.Scale(f32.Pt(0, 0), f32.Pt(sx, sy))).Push(gtx.Ops)
 	m.drawScene(gtx, fs, sx)
 	m.layoutEditor(gtx)
@@ -308,7 +310,7 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 	m.layoutLoupe(gtx, win, sx, sy)
 }
 
-// cursor выбирает курсор по положению мыши: ручки рамки, перемещение, прицел.
+// cursor chooses the cursor by the mouse position: border handles, move, crosshair.
 func (m *monitor) cursor() pointer.Cursor {
 	if m.adjust == adjustMove {
 		return pointer.CursorGrabbing
@@ -327,7 +329,7 @@ func (m *monitor) cursor() pointer.Cursor {
 	return pointer.CursorCrosshair
 }
 
-// layoutSizeLabel показывает размер выделения рядом с левым верхним углом.
+// layoutSizeLabel shows the selection size next to the top left corner.
 func (m *monitor) layoutSizeLabel(gtx layout.Context, selWin image.Rectangle) {
 	txt := fmt.Sprintf("%d × %d", m.sel.Dx(), m.sel.Dy())
 	pad := gtx.Dp(6)
@@ -381,7 +383,7 @@ func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 		paint.FillShape(gtx.Ops, shade, clip.Rect(side).Op())
 	}
 
-	// Аннотации видны только внутри выделения.
+	// Annotations are visible only inside the selection.
 	cl := clip.Rect(r).Push(gtx.Ops)
 	annotate.DrawAll(gtx.Ops, m.env, m.shapes)
 	if m.cur != nil {
@@ -389,11 +391,11 @@ func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 	}
 	cl.Pop()
 
-	// Рамка пунктиром: толщина, штрих и пауза в пикселях экрана, при любом масштабе
-	// окна остаются теми же.
+	// Dashed border: thickness, dash and gap are in screen pixels and stay the same at any
+	// window scale.
 	dashedRect(gtx.Ops, r, cfg.BorderNRGBA(), float32(cfg.BorderWidth)/sx, float32(cfg.BorderDash)/sx, float32(cfg.BorderGap)/sx)
 
-	// Ручки только в углах: за стороны рамку тянут инструментом «выделение».
+	// Handles only at the corners: the sides of the border are dragged with the "Select" tool.
 	if hr := float32(cfg.HandleRadius) / sx; hr > 0 {
 		for _, c := range cornerPoints(r) {
 			dot := clip.Ellipse(image.Rect(int(c.X-hr), int(c.Y-hr), int(c.X+hr), int(c.Y+hr)))
@@ -402,8 +404,8 @@ func (m *monitor) drawScene(gtx layout.Context, fs image.Point, sx float32) {
 	}
 }
 
-// layoutEditor показывает редактор текста в позиции editAt. Размеры считаются
-// в пикселях кадра, как и у готовой аннотации.
+// layoutEditor shows the text editor at position editAt. Sizes are computed in frame
+// pixels, like those of a finished annotation.
 func (m *monitor) layoutEditor(gtx layout.Context) {
 	if !m.editing {
 		return
@@ -427,7 +429,7 @@ func (m *monitor) layoutEditor(gtx layout.Context) {
 
 	dims := m.ed.Layout(egtx, m.shaper, annotate.Font, unit.Sp(size), mat, selMat)
 
-	// Рамка вокруг редактируемого текста.
+	// Border around the text being edited.
 	var p clip.Path
 	p.Begin(gtx.Ops)
 	p.MoveTo(f32.Pt(0, 0))
@@ -484,15 +486,15 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 	}
 }
 
-// keyBinding — клавиша оверлея и действие, которое она запускает.
+// keyBinding is an overlay key and the action it triggers.
 type keyBinding struct {
 	action  string
 	binding keymap.Binding
 	run     func()
 }
 
-// initKeys составляет таблицу клавиш по настройкам. Клавиши назначены на
-// запуск оверлея: пока он открыт, настройки не меняются.
+// initKeys builds the key table from settings. Keys are assigned at overlay launch:
+// settings do not change while it is open.
 func (m *monitor) initKeys() {
 	keys := m.store.Get().Keys
 	actions := map[string]func(){
@@ -516,8 +518,8 @@ func (m *monitor) initKeys() {
 	}
 	actions[settings.ActionWidthUp] = func() { m.bumpWidth(1) }
 	actions[settings.ActionWidthDown] = func() { m.bumpWidth(-1) }
-	// Клавиши инструментов работают, когда область выбрана: иначе выбор сбросился бы на
-	// инструмент по умолчанию в момент выделения.
+	// Tool keys work when a region is selected: otherwise the choice would reset to the
+	// default tool at the moment of selection.
 	for t, name := range settings.ToolNames {
 		tool := annotate.Tool(t)
 		actions[settings.ToolAction(name)] = func() {
@@ -536,9 +538,9 @@ func (m *monitor) initKeys() {
 	}
 }
 
-// keyFilters возвращает фильтры событий для всех клавиш оверлея. Без привязки к
-// фокусу: после клика по кнопке панели фокус уходит с холста, а клавиши должны
-// работать всегда.
+// keyFilters returns event filters for all overlay keys. They are not bound to focus:
+// after a click on a toolbar button focus leaves the canvas, but the keys must always
+// work.
 func (m *monitor) keyFilters() []event.Filter {
 	var fs []event.Filter
 	for _, kb := range m.keys {
@@ -563,8 +565,8 @@ func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.
 			continue
 		}
 		if e.Kind == pointer.Cancel {
-			// Курсор ушёл с окна (например, на оверлей другого монитора): у Cancel нет позиции,
-			// поэтому последнюю не затираем, а лупу гасим.
+			// The cursor left the window (for example, onto the overlay of another monitor): Cancel
+			// has no position, so we do not overwrite the last one, but hide the magnifier.
 			m.hoverIn = false
 			continue
 		}
@@ -586,8 +588,8 @@ func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.
 	}
 }
 
-// claim забирает единственную активную область себе: у остальных окон
-// выделение и рисунки сбрасываются.
+// claim takes the single active region for itself: the selection and drawings of the other
+// windows are reset.
 func (m *monitor) claim() {
 	for _, o := range m.peers {
 		if o == m {
@@ -600,7 +602,7 @@ func (m *monitor) claim() {
 	}
 }
 
-// resetState убирает выделение, рисунки и редактирование текста.
+// resetState clears the selection, the drawings and text editing.
 func (m *monitor) resetState() {
 	m.pick.open, m.menuOpen = false, false
 	m.dragging = false
@@ -620,7 +622,7 @@ func (m *monitor) setTool(t annotate.Tool) {
 		m.commitText()
 	}
 	m.tool = t
-	// Цвет инструмента из настроек действует, пока цвет не выбрали в панели вручную.
+	// The tool colour from settings applies until a colour is chosen manually in the toolbar.
 	if st := m.toolStyle(t); st != nil && !m.colorPicked {
 		if c, err := settings.ParseColor(st.Color); err == nil {
 			m.color = c
@@ -628,7 +630,7 @@ func (m *monitor) setTool(t annotate.Tool) {
 	}
 }
 
-// toolName возвращает имя инструмента в настройках.
+// toolName returns the tool name in settings.
 func toolName(t annotate.Tool) string {
 	if int(t) < len(settings.ToolNames) {
 		return settings.ToolNames[t]
@@ -636,14 +638,14 @@ func toolName(t annotate.Tool) string {
 	return ""
 }
 
-// toolStyle возвращает вид инструмента по умолчанию из настроек (nil для «выделения»).
+// toolStyle returns the default tool style from settings (nil for "Select").
 func (m *monitor) toolStyle(t annotate.Tool) *settings.ToolStyle {
 	tools := m.store.Get().Tools
 	return tools.Of(toolName(t))
 }
 
-// useDefaultTool включает инструмент по умолчанию из настроек: вызывается,
-// когда область выбрана и можно рисовать.
+// useDefaultTool enables the default tool from settings: it is called when a region is
+// selected and drawing is possible.
 func (m *monitor) useDefaultTool() {
 	want := m.store.Get().DefaultTool
 	for t, name := range settings.ToolNames {
@@ -656,7 +658,7 @@ func (m *monitor) useDefaultTool() {
 
 func (m *monitor) press(p f32.Point) {
 	if m.pick.open || m.menuOpen {
-		m.pick.open, m.menuOpen = false, false // клик мимо окошка цвета или меню закрывает его
+		m.pick.open, m.menuOpen = false, false // a click outside the colour popup or menu closes it
 		return
 	}
 	if m.editing {
@@ -666,13 +668,13 @@ func (m *monitor) press(p f32.Point) {
 		return
 	}
 	if m.hasSel {
-		// Ручки рамки важнее любого инструмента.
+		// Border handles take priority over any tool.
 		if e, ok := hitHandle(m.sel, p, m.tol, m.tool == annotate.ToolSelect); ok {
 			m.claim()
 			m.adjust, m.adjEdge, m.adjStartSel = adjustResize, e, m.sel
 			return
 		}
-		// Перетаскивание готовой области за её внутреннюю часть.
+		// Dragging the finished region by its inner part.
 		if m.tool == annotate.ToolSelect && inRect(p, m.sel) {
 			m.claim()
 			m.adjust, m.adjStartSel, m.adjStartPt = adjustMove, m.sel, p
@@ -699,7 +701,8 @@ func (m *monitor) press(p f32.Point) {
 	case annotate.ToolPen, annotate.ToolMarker:
 		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p}, Alpha: m.store.Get().MarkerAlpha()}
 	case annotate.ToolStamp:
-		// Штамп встаёт под курсор сразу; пока кнопка зажата, его можно подвинуть.
+		// The stamp is placed under the cursor immediately; while the button is held, it can be
+		// moved.
 		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p}, Text: strconv.Itoa(m.nextStamp())}
 	default:
 		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p, p}}
@@ -734,7 +737,7 @@ func (m *monitor) release(p f32.Point) {
 	case m.dragging:
 		m.dragging = false
 		m.sel = rectOf(m.selStart, p).Intersect(m.frame.Img.Bounds())
-		// Простой клик без выделения не считаем областью.
+		// A plain click without dragging is not counted as a region.
 		m.hasSel = m.sel.Dx() >= 4 && m.sel.Dy() >= 4
 		if !m.hasSel {
 			m.sel = image.Rectangle{}
@@ -749,23 +752,25 @@ func (m *monitor) release(p f32.Point) {
 	}
 }
 
-// Прокрутка меняет толщину порциями. Колесо шлёт по одному событию на щелчок, а тачпад десятки
-// мелких в секунду и ещё инерцию после того, как палец поднят: если менять толщину на каждое
-// событие, она улетает с 1 до 6 за один жест.
+// Scrolling changes the thickness in steps. A wheel sends one event per click, while a
+// touchpad sends dozens of small ones per second, plus inertia after the finger is lifted:
+// if the thickness changed on every event, it would fly from 1 to 6 in a single gesture.
 const (
-	scrollNotch     = 8                      // событие не меньше этого считается щелчком колеса: шаг сразу
-	scrollUnit      = 40                     // порция мелких событий (тачпад), на которую делается шаг
-	scrollIdle      = 300 * time.Millisecond // после такой паузы накопленное забывается
-	scrollGapFine   = 50 * time.Millisecond  // наименьший промежуток между шагами у инструментов с тонкой шкалой
-	scrollGapCoarse = 250 * time.Millisecond // то же у размытия: у него всего шесть уровней
+	scrollNotch     = 8                      // an event at least this large counts as a wheel click: step immediately
+	scrollUnit      = 40                     // the chunk of small events (touchpad) that makes one step
+	scrollIdle      = 300 * time.Millisecond // after such a pause the accumulated amount is forgotten
+	scrollGapFine   = 50 * time.Millisecond  // the shortest gap between steps for tools with a fine scale
+	scrollGapCoarse = 250 * time.Millisecond // the same for blur: it has only six levels
 )
 
-// scroll копит прокрутку dy и по порции двигает толщину на один шаг. Щелчок колеса (одно крупное
-// событие) это целая порция, мелкие события тачпада копятся до порции. Между шагами пауза, избыток
-// за паузу не копится, а остаток после шага отбрасывается: инерция тачпада не делает лишних шагов.
+// scroll accumulates the scroll dy and moves the thickness by one step per chunk. A wheel
+// click (one large event) is a whole chunk, small touchpad events accumulate up to a
+// chunk. There is a pause between steps; the excess during the pause is not accumulated,
+// and the remainder after a step is discarded: touchpad inertia does not produce extra
+// steps.
 func (m *monitor) scroll(dy float32) {
 	now := m.now()
-	if now.Sub(m.scrollSeen) > scrollIdle || m.scrollAcc*dy < 0 { // пауза или смена направления
+	if now.Sub(m.scrollSeen) > scrollIdle || m.scrollAcc*dy < 0 { // pause or change of direction
 		m.scrollAcc = 0
 	}
 	m.scrollSeen = now
@@ -782,7 +787,7 @@ func (m *monitor) scroll(dy float32) {
 		gap = scrollGapCoarse
 	}
 	if now.Sub(m.scrollStep) < gap {
-		m.scrollAcc = float32(math.Copysign(scrollUnit, float64(m.scrollAcc))) // порция готова, ждёт паузы
+		m.scrollAcc = float32(math.Copysign(scrollUnit, float64(m.scrollAcc))) // the chunk is ready, waiting for the pause
 		return
 	}
 	if m.scrollAcc < 0 {
@@ -793,7 +798,7 @@ func (m *monitor) scroll(dy float32) {
 	m.scrollAcc, m.scrollStep = 0, now
 }
 
-// now возвращает текущее время; в тестах подменяется.
+// now returns the current time; it is replaced in tests.
 func (m *monitor) now() time.Time {
 	if m.clock != nil {
 		return m.clock()
@@ -801,10 +806,10 @@ func (m *monitor) now() time.Time {
 	return time.Now()
 }
 
-// curWidth возвращает толщину (для размытия силу) текущего инструмента.
+// curWidth returns the thickness (the strength for blur) of the current tool.
 func (m *monitor) curWidth() float32 { return m.widthOf(m.tool) }
 
-// widthOf возвращает толщину инструмента или значение по умолчанию.
+// widthOf returns the thickness of the tool or the default value.
 func (m *monitor) widthOf(t annotate.Tool) float32 {
 	if w, ok := m.widths[t]; ok {
 		return w
@@ -815,8 +820,8 @@ func (m *monitor) widthOf(t annotate.Tool) float32 {
 	return annotate.DefaultWidthOf(t)
 }
 
-// bumpWidth меняет толщину текущего инструмента. Фигура, которую рисуют
-// прямо сейчас, и редактируемый текст обновляются сразу.
+// bumpWidth changes the thickness of the current tool. The shape being drawn right now and
+// the text being edited are updated immediately.
 func (m *monitor) bumpWidth(delta float32) {
 	if m.tool == annotate.ToolSelect {
 		return
@@ -836,8 +841,8 @@ func (m *monitor) clamp(p f32.Point) f32.Point {
 	return p
 }
 
-// nextStamp возвращает номер нового штампа: на единицу больше, чем уже поставлено. После
-// отмены последнего штампа его номер освобождается.
+// nextStamp returns the number of the new stamp: one more than already placed. After the
+// last stamp is undone, its number is freed.
 func (m *monitor) nextStamp() int {
 	n := 1
 	for _, s := range m.shapes {
@@ -875,9 +880,9 @@ func (m *monitor) cancelText() {
 	m.focusCanvas = true
 }
 
-// export рендерит выделение с аннотациями, при необходимости сохраняет в файл
-// и копирует в буфер обмена, затем завершает работу (или остаётся в редакторе,
-// если в настройках включено «не закрывать после копирования»).
+// export renders the selection with annotations, saves it to a file if needed and copies
+// it to the clipboard, then exits (or stays in the editor if "don't close after copying"
+// is enabled in settings).
 func (m *monitor) export(toClipboard, toFile bool) {
 	if m.editing {
 		m.commitText()
@@ -917,23 +922,23 @@ func (m *monitor) export(toClipboard, toFile bool) {
 	}
 	m.inform(i18n.T("Screenshot ready"), msg)
 	if m.store.Get().KeepOpen {
-		m.showMessage(done) // остаёмся в редакторе: подтверждаем действие на экране
+		m.showMessage(done) // we stay in the editor: confirm the action on screen
 		return
 	}
 	m.quit()
 }
 
-// quit запоминает область (если она есть) и завершает работу. Область
-// запоминается при любом закрытии, а не только после успешного скриншота.
+// quit remembers the region (if there is one) and exits. The region is remembered on any
+// close, not only after a successful screenshot.
 func (m *monitor) quit() {
 	m.rememberRegion()
 	m.closeWindows()
 }
 
-// closeWindows закрывает окна по-человечески и завершает работу, когда они
-// закрылись: если выйти из процесса при открытых полноэкранных окнах, GNOME
-// подвисает на секунду-две, что заметно в играх. Если окна не закрылись за
-// 800 мс, завершаем принудительно.
+// closeWindows closes the windows gracefully and exits once they have closed: if the
+// process exits while fullscreen windows are open, GNOME freezes for a second or two,
+// which is noticeable in games. If the windows have not closed within 800 ms, we exit
+// forcibly.
 func (m *monitor) closeWindows() {
 	closed := 0
 	for _, p := range m.peers {
@@ -943,7 +948,7 @@ func (m *monitor) closeWindows() {
 		}
 	}
 	if closed == 0 {
-		m.finish() // окон нет (например, в тестах): закрывать нечего
+		m.finish() // no windows (for example, in tests): nothing to close
 		return
 	}
 	time.AfterFunc(800*time.Millisecond, m.finish)

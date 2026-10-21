@@ -6,7 +6,7 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// Номера пунктов меню; 0 — корень.
+// Menu item numbers; 0 is the root.
 const (
 	idShot     int32 = 1
 	idSettings int32 = 2
@@ -14,14 +14,14 @@ const (
 	idQuit     int32 = 4
 )
 
-// Handlers — действия пунктов меню и левого клика по значку.
+// Handlers are the actions of the menu items and of a left click on the icon.
 type Handlers struct {
-	Shot     func() // сделать снимок
-	Settings func() // открыть настройки
-	Quit     func() // закрыть значок (сам Run завершится после этого)
+	Shot     func() // take a shot
+	Settings func() // open the settings
+	Quit     func() // remove the tray icon (Run itself returns after this)
 }
 
-// layout — узел меню в формате com.canonical.dbusmenu: (ia{sv}av).
+// layout is a menu node in the com.canonical.dbusmenu format: (ia{sv}av).
 type layout struct {
 	ID       int32
 	Props    map[string]dbus.Variant
@@ -30,7 +30,7 @@ type layout struct {
 
 type item struct {
 	id    int32
-	label string // пусто у разделителя
+	label string // empty for a separator
 }
 
 func items() []item {
@@ -53,13 +53,13 @@ func itemProps(it item) map[string]dbus.Variant {
 	}
 }
 
-// menu реализует com.canonical.dbusmenu.
+// menu implements com.canonical.dbusmenu.
 type menu struct {
 	h        Handlers
 	revision uint32
 }
 
-// GetLayout возвращает меню целиком: пунктов мало, поэтому глубина не важна.
+// GetLayout returns the whole menu: there are few items, so depth does not matter.
 func (m *menu) GetLayout(parent int32, depth int32, props []string) (uint32, layout, *dbus.Error) {
 	root := layout{ID: 0, Props: map[string]dbus.Variant{"children-display": dbus.MakeVariant("submenu")}}
 	for _, it := range items() {
@@ -104,7 +104,7 @@ func (m *menu) GetProperty(id int32, name string) (dbus.Variant, *dbus.Error) {
 	return dbus.Variant{}, dbus.MakeFailedError(errNoItem(id))
 }
 
-// Event принимает нажатия: «clicked» запускает действие пункта.
+// Event accepts clicks: "clicked" runs the item's action.
 func (m *menu) Event(id int32, eventID string, data dbus.Variant, timestamp uint32) *dbus.Error {
 	if eventID == "clicked" {
 		m.activate(id)
@@ -145,7 +145,7 @@ func (m *menu) activate(id int32) {
 		f = m.h.Quit
 	}
 	if f != nil {
-		go f() // вызов пришёл из обработчика D-Bus: не задерживаем ответ
+		go f() // the call came from a D-Bus handler: do not delay the reply
 	}
 }
 

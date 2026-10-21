@@ -14,7 +14,7 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// keyLabels — названия действий оверлея в окне настроек.
+// keyLabels are the names of the overlay actions in the settings window.
 var keyLabels = map[string]string{
 	settings.ActionConfirm: "Copy and/or save",
 	settings.ActionCancel:  "Close the overlay",
@@ -30,8 +30,8 @@ var keyLabels = map[string]string{
 	settings.ActionWidthDown: "Thinner (text size, blur strength)",
 }
 
-// keyLabel возвращает название действия для окна настроек. Для инструментов оно
-// собирается из названия инструмента на панели.
+// keyLabel returns the action name for the settings window. For tools it is
+// built from the tool's name on the toolbar.
 func keyLabel(action string) string {
 	for i, name := range settings.ToolNames {
 		if settings.ToolAction(name) == action {
@@ -41,10 +41,10 @@ func keyLabel(action string) string {
 	return i18n.T(keyLabels[action])
 }
 
-// keyRow — строка окна: действие, кнопка с его клавишей и сброс.
+// keyRow is a window row: an action, a button with its key, and a reset.
 type keyRow struct {
 	action string
-	btn    widget.Clickable // нажать и затем нажать новую комбинацию
+	btn    widget.Clickable // press, then press the new combination
 	reset  widget.Clickable
 	err    string
 }
@@ -55,8 +55,8 @@ func (s *state) initKeys() {
 	}
 }
 
-// assignKey назначает действию клавишу. Клавишу, уже занятую другим действием,
-// не принимает и говорит, чьей она стала.
+// assignKey assigns a key to an action. A key already taken by another action is
+// not accepted, and the message says whose it became.
 func (s *state) assignKey(row *keyRow, chord string) {
 	keys := s.store.Get().Keys
 	if chord != "" {
@@ -67,7 +67,7 @@ func (s *state) assignKey(row *keyRow, chord string) {
 		}
 		chord = canon
 	}
-	keys.Set(row.action, chord) // пустая клавиша: сброс к умолчанию
+	keys.Set(row.action, chord) // empty key: reset to the default
 	if a, b, clash := keys.Conflict(); clash {
 		other := a
 		if a == row.action {
@@ -82,7 +82,7 @@ func (s *state) assignKey(row *keyRow, chord string) {
 	}
 }
 
-// updateKeys обрабатывает нажатия кнопок и, пока идёт запись, нажатую комбинацию.
+// updateKeys handles button presses and, while recording, the pressed combination.
 func (s *state) updateKeys(gtx layout.Context) {
 	for _, row := range s.keyRows {
 		if row.reset.Clicked(gtx) {
@@ -118,7 +118,7 @@ func (s *state) updateKeys(gtx layout.Context) {
 	}
 }
 
-// keyControls — таблица клавиш оверлея.
+// keyControls is the table of overlay keys.
 func (s *state) keyControls() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		keys := s.store.Get().Keys

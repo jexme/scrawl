@@ -53,7 +53,7 @@ const (
 	wmLButtonUp   = 0x0202
 	wmRButtonUp   = 0x0205
 	wmContextMenu = 0x007B
-	wmTrayIcon    = 0x8000 + 1 // WM_APP+1: сообщения от значка
+	wmTrayIcon    = 0x8000 + 1 // WM_APP+1: messages from the tray icon
 
 	nimAdd, nimModify, nimDelete = 0, 1, 2
 	nifMessage, nifIcon, nifTip  = 0x1, 0x2, 0x4
@@ -118,16 +118,16 @@ type notifyIconData struct {
 	BalloonIcon     uintptr
 }
 
-// state — единственный значок процесса; оконная процедура Windows получает только числа,
-// поэтому состояние лежит в переменной пакета.
+// state is the process's only tray icon; the Windows window procedure receives only
+// numbers, so the state lives in a package variable.
 type state struct {
 	h           Handlers
 	hwnd        uintptr
 	icon        uintptr
 	taskbarMsg  uint32
-	accel       string // комбинация, которую пытались зарегистрировать
+	accel       string // the combination we tried to register
 	hotkeyReady bool
-	warned      bool // подсказку про занятую комбинацию уже показали
+	warned      bool // the hint about the combination being taken has already been shown
 }
 
 var cur *state
@@ -140,11 +140,11 @@ func utf16Copy(dst []uint16, s string) {
 	copy(dst, u)
 }
 
-// Run показывает значок в области уведомлений и слушает глобальную комбинацию клавиш, пока
-// не вызван h.Quit или не закрыт канал stop (nil: без него). Левый клик по значку и
-// комбинация делают снимок, правый клик открывает меню.
+// Run shows an icon in the notification area and listens for the global key combination
+// until h.Quit is called or the stop channel is closed (nil: without it). A left click on
+// the icon and the combination take a screenshot, a right click opens the menu.
 func Run(h Handlers, stop <-chan struct{}) error {
-	runtime.LockOSThread() // окно и цикл сообщений принадлежат одному потоку
+	runtime.LockOSThread() // the window and the message loop belong to a single thread
 	defer runtime.UnlockOSThread()
 
 	s := &state{h: h}
@@ -178,7 +178,8 @@ func Run(h Handlers, stop <-chan struct{}) error {
 		return err
 	}
 	s.syncHotkey()
-	// Комбинацию меняют в окне настроек (другой процесс): раз в пару секунд сверяемся с файлом.
+	// The combination is changed in the settings window (another process): every couple of
+	// seconds we check the file.
 	procSetTimer.Call(hwnd, watchTimer, 2000, 0)
 
 	if stop != nil {
@@ -191,7 +192,7 @@ func Run(h Handlers, stop <-chan struct{}) error {
 	var m msg
 	for {
 		r, _, _ := procGetMessageW.Call(uintptr(unsafe.Pointer(&m)), 0, 0, 0)
-		if int32(r) <= 0 { // WM_QUIT или ошибка
+		if int32(r) <= 0 { // WM_QUIT or an error
 			break
 		}
 		procTranslateMessage.Call(uintptr(unsafe.Pointer(&m)))
@@ -231,7 +232,7 @@ func wndProc(hwnd, message, wParam, lParam uintptr) uintptr {
 			return 0
 		}
 		if s.taskbarMsg != 0 && uint32(message) == s.taskbarMsg {
-			// Проводник перезапустился: значок пропал вместе с панелью, добавляем заново.
+			// Explorer restarted: the icon disappeared along with the taskbar, so we add it again.
 			s.notify(nimAdd, nifMessage|nifIcon|nifTip, "", "")
 			return 0
 		}
@@ -246,7 +247,7 @@ func (s *state) shot() {
 	}
 }
 
-// notify добавляет, меняет или убирает значок; balloon (если не пуст) показывает всплывающую подсказку.
+// notify adds, changes or removes the icon; balloon (if not empty) shows a popup hint.
 func (s *state) notify(op uintptr, flags uint32, balloonTitle, balloon string) error {
 	nid := notifyIconData{Size: uint32(unsafe.Sizeof(notifyIconData{})), Wnd: s.hwnd, ID: 1, Flags: flags, CallbackMessage: wmTrayIcon, Icon: s.icon}
 	utf16Copy(nid.Tip[:], "Scrawl")
@@ -269,7 +270,7 @@ func errOr(err error) error {
 	return err
 }
 
-// syncHotkey приводит зарегистрированную комбинацию в соответствие с файлом настроек.
+// syncHotkey brings the registered combination in line with the settings file.
 func (s *state) syncHotkey() {
 	accel := hotkey.Current()
 	if accel == "" {
@@ -278,7 +279,7 @@ func (s *state) syncHotkey() {
 	if accel == s.accel && s.hotkeyReady {
 		return
 	}
-	// Комбинацию могла держать другая программа: пока не зарегистрирована, пробуем снова.
+	// Another program may hold the combination: until it is registered, we try again.
 	if accel != s.accel {
 		s.warned = false
 	}
@@ -320,7 +321,8 @@ func (s *state) showMenu() {
 	}
 	var pt point
 	procGetCursorPos.Call(uintptr(unsafe.Pointer(&pt)))
-	// Без выхода на передний план меню не закроется кликом мимо.
+	// Without bringing the window to the foreground, the menu will not close on a click
+	// elsewhere.
 	procSetForegroundWindow.Call(s.hwnd)
 	cmd, _, _ := procTrackPopupMenu.Call(menu, tpmReturnCmd|tpmRightButton|tpmBottomAlign, uintptr(pt.X), uintptr(pt.Y), 0, s.hwnd, 0)
 	procPostMessageW.Call(s.hwnd, wmNull, 0, 0)
@@ -339,7 +341,8 @@ func (s *state) showMenu() {
 	}
 }
 
-// makeIcon собирает HICON из рисунка tray.Framed под размер малого значка системы.
+// makeIcon builds an HICON from the tray.Framed image at the size of the system's small
+// icon.
 func makeIcon() uintptr {
 	size, _, _ := procGetSystemMetrics.Call(smCxSmIcon)
 	n := max(int(size), 16)
@@ -352,7 +355,7 @@ func makeIcon() uintptr {
 			xor = append(xor, c.B, c.G, c.R, c.A)
 		}
 	}
-	and := make([]byte, ((n+15)/16*2)*n) // маска нулевая: прозрачность берётся из альфа-канала
+	and := make([]byte, ((n+15)/16*2)*n) // the mask is zero: transparency is taken from the alpha channel
 	icon, _, _ := procCreateIcon.Call(0, uintptr(n), uintptr(n), 1, 32, uintptr(unsafe.Pointer(&and[0])), uintptr(unsafe.Pointer(&xor[0])))
 	return icon
 }

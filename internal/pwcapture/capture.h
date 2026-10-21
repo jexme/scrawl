@@ -3,19 +3,19 @@
 
 #include <stdint.h>
 
-// Коды результата sec_capture.
+// Result codes of sec_capture.
 enum {
 	SEC_OK = 0,
-	SEC_TIMEOUT = 1,  // кадр не пришёл за отведённое время
-	SEC_STREAM = 2,   // ошибка потока, текст в err
-	SEC_SETUP = 3,    // не удалось подключиться к PipeWire, текст в err
+	SEC_TIMEOUT = 1,  // the frame did not arrive within the allotted time
+	SEC_STREAM = 2,   // stream error, text in err
+	SEC_SETUP = 3,    // could not connect to PipeWire, text in err
 };
 
 void sec_init(void);
 
-// sec_capture подключается к узлу node через уже открытый fd (fd переходит во
-// владение библиотеки PipeWire и закрывается внутри), ждёт первый кадр и
-// отдаёт его как RGBA в *pixels (память malloc, освобождает вызывающий).
+// sec_capture connects to node through the already open fd (fd passes into the
+// ownership of the PipeWire library and is closed inside), waits for the first frame and
+// returns it as RGBA in *pixels (malloc memory, freed by the caller).
 int sec_capture(int fd, uint32_t node, int timeout_ms, uint8_t **pixels,
                 int *width, int *height, char *err, int errlen);
 

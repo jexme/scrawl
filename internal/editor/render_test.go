@@ -11,8 +11,8 @@ import (
 	"github.com/jexme/scrawl/internal/annotate"
 )
 
-// TestRenderAnnotations рендерит аннотации поверх однотонного кадра и проверяет
-// ключевые пиксели. С SCRAWL_TEST_OUT=путь.png результат сохраняется для просмотра.
+// TestRenderAnnotations renders annotations over a solid frame and checks the key
+// pixels. With SCRAWL_TEST_OUT=path.png the result is saved for inspection.
 func TestRenderAnnotations(t *testing.T) {
 	src := image.NewRGBA(image.Rect(0, 0, 600, 400))
 	bg := color.RGBA{R: 40, G: 60, B: 90, A: 255}
@@ -39,16 +39,16 @@ func TestRenderAnnotations(t *testing.T) {
 		t.Fatalf("размер результата %v, ожидали %v", got, sel.Size())
 	}
 
-	// Координаты в результате сдвинуты на sel.Min.
+	// Coordinates in the result are shifted by sel.Min.
 	at := func(x, y int) color.RGBA { return out.RGBAAt(x-sel.Min.X, y-sel.Min.Y) }
 	if c := at(110, 30); c != bg {
 		t.Errorf("фон в углу: %v, ожидали %v", c, bg)
 	}
-	// Середина древка стрелки (275, 225) должна быть красной.
+	// The middle of the arrow shaft (275, 225) must be red.
 	if c := at(275, 225); c.R < 200 || c.G > 90 {
 		t.Errorf("древко стрелки не красное: %v", c)
 	}
-	// Верхняя сторона жёлтой рамки.
+	// The top side of the yellow rectangle.
 	if c := at(190, 120); c.R < 200 || c.G < 180 {
 		t.Errorf("рамка не жёлтая: %v", c)
 	}
@@ -64,8 +64,8 @@ func TestRenderAnnotations(t *testing.T) {
 	}
 }
 
-// TestRenderBlur проверяет, что инструмент размытия стирает мелкие детали внутри
-// рамки и не трогает остальное. Кадр: чёрно-белые вертикальные полосы шириной 2 px.
+// TestRenderBlur checks that the blur tool wipes out small details inside the
+// rectangle and leaves the rest alone. The frame: black and white vertical stripes 2 px wide.
 func TestRenderBlur(t *testing.T) {
 	src := image.NewRGBA(image.Rect(0, 0, 400, 240))
 	for y := 0; y < 240; y++ {
@@ -86,7 +86,7 @@ func TestRenderBlur(t *testing.T) {
 		t.Skipf("headless рендер недоступен: %v", err)
 	}
 
-	// Размах значений в строке: снаружи рамки полосы, внутри почти ровный серый.
+	// The spread of values in a row: stripes outside the rectangle, almost flat grey inside.
 	spread := func(y, x0, x1 int) int {
 		lo, hi := 255, 0
 		for x := x0; x < x1; x++ {

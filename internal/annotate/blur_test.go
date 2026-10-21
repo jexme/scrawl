@@ -18,7 +18,8 @@ func TestBlurModes(t *testing.T) {
 	if ModeOf(DefaultBlurLevel) != BlurSoft || DefaultWidthOf(ToolBlur) != DefaultBlurLevel || DefaultWidthOf(ToolPen) != DefaultWidth {
 		t.Error("по умолчанию размытие мягкое, а у остальных инструментов прежняя толщина")
 	}
-	// Вне границ уровень подрезается, а не ломает режимы и не выходит за таблицы.
+	// Out of range, the level is clamped; it does not break the modes or go outside the
+	// tables.
 	if ModeOf(-5) != BlurSoft || ModeOf(500) != BlurMosaic {
 		t.Error("уровень вне 1-6 должен подрезаться")
 	}
@@ -29,8 +30,9 @@ func TestBlurModes(t *testing.T) {
 		t.Error("наибольшая толщина: у размытия последний уровень, у остальных MaxWidth")
 	}
 
-	// Внутри режима сила растёт с уровнем: сигма и сторона квадрата строго возрастают, а мозаика
-	// крупнее самого слабого размытия по размеру деталей (сторона больше сигмы).
+	// Within a mode the strength grows with the level: the sigma and the square side strictly
+	// increase, and the mosaic is coarser than the weakest blur in terms of detail size (the
+	// side is larger than the sigma).
 	for l := float32(2); l <= softLevels; l++ {
 		if gaussSigma(l) <= gaussSigma(l-1) {
 			t.Errorf("сигма не растёт на уровне %v", l)
@@ -60,7 +62,8 @@ func solid(w, h int, c color.RGBA) *image.RGBA {
 }
 
 func TestGaussBlur(t *testing.T) {
-	// Однотонный кадр остаётся прежним, в том числе у краёв: края продолжаются, а не темнеют.
+	// A flat-colour frame stays the same, including at the edges: the edges continue, they do
+	// not darken.
 	flat := solid(60, 40, color.RGBA{R: 200, G: 100, B: 50, A: 255})
 	out := gaussBlur(flat, 6)
 	for _, p := range []image.Point{{0, 0}, {59, 39}, {30, 20}, {0, 39}} {
@@ -69,7 +72,7 @@ func TestGaussBlur(t *testing.T) {
 		}
 	}
 
-	// Мелкие полосы сглаживаются в ровный серый, средняя яркость сохраняется.
+	// Fine stripes are smoothed into an even grey, and the mean brightness is preserved.
 	stripes := image.NewRGBA(image.Rect(0, 0, 80, 60))
 	for y := 0; y < 60; y++ {
 		for x := 0; x < 80; x++ {
@@ -90,8 +93,9 @@ func TestGaussBlur(t *testing.T) {
 		t.Errorf("полосы не сглажены до серого: от %d до %d", lo, hi)
 	}
 
-	// Средняя яркость не меняется: на шуме внутри кадра (вдали от краёв) среднее до и после совпадает.
-	// Если остаток от деления отбрасывать, а не округлять, за шесть проходов кадр темнеет на два-три уровня.
+	// The mean brightness does not change: on noise inside the frame (far from the edges) the
+	// mean before and after matches. If the division remainder were discarded rather than
+	// rounded, the frame would darken by two or three levels over six passes.
 	noise := image.NewRGBA(image.Rect(0, 0, 200, 200))
 	seed := uint32(12345)
 	for i := 0; i < len(noise.Pix); i += 4 {
@@ -111,7 +115,7 @@ func TestGaussBlur(t *testing.T) {
 		t.Errorf("средняя яркость сдвинулась на %.2f уровня", d)
 	}
 
-	// Светлый квадрат 21×21 на чёрном превращается в симметричное пятно с пиком в центре.
+	// A light 21×21 square on black turns into a symmetric blob with a peak in the centre.
 	blk := solid(101, 101, color.RGBA{A: 255})
 	for y := 40; y < 61; y++ {
 		for x := 40; x < 61; x++ {
@@ -133,7 +137,8 @@ func TestGaussBlur(t *testing.T) {
 		t.Error("яркость должна монотонно убывать от края квадрата наружу")
 	}
 
-	// Сильнее сигма, шире пятно: за краем квадрата яркость растёт.
+	// With a larger sigma the blob is wider: beyond the edge of the square the brightness
+	// grows.
 	wide := gaussBlur(blk, 9)
 	if wide.RGBAAt(32, 50).R <= out.RGBAAt(32, 50).R {
 		t.Errorf("с ростом сигмы пятно должно расплываться шире: %d и %d", wide.RGBAAt(32, 50).R, out.RGBAAt(32, 50).R)
@@ -148,7 +153,8 @@ func absDiff(a, b uint8) int {
 }
 
 func TestBoxRadiiApproximateGauss(t *testing.T) {
-	// Три коробки с этими радиусами дают дисперсию сигма²: сумма (w²-1)/12 по трём окнам.
+	// Three boxes with these radii give the variance sigma²: the sum of (w²-1)/12 over the
+	// three windows.
 	for _, sigma := range []float64{2.2, 5, 11.2, 20, 27.5} {
 		var variance float64
 		for _, r := range boxRadii(sigma, 3) {
@@ -162,7 +168,8 @@ func TestBoxRadiiApproximateGauss(t *testing.T) {
 }
 
 func TestMosaicCells(t *testing.T) {
-	// Кадр 50×30: градиент по X. Область начинается не с нуля: клетки считаются от её угла.
+	// A 50×30 frame: a gradient along X. The area does not start at zero: cells are counted
+	// from its corner.
 	src := image.NewRGBA(image.Rect(0, 0, 50, 30))
 	for y := 0; y < 30; y++ {
 		for x := 0; x < 50; x++ {
@@ -174,17 +181,18 @@ func TestMosaicCells(t *testing.T) {
 	if got.Bounds().Dx() != 4 || got.Bounds().Dy() != 2 {
 		t.Fatalf("клеток %v, ожидали 4×2", got.Bounds().Size())
 	}
-	// Первая клетка: пиксели (7..16, 3..12), среднее R = 5*(7+16)/2 = 57.5, G = 8*(3+12)/2 = 60.
+	// The first cell: pixels (7..16, 3..12), mean R = 5*(7+16)/2 = 57.5, G = 8*(3+12)/2 = 60.
 	c := got.RGBAAt(0, 0)
 	if absDiff(c.R, 57) > 2 || absDiff(c.G, 60) > 1 || c.B != 7 || c.A != 255 {
 		t.Errorf("первая клетка %v", c)
 	}
-	// Последняя клетка короткая (3 px по X: 37..39, 9 по Y: 13..21): усредняет только то, что есть.
+	// The last cell is short (3 px in X: 37..39, 9 in Y: 13..21): it averages only what
+	// exists.
 	c = got.RGBAAt(3, 1)
 	if absDiff(c.R, 190) > 2 || absDiff(c.G, 136) > 1 { // R = 5*38 = 190, G = 8*(13+21)/2 = 136
 		t.Errorf("последняя клетка %v", c)
 	}
-	// Область за кадром подрезается, пустая даёт заглушку, а не панику.
+	// An area outside the frame is clipped, an empty one gives a stub, not a panic.
 	if g := downsample(src, image.Rect(45, 25, 100, 100), 10); g.Bounds().Dx() != 1 || g.Bounds().Dy() != 1 {
 		t.Errorf("область за краем: %v", g.Bounds())
 	}
@@ -193,7 +201,8 @@ func TestMosaicCells(t *testing.T) {
 	}
 }
 
-// Размытие целого кадра FullHD укладывается в разумное время: оно пересчитывается при смене силы.
+// Blurring a whole FullHD frame fits into a reasonable time: it is recomputed when the
+// strength changes.
 func TestGaussBlurIsFast(t *testing.T) {
 	src := image.NewRGBA(image.Rect(0, 0, 1920, 1080))
 	for i := range src.Pix {
@@ -216,7 +225,7 @@ func TestBlurrerCacheIsBounded(t *testing.T) {
 	if len(b.cache) > maxCached || len(b.order) > maxCached {
 		t.Errorf("в кэше %d копий, предел %d", len(b.cache), maxCached)
 	}
-	// Повторный запрос берёт готовое, а не добавляет второе.
+	// A repeated request takes the ready result and does not add a second one.
 	n := len(b.cache)
 	b.mosaic(image.Rect(0, 0, 20+maxCached*3-1, 20), 6)
 	if len(b.cache) != n {

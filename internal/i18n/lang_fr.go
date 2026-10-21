@@ -1,6 +1,6 @@
 package i18n
 
-// fr — перевод интерфейса: французский. Ключ это английский текст из кода.
+// fr is the interface translation: French. The key is the English text from the code.
 var fr = map[string]string{
 	"pick the monitors again (shows GNOME dialogs)": "choisir de nouveau les écrans (affiche des boîtes de dialogue GNOME)",
 	"print timings": "afficher les temps mesurés",

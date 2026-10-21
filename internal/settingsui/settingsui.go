@@ -1,5 +1,5 @@
-// Package settingsui показывает отдельное окно настроек. Изменения применяются
-// сразу и записываются в config.json.
+// Package settingsui shows a separate settings window. Changes are applied
+// immediately and written to config.json.
 package settingsui
 
 import (
@@ -40,73 +40,73 @@ var (
 	borderColor = color.NRGBA{R: 74, G: 75, B: 79, A: 255}
 )
 
-// state — состояние окна: виджеты и ссылка на настройки.
+// state is the window state: widgets and a reference to the settings.
 type state struct {
 	th    *material.Theme
 	store *settings.Store
 
-	choice    widget.Enum // двойной клик: off, copy, copy_save
+	choice    widget.Enum // double click: off, copy, copy_save
 	enter     widget.Enum // Enter: copy_save, copy, save
-	notify    widget.Bool // уведомления после снимка
-	remember  widget.Bool // запоминать прошлую область
-	showSize  widget.Bool // подпись размера области
-	showLoupe widget.Bool // лупа при выборе и изменении области
-	keepOpen  widget.Bool // не закрывать оверлей после копирования
-	cursor    widget.Bool // курсор мыши в снимке
+	notify    widget.Bool // notifications after a capture
+	remember  widget.Bool // remember the previous area
+	showSize  widget.Bool // area size label
+	showLoupe widget.Bool // magnifier while selecting and resizing the area
+	keepOpen  widget.Bool // do not close the overlay after copying
+	cursor    widget.Bool // mouse cursor in the capture
 	dir       widget.Editor
-	prefix    widget.Editor // начало имени файла
+	prefix    widget.Editor // start of the file name
 	reset     widget.Clickable
 	openDir   widget.Clickable
 	close     widget.Clickable
-	list      widget.List // прокрутка содержимого
-	sliders   []*slider   // все ползунки окна
-	dim       *slider     // затемнение вне области
-	bWidth    *slider     // рамка: толщина
-	bDash     *slider     // рамка: штрих
-	bGap      *slider     // рамка: пауза
-	handle    *slider     // радиус угловых ручек
-	marker    *slider     // непрозрачность маркера
+	list      widget.List // content scrolling
+	sliders   []*slider   // all sliders of the window
+	dim       *slider     // dimming outside the area
+	bWidth    *slider     // border: thickness
+	bDash     *slider     // border: dash
+	bGap      *slider     // border: gap
+	handle    *slider     // radius of the corner handles
+	marker    *slider     // marker opacity
 
-	palEd    [settings.PaletteSize]widget.Editor // цвета панели
+	palEd    [settings.PaletteSize]widget.Editor // panel colors
 	palErr   string
 	palReset widget.Clickable
 
-	glueLayout widget.Enum      // расположение склейки: side, stack
-	format     widget.Enum      // формат файла: png, jpeg
-	quality    *slider          // качество JPEG
-	glueBg     widget.Enum      // фон склейки: light, dark
-	gluePad    *slider          // отступы склейки
-	glueFont   *slider          // размер подписи склейки
-	glue       [3]widget.Editor // подписи склейки: было, стало, шаг
+	glueLayout widget.Enum      // glue layout: side, stack
+	format     widget.Enum      // file format: png, jpeg
+	quality    *slider          // JPEG quality
+	glueBg     widget.Enum      // glue background: light, dark
+	gluePad    *slider          // glue padding
+	glueFont   *slider          // glue caption size
+	glue       [3]widget.Editor // glue captions: Before, After, Step
 	glueErr    [3]string
 
-	toolChoice widget.Enum // инструмент после выбора области
+	toolChoice widget.Enum // tool after selecting an area
 	toolRows   []*toolRow
 	bColor     widget.Editor
 	colorErr   string
 
-	invalidate func() // перерисовать окно из другой горутины
-	grant      task   // выдача разрешения на запасной снимок
-	monitors   task   // повторный выбор мониторов
-	hotkey     task   // назначение горячей клавиши
+	invalidate func() // redraw the window from another goroutine
+	grant      task   // granting permission for the fallback capture
+	monitors   task   // re-picking monitors
+	hotkey     task   // assigning the hotkey
 	hotkeyEd   widget.Editor
-	lang       widget.Enum        // язык интерфейса: auto, ru, en
-	tab        int                // выбранная вкладка
-	tabBtns    []widget.Clickable // кнопки вкладок
-	shownTab   int                // вкладка, чьё содержимое нарисовано в последнем кадре
-	checkUpd   widget.Bool        // проверять обновления при старте
-	update     task               // проверка обновлений
-	autostart  widget.Bool        // запуск значка при входе
+	lang       widget.Enum        // UI language: auto, ru, en
+	tab        int                // selected tab
+	tabBtns    []widget.Clickable // tab buttons
+	shownTab   int                // the tab whose content was drawn in the last frame
+	checkUpd   widget.Bool        // check for updates at startup
+	update     task               // update check
+	autostart  widget.Bool        // launch the tray icon at login
 	autoErr    string
 	keyRows    []*keyRow
-	capturing  *keyRow // строка, для которой ждём нажатия клавиши
-	capTag     bool    // тег фокуса для записи клавиши
+	capturing  *keyRow // the row waiting for a key press
+	capTag     bool    // focus tag for key capture
 	dirErr     string
 	prefixErr  string
 }
 
-// newShaper собирает шрифты для языка интерфейса: для китайского, японского и
-// корейского к встроенным добавляется системный шрифт с иероглифами.
+// newShaper builds the fonts for the UI language: for Chinese, Japanese and
+// Korean, a system font with CJK glyphs is added to the built-in ones.
 func newShaper() *text.Shaper {
 	return text.NewShaper(text.WithCollection(fonts.Collection(i18n.Language())))
 }
@@ -120,7 +120,7 @@ func newState(store *settings.Store) *state {
 	s.list.Axis = layout.Vertical
 	tabs := s.tabs()
 	s.tabBtns = make([]widget.Clickable, len(tabs))
-	s.tab = rememberedTab(tabs) // окно открывается на той вкладке, где закрыли
+	s.tab = rememberedTab(tabs) // the window opens on the tab that was open when it was closed
 	px := func(v float64) string { return fmt.Sprintf("%.1f px", v) }
 	s.dim = s.addSlider(0, 100, 1, func(v float64) string { return fmt.Sprintf("%.0f%%", v) },
 		func(c settings.Settings) float64 { return float64(c.DimPercent) },
@@ -201,7 +201,7 @@ func newState(store *settings.Store) *state {
 	return s
 }
 
-// Run открывает окно настроек и работает, пока его не закроют. Вызывать из main.
+// Run opens the settings window and runs until it is closed. Call it from main.
 func Run(store *settings.Store) {
 	i18n.SetLanguage(store.Get().Language)
 	app.ID = screencast.AppID
@@ -234,7 +234,7 @@ func loop(s *state) {
 				}
 				if k, ok := ev.(key.Event); ok && k.State == key.Press {
 					if s.capturing != nil {
-						s.capturing = nil // Esc отменяет запись клавиши, а не закрывает окно
+						s.capturing = nil // Esc cancels key capture instead of closing the window
 					} else {
 						w.Perform(system.ActionClose)
 					}
@@ -250,12 +250,12 @@ func loop(s *state) {
 	}
 }
 
-// apply приводит сохранённые настройки в соответствие с виджетами. Вызывается
-// на каждом кадре: ничего не пишет, пока значения не изменились.
+// apply brings the saved settings in line with the widgets. It is called on
+// every frame: it writes nothing until the values have changed.
 func (s *state) apply(gtx layout.Context) {
-	// Клик по вкладке обрабатывается до того, как кадр выберет, что рисовать:
-	// иначе содержимое сменится только на следующем кадре, а он не придёт,
-	// пока не будет нового события, и клик покажется запоздавшим.
+	// A tab click is handled before the frame decides what to draw:
+	// otherwise the content would change only on the next frame, which will not
+	// come until there is a new event, and the click would seem delayed.
 	for i := range s.tabBtns {
 		if s.tabBtns[i].Clicked(gtx) {
 			s.selectTab(i)
@@ -284,7 +284,7 @@ func (s *state) apply(gtx layout.Context) {
 		}
 		if err != nil {
 			s.autoErr = fmt.Sprintf(i18n.T("Could not change autostart: %v"), err)
-			s.autostart.Value = autostartOn() // вернуть галочку в состояние файла
+			s.autostart.Value = autostartOn() // restore the checkbox to the state in the file
 		}
 	}
 	s.lang.Update(gtx)
@@ -292,8 +292,8 @@ func (s *state) apply(gtx layout.Context) {
 		if err := s.store.Update(func(c *settings.Settings) { c.Language = want }); err != nil {
 			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
-		i18n.SetLanguage(s.store.Get().Language) // окно перерисуется на новом языке сразу
-		s.th.Shaper = newShaper()                // и получит шрифт для его письменности
+		i18n.SetLanguage(s.store.Get().Language) // the window is redrawn in the new language right away
+		s.th.Shaper = newShaper()                // and gets a font for its script
 	}
 	s.updateKeys(gtx)
 	if s.hotkey.btn.Clicked(gtx) {
@@ -470,7 +470,7 @@ func (s *state) apply(gtx layout.Context) {
 	}
 }
 
-// addSlider создаёт ползунок и записывает его в список окна.
+// addSlider creates a slider and adds it to the window's list.
 func (s *state) addSlider(min, max, step float64, format func(float64) string,
 	get func(settings.Settings) float64, set func(*settings.Settings, float64)) *slider {
 	sl := &slider{min: min, max: max, step: step, format: format, get: get, set: set}
@@ -478,7 +478,7 @@ func (s *state) addSlider(min, max, step float64, format func(float64) string,
 	return sl
 }
 
-// applyBorderColor проверяет и сохраняет цвет рамки; при ошибке настройка не меняется.
+// applyBorderColor validates and saves the border color; on error the setting is unchanged.
 func (s *state) applyBorderColor(txt string) {
 	c, err := settings.ParseColor(txt)
 	if err != nil {
@@ -491,8 +491,8 @@ func (s *state) applyBorderColor(txt string) {
 	}
 }
 
-// openOutputDir открывает папку скриншотов в файловом менеджере. Пока команда
-// запускается, окно не ждёт её завершения.
+// openOutputDir opens the screenshots folder in the file manager. The window does not
+// wait for the command to finish while it runs.
 func (s *state) openOutputDir() {
 	dir, err := s.store.Get().OutputDir()
 	if err == nil {
@@ -505,17 +505,17 @@ func (s *state) openOutputDir() {
 	s.dirErr = ""
 }
 
-// openFolder запускает xdg-open для папки и не дожидается его завершения.
+// openFolder runs xdg-open for a folder and does not wait for it to finish.
 var openFolder = func(dir string) error {
 	cmd := exec.Command("xdg-open", dir)
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	go cmd.Wait() // чтобы не оставлять зомби-процесс
+	go cmd.Wait() // so as not to leave a zombie process
 	return nil
 }
 
-// edited сообщает, менялся ли текст в поле с прошлого кадра.
+// edited reports whether the text in the field has changed since the last frame.
 func edited(gtx layout.Context, ed *widget.Editor) bool {
 	changed := false
 	for {
@@ -529,7 +529,7 @@ func edited(gtx layout.Context, ed *widget.Editor) bool {
 	}
 }
 
-// checkNow запрашивает у GitHub последнюю версию в фоне.
+// checkNow asks GitHub for the latest version in the background.
 func (s *state) checkNow() {
 	s.start(&s.update, func(progress func(string)) (string, error) {
 		progress(i18n.T("Checking…"))
@@ -541,7 +541,8 @@ func (s *state) checkNow() {
 	})
 }
 
-// applyPrefix проверяет и сохраняет начало имени файла; при ошибке настройка не меняется.
+// applyPrefix validates and saves the start of the file name; on error the setting is
+// unchanged.
 func (s *state) applyPrefix(prefix string) {
 	if err := settings.ValidateFilePrefix(prefix); err != nil {
 		s.prefixErr = err.Error()
@@ -553,7 +554,7 @@ func (s *state) applyPrefix(prefix string) {
 	}
 }
 
-// applyDir проверяет и сохраняет папку; при ошибке настройка не меняется.
+// applyDir validates and saves the folder; on error the setting is unchanged.
 func (s *state) applyDir(dir string) {
 	if err := settings.ValidateSaveDir(dir); err != nil {
 		s.dirErr = err.Error()
@@ -565,7 +566,7 @@ func (s *state) applyDir(dir string) {
 	}
 }
 
-// row — одна настройка: название, пояснение и элемент управления.
+// row is a single setting: a name, a hint and a control.
 func (s *state) row(name, hint string, control layout.Widget) layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		children := []layout.FlexChild{layout.Rigid(s.label(material.Body1, name, fgColor))}
@@ -580,7 +581,7 @@ func (s *state) row(name, hint string, control layout.Widget) layout.Widget {
 	}
 }
 
-// section — заголовок раздела с линией под ним.
+// section is a section heading with a line under it.
 func (s *state) section(name string) layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -595,7 +596,7 @@ func (s *state) section(name string) layout.Widget {
 	}
 }
 
-// label делает текстовый виджет заданного стиля и цвета.
+// label makes a text widget of the given style and color.
 func (s *state) label(style func(*material.Theme, string) material.LabelStyle, txt string, c color.NRGBA) layout.Widget {
 	l := style(s.th, txt)
 	l.Color = c
@@ -605,7 +606,8 @@ func (s *state) label(style func(*material.Theme, string) material.LabelStyle, t
 func (s *state) radio(group *widget.Enum, key, label string) layout.Widget {
 	rb := material.RadioButton(s.th, group, key, label)
 	rb.Color = fgColor
-	// Выбранный вариант синий, остальные светло-серые: на тёмном фоне иначе не видно.
+	// The selected option is blue, the others light gray: otherwise they are invisible on a
+	// dark background.
 	rb.IconColor = mutedColor
 	if group.Value == key {
 		rb.IconColor = accentColor
@@ -613,7 +615,7 @@ func (s *state) radio(group *widget.Enum, key, label string) layout.Widget {
 	return rb.Layout
 }
 
-// field — однострочное поле ввода в рамке.
+// field is a single-line input field with a border.
 func (s *state) field(ed *widget.Editor, hint string) layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		return widget.Border{Color: borderColor, CornerRadius: unit.Dp(6), Width: unit.Dp(1)}.Layout(gtx,
@@ -628,7 +630,7 @@ func (s *state) field(ed *widget.Editor, hint string) layout.Widget {
 	}
 }
 
-// swatchBox рисует квадратный образец цвета в рамке.
+// swatchBox draws a square color swatch with a border.
 func swatchBox(gtx layout.Context, c color.NRGBA, dp int) layout.Dimensions {
 	sz := gtx.Dp(unit.Dp(dp))
 	rr := clip.UniformRRect(image.Rect(0, 0, sz, sz), gtx.Dp(6))
@@ -638,19 +640,19 @@ func swatchBox(gtx layout.Context, c color.NRGBA, dp int) layout.Dimensions {
 	return layout.Dimensions{Size: image.Pt(sz, sz)}
 }
 
-// toolRow — строка настроек одного инструмента: цвет и толщина по умолчанию.
+// toolRow is the settings row of one tool: its default color and thickness.
 type toolRow struct {
-	name  string // имя в настройках
+	name  string // name in the settings
 	label string
 	ed    widget.Editor
 	sl    *slider
 	err   string
 }
 
-// toolLabels — названия инструментов в окне, в порядке settings.ToolNames.
+// toolLabels are the tool names in the window, in the order of settings.ToolNames.
 var toolLabels = []string{"Select", "Pen", "Line", "Arrow", "Box", "Marker", "Blur", "Text", "Number"}
 
-// initTools создаёт строки инструментов и выбор инструмента по умолчанию.
+// initTools creates the tool rows and the default tool choice.
 func (s *state) initTools(cur settings.Settings) {
 	s.toolChoice.Value = cur.DefaultTool
 	for i, name := range settings.ToolNames {
@@ -658,7 +660,7 @@ func (s *state) initTools(cur settings.Settings) {
 			continue
 		}
 		name := name
-		row := &toolRow{name: name, label: toolLabels[i]} // русский ключ: переводится при показе
+		row := &toolRow{name: name, label: toolLabels[i]} // Russian key: translated when shown
 		row.ed.SingleLine = true
 		row.ed.SetText(cur.Tools.Of(name).Color)
 		row.sl = s.addSlider(0, settings.MaxWidthOf(name), 1, func(v float64) string {
@@ -673,7 +675,7 @@ func (s *state) initTools(cur settings.Settings) {
 	}
 }
 
-// applyToolColor проверяет и сохраняет цвет инструмента; пусто значит «не менять».
+// applyToolColor validates and saves the tool color; empty means "leave unchanged".
 func (s *state) applyToolColor(row *toolRow) {
 	txt := strings.TrimSpace(row.ed.Text())
 	value := ""
@@ -691,7 +693,7 @@ func (s *state) applyToolColor(row *toolRow) {
 	}
 }
 
-// toolControls — выбор инструмента после выделения области и вид каждого инструмента.
+// toolControls is the tool choice after selecting an area and the settings of each tool.
 func (s *state) toolControls() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		children := make([]layout.FlexChild, 0, len(s.toolRows)*2)
@@ -709,7 +711,7 @@ func (s *state) toolControls() layout.Widget {
 					}),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						if c == (color.NRGBA{}) {
-							// Цвет не задан: пустая рамка вместо образца.
+							// No color set: an empty frame instead of a swatch.
 							sz := gtx.Dp(28)
 							return layout.Dimensions{Size: image.Pt(sz, sz)}
 						}
@@ -734,7 +736,7 @@ func (s *state) toolControls() layout.Widget {
 	}
 }
 
-// borderControls — ползунки рамки и поле цвета с образцом.
+// borderControls are the border sliders and the color field with a swatch.
 func (s *state) borderControls() layout.Widget {
 	labeled := func(name string, sl *slider) layout.FlexChild {
 		return layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -790,8 +792,8 @@ func (s *state) checkbox(b *widget.Bool, label string) layout.Widget {
 	return cb.Layout
 }
 
-// applyPalette сохраняет цвета панели. Пустые поля берут цвет по умолчанию; пока
-// в каком-то поле неверный цвет, настройка не меняется.
+// applyPalette saves the panel colors. Empty fields take the default color; while
+// any field has an invalid color, the setting is unchanged.
 func (s *state) applyPalette() {
 	var pal [settings.PaletteSize]string
 	for i := range s.palEd {
@@ -813,7 +815,7 @@ func (s *state) applyPalette() {
 	}
 }
 
-// paletteControls — цвета панели в две колонки и кнопка сброса.
+// paletteControls are the panel colors in two columns and a reset button.
 func (s *state) paletteControls() layout.Widget {
 	cell := func(i int) layout.Widget {
 		return func(gtx layout.Context) layout.Dimensions {
@@ -857,12 +859,12 @@ func (s *state) paletteControls() layout.Widget {
 	}
 }
 
-// glueField возвращает указатель на подпись склейки в настройках по номеру поля.
+// glueField returns a pointer to a glue caption in the settings by field number.
 func glueField(g *settings.Glue, i int) *string {
 	return [...]*string{&g.Before, &g.After, &g.Step}[i]
 }
 
-// applyGlueLabel проверяет и сохраняет подпись склейки; при ошибке настройка не меняется.
+// applyGlueLabel validates and saves a glue caption; on error the setting is unchanged.
 func (s *state) applyGlueLabel(i int) {
 	txt := strings.TrimSpace(s.glue[i].Text())
 	if err := settings.ValidateGlueLabel(txt); err != nil {
@@ -875,7 +877,7 @@ func (s *state) applyGlueLabel(i int) {
 	}
 }
 
-// glueControls — три поля со словами подписей склейки.
+// glueControls are three fields with the words of the glue captions.
 func (s *state) glueControls() layout.Widget {
 	names := [3]string{i18n.T("First of two"), i18n.T("Second of two"), i18n.T("If more than two")}
 	hints := [3]string{i18n.T(settings.DefaultGlueBefore), i18n.T(settings.DefaultGlueAfter), i18n.T(settings.DefaultGlueStep)}
@@ -901,7 +903,7 @@ func (s *state) glueControls() layout.Widget {
 	}
 }
 
-// autostartControl — переключатель автозапуска и сообщение об ошибке под ним.
+// autostartControl is the autostart switch and the error message under it.
 func (s *state) autostartControl() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		children := []layout.FlexChild{layout.Rigid(s.checkbox(&s.autostart, i18n.T("Start the icon at login")))}
@@ -912,7 +914,7 @@ func (s *state) autostartControl() layout.Widget {
 	}
 }
 
-// updateControl — переключатель проверки при старте и кнопка «Проверить сейчас».
+// updateControl is the startup check switch and the "Check now" button.
 func (s *state) updateControl() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -923,7 +925,7 @@ func (s *state) updateControl() layout.Widget {
 	}
 }
 
-// hotkeyControl — поле комбинации и кнопка назначения.
+// hotkeyControl is the combination field and the assign button.
 func (s *state) hotkeyControl() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -934,7 +936,7 @@ func (s *state) hotkeyControl() layout.Widget {
 	}
 }
 
-// toolChoiceRadios — выбор инструмента по умолчанию.
+// toolChoiceRadios is the choice of the default tool.
 func (s *state) toolChoiceRadios() layout.Widget {
 	items := make([]layout.Widget, len(settings.ToolNames))
 	for i, name := range settings.ToolNames {
@@ -943,16 +945,16 @@ func (s *state) toolChoiceRadios() layout.Widget {
 	return radioColumns(2, items...)
 }
 
-// languageRadios — выбор языка двумя столбцами: «как в системе» и все языки по
-// их собственным названиям (их надо узнавать, даже не понимая остального окна).
-// Если выбран язык с иероглифами, а системного шрифта для них нет, под списком
-// подсказка, что поставить.
+// languageRadios is the language choice in two columns: "as in the system" and all
+// languages under their own names (they must be recognizable even when the rest of
+// the window is not understood). If a language with CJK glyphs is selected and there
+// is no system font for them, a hint on what to install is shown under the list.
 func (s *state) languageRadios() layout.Widget {
 	items := []layout.Widget{s.radio(&s.lang, i18n.Auto, i18n.T("Same as the system"))}
 	for _, l := range i18n.Languages {
 		name := l.Name
 		if l.Hint != "" {
-			name += "  ·  " + l.Hint // без шрифта с иероглифами подпись всё равно читается
+			name += "  ·  " + l.Hint // without a font for CJK glyphs the label is still readable
 		}
 		items = append(items, s.radio(&s.lang, l.Code, name))
 	}
@@ -967,7 +969,7 @@ func (s *state) languageRadios() layout.Widget {
 	}
 }
 
-// radioColumns раскладывает варианты по столбцам поровну, слева направо.
+// radioColumns lays the options out in columns evenly, left to right.
 func radioColumns(n int, items ...layout.Widget) layout.Widget {
 	per := (len(items) + n - 1) / n
 	return func(gtx layout.Context) layout.Dimensions {
@@ -979,7 +981,7 @@ func radioColumns(n int, items ...layout.Widget) layout.Widget {
 	}
 }
 
-// radios складывает варианты выбора в столбик.
+// radios stacks the choice options in a column.
 func radios(items ...layout.Widget) layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		children := make([]layout.FlexChild, len(items))
@@ -990,15 +992,15 @@ func radios(items ...layout.Widget) layout.Widget {
 	}
 }
 
-// settingsTab — вкладка окна: название и строки настроек в ней.
+// settingsTab is a window tab: its name and the settings rows in it.
 type settingsTab struct {
-	id    string // постоянное имя вкладки: по нему запоминается выбор
+	id    string // stable tab name: the choice is remembered by it
 	label string
 	rows  []layout.Widget
 }
 
-// tabs — все вкладки окна и их содержимое. Окно строится заново на каждом кадре,
-// поэтому тексты сразу следуют выбранному языку.
+// tabs are all the window's tabs and their content. The window is rebuilt on every frame,
+// so the texts immediately follow the selected language.
 func (s *state) tabs() []settingsTab {
 	th := s.th
 
@@ -1132,16 +1134,16 @@ func (s *state) tabs() []settingsTab {
 	}
 }
 
-// captureRows — настройки захвата. В сеансе X11 портала нет: мониторы выбирать и
-// разрешение выдавать не нужно, вместо этих кнопок короткое пояснение.
+// captureRows are the capture settings. An X11 session has no portal: there is no need to
+// pick monitors or grant permission, so a short explanation replaces those buttons.
 func (s *state) captureRows() []layout.Widget {
 	rows := []layout.Widget{
 		s.row(i18n.T("Launch hotkey"), i18n.T("Creates or updates a shortcut in the GNOME keyboard settings. Format: Print, <Super>s, <Control><Alt>p. Other shortcuts are not changed."),
 			s.hotkeyControl()),
 	}
 	if onWindows {
-		// В Windows нет ни портала, ни GNOME: экран снимается напрямую через GDI, а комбинацию
-		// держит значок в трее (scrawl -tray).
+		// Windows has neither a portal nor GNOME: the screen is captured directly via GDI, and the
+		// combination is held by the tray icon (scrawl -tray).
 		rows[0] = s.row(i18n.T("Launch hotkey"), i18n.T("Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination."),
 			s.hotkeyControl())
 		return rows
@@ -1157,13 +1159,13 @@ func (s *state) captureRows() []layout.Widget {
 	)
 }
 
-// rows возвращает строки выбранной вкладки.
+// rows returns the rows of the selected tab.
 func (s *state) rows() []layout.Widget {
 	tabs := s.tabs()
 	return tabs[min(max(s.tab, 0), len(tabs)-1)].rows
 }
 
-// selectTab переключает вкладку и возвращает прокрутку в начало.
+// selectTab switches the tab and scrolls back to the top.
 func (s *state) selectTab(i int) {
 	if i != s.tab {
 		s.tab = i
@@ -1174,7 +1176,7 @@ func (s *state) selectTab(i int) {
 	}
 }
 
-// tabBar рисует вкладки в ряд и под ним тонкую линию на всю ширину.
+// tabBar draws the tabs in a row and a thin full-width line under it.
 func (s *state) tabBar(gtx layout.Context, tabs []settingsTab) layout.Dimensions {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions { return s.tabRow(gtx, tabs) }),
@@ -1187,8 +1189,8 @@ func (s *state) tabBar(gtx layout.Context, tabs []settingsTab) layout.Dimensions
 	)
 }
 
-// tabRow — сами вкладки: выбранная подчёркнута акцентным цветом, под курсором
-// подсвечивается.
+// tabRow is the tabs themselves: the selected one is underlined in the accent color, the one
+// under the cursor is highlighted.
 func (s *state) tabRow(gtx layout.Context, tabs []settingsTab) layout.Dimensions {
 	children := make([]layout.FlexChild, 0, len(tabs))
 	for i := range tabs {
@@ -1240,7 +1242,7 @@ func (s *state) layout(gtx layout.Context) layout.Dimensions {
 			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 				list := material.List(th, &s.list)
 				return list.Layout(gtx, len(items), func(gtx layout.Context, i int) layout.Dimensions {
-					// Справа место под полосу прокрутки, чтобы она не лежала на элементах.
+					// On the right there is room for the scrollbar, so that it does not lie over the controls.
 					return layout.Inset{Right: unit.Dp(14)}.Layout(gtx, items[i])
 				})
 			}),

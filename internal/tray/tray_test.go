@@ -55,7 +55,7 @@ func TestMenuEventsRunHandlers(t *testing.T) {
 	}}
 	m.Event(idShot, "clicked", dbus.MakeVariant(0), 0)
 	m.Event(idSettings, "clicked", dbus.MakeVariant(0), 0)
-	m.Event(idSettings, "hovered", dbus.MakeVariant(0), 0) // наведение не запускает
+	m.Event(idSettings, "hovered", dbus.MakeVariant(0), 0) // hovering does not trigger it
 	m.Event(idSep, "clicked", dbus.MakeVariant(0), 0)
 	m.EventGroup([]menuEvent{{ID: idQuit, EventID: "clicked"}})
 	deadline := time.Now().Add(time.Second)
@@ -65,7 +65,7 @@ func TestMenuEventsRunHandlers(t *testing.T) {
 	if shot.Load() != 1 || settings.Load() != 1 || quit.Load() != 1 {
 		t.Errorf("снимок %d, настройки %d, выход %d", shot.Load(), settings.Load(), quit.Load())
 	}
-	// Левый клик по значку тоже делает снимок.
+	// A left click on the icon also takes a screenshot.
 	(&itemObj{h: m.h}).Activate(0, 0)
 	time.Sleep(50 * time.Millisecond)
 	if shot.Load() != 2 {
@@ -95,7 +95,7 @@ func TestIcon(t *testing.T) {
 			t.Errorf("pixmap %d px: %dx%d, %d байт", size, pm.W, pm.H, len(pm.Data))
 		}
 	}
-	// ARGB: первый закрашенный пиксель непрозрачный белый.
+	// ARGB: the first painted pixel is opaque white.
 	pm := toPixmap(drawIcon(22))
 	for i := 0; i < len(pm.Data); i += 4 {
 		if pm.Data[i] == 255 {
@@ -108,9 +108,9 @@ func TestIcon(t *testing.T) {
 	t.Error("в значке нет закрашенных точек")
 }
 
-// TestOnSessionBus проверяет значок по-настоящему: выставляет его на шине сеанса,
-// читает свойства и меню другим соединением и ищет значок у наблюдателя. Пропускается
-// без шины или без StatusNotifierWatcher.
+// TestOnSessionBus checks the icon for real: it exposes it on the session bus, reads the
+// properties and menu over another connection and looks for the icon at the watcher. Skipped
+// without a bus or without a StatusNotifierWatcher.
 func TestOnSessionBus(t *testing.T) {
 	server, err := dbus.ConnectSessionBus()
 	if err != nil {
@@ -162,7 +162,7 @@ func TestOnSessionBus(t *testing.T) {
 		t.Errorf("Version: %v %v", v, err)
 	}
 
-	// Клик по значку и по пункту меню доходит до обработчика.
+	// A click on the icon and on a menu item reaches the handler.
 	if err := obj.Call(itemIface+".Activate", 0, int32(0), int32(0)).Err; err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +177,7 @@ func TestOnSessionBus(t *testing.T) {
 		t.Errorf("до обработчика дошло %d из 2 нажатий", clicked.Load())
 	}
 
-	// Наблюдатель знает о значке.
+	// The watcher knows about the icon.
 	var registered []string
 	v, err := client.Object(watcherName, watcherPath).GetProperty(watcherName + ".RegisteredStatusNotifierItems")
 	if err != nil || v.Store(&registered) != nil {
@@ -201,7 +201,7 @@ func contains(s, sub string) bool {
 	return false
 }
 
-// TestIconPicture сохраняет значок на тёмном фоне для просмотра (SCRAWL_TEST_OUT).
+// TestIconPicture saves the icon on a dark background for inspection (SCRAWL_TEST_OUT).
 func TestIconPicture(t *testing.T) {
 	path := os.Getenv("SCRAWL_TEST_OUT")
 	if path == "" {

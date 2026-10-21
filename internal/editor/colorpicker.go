@@ -16,7 +16,7 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// hsv — цвет в виде оттенка (0-360), насыщенности и яркости (0-1): так удобно рисовать палитру.
+// hsv is a colour as hue (0-360), saturation and value (0-1): convenient for drawing the palette.
 type hsv struct{ H, S, V float32 }
 
 func (c hsv) rgb() color.NRGBA {
@@ -73,14 +73,14 @@ func hsvOf(c color.NRGBA) hsv {
 	return hsv{H: float32(h), S: float32(s), V: float32(mx)}
 }
 
-// picker — окошко выбора своего цвета: квадрат насыщенности и яркости и полоса оттенка.
+// picker is the small window for choosing a custom colour: a saturation/value square and a hue strip.
 type picker struct {
 	open     bool
 	hsv      hsv
-	sv, hue  int // теги областей ввода
-	area     int // тег подложки: клики по окошку не уходят на холст
+	sv, hue  int // input area tags
+	area     int // backdrop tag: clicks on the window do not reach the canvas
 	picked   bool
-	released bool // выбор закончили: цвет можно запомнить
+	released bool // the choice is finished: the colour can be remembered
 }
 
 var hueStops = [...]color.NRGBA{
@@ -88,7 +88,7 @@ var hueStops = [...]color.NRGBA{
 	{G: 255, B: 255, A: 255}, {B: 255, A: 255}, {R: 255, B: 255, A: 255}, {R: 255, A: 255},
 }
 
-// pickerSize возвращает размеры окошка и его частей в пикселях окна.
+// pickerSize returns the sizes of the window and its parts in window pixels.
 func pickerSize(gtx layout.Context) (w, h, pad, svH, hueH, rowH int) {
 	pad = gtx.Dp(10)
 	w = gtx.Dp(224)
@@ -99,8 +99,8 @@ func pickerSize(gtx layout.Context) (w, h, pad, svH, hueH, rowH int) {
 	return
 }
 
-// pickerOrigin возвращает левый верхний угол окошка: под панелью, а если там нет места, над
-// ней, по центру кнопки своего цвета (anchorX).
+// pickerOrigin returns the top-left corner of the window: below the toolbar, or above
+// it if there is no room, centred on the custom colour button (anchorX).
 func pickerOrigin(gtx layout.Context, win image.Point, bar image.Rectangle, anchorX int) image.Point {
 	w, h, _, _, _, _ := pickerSize(gtx)
 	margin := gtx.Dp(8)
@@ -112,8 +112,8 @@ func pickerOrigin(gtx layout.Context, win image.Point, bar image.Rectangle, anch
 	return image.Pt(x, max(y, margin))
 }
 
-// layoutPicker рисует окошко под панелью (если там нет места, над ней), по центру кнопки
-// своего цвета с центром anchorX. Меняет цвет по мере того, как тянут мышь.
+// layoutPicker draws the window below the toolbar (above it if there is no room),
+// centred on the custom colour button at anchorX. Changes the colour as the mouse is dragged.
 func (m *monitor) layoutPicker(gtx layout.Context, win image.Point, bar image.Rectangle, anchorX int) {
 	p := &m.pick
 	if !p.open {
@@ -122,7 +122,7 @@ func (m *monitor) layoutPicker(gtx layout.Context, win image.Point, bar image.Re
 	w, h, pad, svH, hueH, rowH := pickerSize(gtx)
 	defer op.Offset(pickerOrigin(gtx, win, bar, anchorX)).Push(gtx.Ops).Pop()
 
-	// Подложка и область, не пропускающая клики на холст.
+	// The backdrop and an area that stops clicks from reaching the canvas.
 	bg := image.Rect(0, 0, w, h)
 	paint.FillShape(gtx.Ops, barBG, clip.UniformRRect(bg, gtx.Dp(8)).Op(gtx.Ops))
 	area := clip.Rect(bg).Push(gtx.Ops)
@@ -138,7 +138,7 @@ func (m *monitor) layoutPicker(gtx layout.Context, win image.Point, bar image.Re
 	svRect := image.Rect(pad, pad, pad+inner, pad+svH)
 	hueRect := image.Rect(pad, svRect.Max.Y+pad/2, pad+inner, svRect.Max.Y+pad/2+hueH)
 
-	// События: нажатие и перетаскивание в квадрате и на полосе.
+	// Events: press and drag in the square and on the strip.
 	m.pickerInput(gtx, svRect, &p.sv, func(pt f32.Point) {
 		p.hsv.S = clamp01(pt.X / float32(svRect.Dx()))
 		p.hsv.V = 1 - clamp01(pt.Y/float32(svRect.Dy()))
@@ -147,7 +147,8 @@ func (m *monitor) layoutPicker(gtx layout.Context, win image.Point, bar image.Re
 		p.hsv.H = clamp01(pt.X/float32(hueRect.Dx())) * 360
 	})
 
-	// Квадрат: слева белый, справа чистый оттенок; поверх сверху прозрачный, снизу чёрный.
+	// The square: white on the left, the pure hue on the right; on top, transparent at the
+	// top and black at the bottom.
 	pure := hsv{H: p.hsv.H, S: 1, V: 1}.rgb()
 	func() {
 		defer clip.UniformRRect(svRect, gtx.Dp(4)).Push(gtx.Ops).Pop()
@@ -162,12 +163,12 @@ func (m *monitor) layoutPicker(gtx layout.Context, win image.Point, bar image.Re
 		}.Add(gtx.Ops)
 		paint.PaintOp{}.Add(gtx.Ops)
 	}()
-	// Кружок на выбранной точке.
+	// A circle at the selected point.
 	cx := float32(svRect.Min.X) + p.hsv.S*float32(svRect.Dx())
 	cy := float32(svRect.Min.Y) + (1-p.hsv.V)*float32(svRect.Dy())
 	ring(gtx, cx, cy, float32(gtx.Dp(6)))
 
-	// Полоса оттенка из шести градиентных кусков.
+	// The hue strip made of six gradient pieces.
 	func() {
 		defer clip.UniformRRect(hueRect, gtx.Dp(4)).Push(gtx.Ops).Pop()
 		seg := float32(hueRect.Dx()) / 6
@@ -186,7 +187,7 @@ func (m *monitor) layoutPicker(gtx layout.Context, win image.Point, bar image.Re
 	mark := clip.Rect(image.Rect(int(hx)-gtx.Dp(2), hueRect.Min.Y-gtx.Dp(2), int(hx)+gtx.Dp(2), hueRect.Max.Y+gtx.Dp(2)))
 	paint.FillShape(gtx.Ops, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, mark.Op())
 
-	// Образец и код цвета.
+	// The sample and the colour code.
 	cur := p.hsv.rgb()
 	rowY := hueRect.Max.Y + pad/2
 	chip := image.Rect(pad, rowY, pad+gtx.Dp(44), rowY+rowH)
@@ -199,12 +200,12 @@ func (m *monitor) layoutPicker(gtx layout.Context, win image.Point, bar image.Re
 	if p.released {
 		p.released = false
 		c := settings.FormatColor(m.customColor)
-		_ = m.store.Update(func(s *settings.Settings) { s.CustomColor = c }) // не записалось: цвет останется до конца снимка
+		_ = m.store.Update(func(s *settings.Settings) { s.CustomColor = c }) // not saved: the colour stays until the end of the screenshot
 	}
 }
 
-// pickerInput читает нажатие и перетаскивание в прямоугольнике r и передаёт точку в его
-// координатах. Каждое изменение сразу применяется к цвету рисования.
+// pickerInput reads press and drag in the rectangle r and passes the point in its own
+// coordinates. Every change is applied to the drawing colour immediately.
 func (m *monitor) pickerInput(gtx layout.Context, r image.Rectangle, tag event.Tag, set func(f32.Point)) {
 	p := &m.pick
 	stack := clip.Rect(r).Push(gtx.Ops)
@@ -222,7 +223,7 @@ func (m *monitor) pickerInput(gtx layout.Context, r image.Rectangle, tag event.T
 		}
 		switch e.Kind {
 		case pointer.Press, pointer.Drag:
-			// Позиция приходит в координатах окошка, а не квадрата: сдвигаем на его угол.
+			// The position arrives in window coordinates, not square coordinates: shift it by the square's corner.
 			set(e.Position.Sub(f32.Pt(float32(r.Min.X), float32(r.Min.Y))))
 			m.applyPicked()
 		case pointer.Release:
@@ -231,14 +232,14 @@ func (m *monitor) pickerInput(gtx layout.Context, r image.Rectangle, tag event.T
 	}
 }
 
-// applyPicked делает выбранный в окошке цвет цветом рисования.
+// applyPicked makes the colour chosen in the window the drawing colour.
 func (m *monitor) applyPicked() {
 	c := m.pick.hsv.rgb()
 	m.color, m.colorPicked = c, true
 	m.customColor, m.hasCustom = c, true
 }
 
-// ring рисует кружок-метку: белое кольцо с тёмной обводкой.
+// ring draws a marker circle: a white ring with a dark outline.
 func ring(gtx layout.Context, cx, cy, r float32) {
 	for _, s := range []struct {
 		r, w float32

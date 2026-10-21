@@ -6,21 +6,21 @@ import (
 	"image/draw"
 )
 
-// pixmap — картинка значка для StatusNotifierItem: ширина, высота и байты ARGB32
-// в сетевом порядке (альфа первой).
+// pixmap is an icon image for StatusNotifierItem: width, height and ARGB32 bytes
+// in network byte order (alpha first).
 type pixmap struct {
 	W, H int32
 	Data []byte
 }
 
-// drawIcon рисует значок: белые уголки видоискателя и точка-курсор в центре.
-// Значок рисуется кодом, чтобы не зависеть от темы значков и файлов ресурсов.
+// drawIcon draws the icon: white viewfinder corners and a cursor dot in the center.
+// The icon is drawn in code so as not to depend on the icon theme or resource files.
 func drawIcon(size int) image.Image {
 	img := image.NewNRGBA(image.Rect(0, 0, size, size))
 	white := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
-	th := max(size/10, 2) // толщина линий
-	arm := size / 4       // длина уголка: между уголками остаётся просвет
-	m := size / 8         // отступ от края
+	th := max(size/10, 2) // line thickness
+	arm := size / 4       // corner arm length: a gap remains between the corners
+	m := size / 8         // margin from the edge
 	fill := func(x0, y0, x1, y1 int) {
 		for y := y0; y < y1; y++ {
 			for x := x0; x < x1; x++ {
@@ -37,7 +37,7 @@ func drawIcon(size int) image.Image {
 		if c[1] == hi {
 			dy = -1
 		}
-		// Горизонтальная и вертикальная стороны уголка.
+		// The horizontal and vertical sides of a corner.
 		x0, x1 := c[0], c[0]+dx*arm
 		if dx < 0 {
 			x0, x1 = x1, c[0]
@@ -75,9 +75,9 @@ func toPixmap(img image.Image) pixmap {
 	return pixmap{W: int32(b.Dx()), H: int32(b.Dy()), Data: data}
 }
 
-// Framed рисует значок для Windows: белый видоискатель на синем скруглённом квадрате. Фон нужен,
-// чтобы значок читался и на тёмной, и на светлой панели задач. Его же берут для значка файла
-// scrawl.exe (scripts/genicon).
+// Framed draws the icon for Windows: a white viewfinder on a blue rounded square. The
+// background is needed so the icon is readable on both a dark and a light taskbar. It is
+// also used for the icon of the file scrawl.exe (scripts/genicon).
 func Framed(size int) *image.NRGBA {
 	img := image.NewNRGBA(image.Rect(0, 0, size, size))
 	bg := color.NRGBA{R: 0x25, G: 0x63, B: 0xEB, A: 0xFF}
@@ -93,7 +93,8 @@ func Framed(size int) *image.NRGBA {
 	return img
 }
 
-// insideRounded сообщает, лежит ли пиксель внутри квадрата n×n со скруглёнными углами радиуса rad.
+// insideRounded reports whether a pixel lies inside an n×n square with rounded corners of
+// radius rad.
 func insideRounded(x, y, n, rad int) bool {
 	cx, cy := x, y
 	switch {

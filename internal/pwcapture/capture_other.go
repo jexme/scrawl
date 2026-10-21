@@ -1,7 +1,7 @@
 //go:build !linux
 
-// Package pwcapture читает кадр из потока PipeWire (только Linux). На других
-// системах есть заглушка, чтобы остальные пакеты собирались.
+// Package pwcapture reads a frame from a PipeWire stream (Linux only). Other
+// systems get a stub so that the remaining packages still build.
 package pwcapture
 
 import (
@@ -12,10 +12,10 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// ErrTimeout означает, что кадр не пришёл за отведённое время.
+// ErrTimeout means the frame did not arrive within the allotted time.
 var ErrTimeout = errors.New("the PipeWire frame did not arrive in time")
 
-// Capture на этой системе недоступен.
+// Capture is unavailable on this system.
 func Capture(fd int, node uint32, timeout time.Duration) (*image.RGBA, error) {
 	return nil, errors.New(i18n.T("PipeWire is only available on Linux"))
 }

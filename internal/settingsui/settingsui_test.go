@@ -27,7 +27,7 @@ import (
 func testState(t *testing.T) *state {
 	t.Helper()
 	testenv.Config(t, t.TempDir())
-	testenv.Cache(t, t.TempDir()) // запомненная вкладка не должна браться из кэша пользователя
+	testenv.Cache(t, t.TempDir()) // the remembered tab must not be taken from the user's cache
 	return newState(settings.NewStore())
 }
 
@@ -45,7 +45,7 @@ func TestChoiceIsSavedToDisk(t *testing.T) {
 		t.Fatalf("по умолчанию двойной клик копирует, а в окне %q", s.choice.Value)
 	}
 	s.choice.Value = string(settings.DoubleClickCopySave)
-	s.layout(frameContext(700, 650)) // apply на кадре замечает смену выбора
+	s.layout(frameContext(700, 650)) // apply notices a changed choice within a frame
 	if got := settings.Load().DoubleClick; got != settings.DoubleClickCopySave {
 		t.Errorf("выбор не дошёл до файла: %q", got)
 	}
@@ -77,7 +77,7 @@ func TestInitialStateReflectsFile(t *testing.T) {
 	}
 }
 
-// TestRenderWindow рисует окно для просмотра глазами (SCRAWL_TEST_OUT).
+// TestRenderWindow draws the window for visual inspection (SCRAWL_TEST_OUT).
 func TestRenderWindow(t *testing.T) {
 	const W, H = 700, 3300
 	s := testState(t)
@@ -106,8 +106,8 @@ func TestRenderWindow(t *testing.T) {
 	}
 }
 
-// TestContentScrollsInSmallWindow: в низком окне содержимое не обрезается, а
-// прокручивается; в высоком влезает целиком.
+// TestContentScrollsInSmallWindow: in a short window the content is not clipped but
+// scrolls; in a tall one it fits entirely.
 func TestContentScrollsInSmallWindow(t *testing.T) {
 	small := testState(t)
 	small.layout(frameContext(820, 700))
@@ -174,7 +174,7 @@ func TestFilePrefixIsValidatedAndSaved(t *testing.T) {
 		t.Errorf("верный префикс должен сохраниться: ошибка=%q, файл=%q", s.prefixErr, settings.Load().FilePrefix)
 	}
 	s.prefix.SetText("typed")
-	s.layout(frameContext(700, 650)) // изменение текста в поле замечается на кадре
+	s.layout(frameContext(700, 650)) // a text change in the field is noticed within a frame
 	if got := settings.Load().FilePrefix; got != "typed" {
 		t.Errorf("текст из поля не дошёл до файла: %q", got)
 	}
@@ -198,7 +198,7 @@ func TestOpenOutputDirCreatesAndOpensFolder(t *testing.T) {
 		t.Errorf("папка должна быть создана: %v", err)
 	}
 
-	// Папка из настроек, ошибка запуска показывается в окне.
+	// The directory from the settings; a launch error is shown in the window.
 	custom := filepath.Join(home, "мои снимки")
 	s.store.Update(func(c *settings.Settings) { c.SaveDir = custom })
 	openFolder = func(dir string) error { opened = dir; return errors.New("нет xdg-open") }
@@ -217,15 +217,15 @@ func TestDimSliderSnapsAndSaves(t *testing.T) {
 	if got := s.dim.Value(); got != 33 {
 		t.Errorf("значение должно прижиматься к шагу: %v", got)
 	}
-	s.dim.f.Value = 0.5 // как если бы пользователь перетащил ползунок
+	s.dim.f.Value = 0.5 // as if the user had dragged the slider
 	s.layout(frameContext(700, 650))
 	if got := settings.Load().DimPercent; got != 50 {
 		t.Errorf("в файле %d, ожидали 50", got)
 	}
 }
 
-// Простое открытие окна ничего не пишет в файл: значения ползунков после
-// округления совпадают с сохранёнными (например, 4.6 не становится 4.6000004).
+// Merely opening the window writes nothing to the file: slider values after rounding
+// match the saved ones (for example, 4.6 does not become 4.6000004).
 func TestOpeningWindowDoesNotRewriteConfig(t *testing.T) {
 	s := testState(t)
 	s.layout(frameContext(700, 650))
@@ -313,7 +313,7 @@ func TestToolDefaultsAreSavedToDisk(t *testing.T) {
 		t.Errorf("стили инструментов не дошли до файла: %+v", got.Tools)
 	}
 
-	// Пустой цвет очищает настройку, неверный отклоняется и оставляет прошлое значение.
+	// An empty colour clears the setting; an invalid one is rejected and keeps the previous value.
 	arrow.ed.SetText("zzz")
 	s.layout(frameContext(700, 650))
 	if arrow.err == "" || settings.Load().Tools.Arrow.Color != "#1E88E5" {
@@ -336,14 +336,14 @@ func TestPaletteIsSavedToDisk(t *testing.T) {
 		t.Errorf("палитра: %v, ошибка %q", got, s.palErr)
 	}
 
-	// Неверный цвет: ошибка, файл не меняется.
+	// Invalid colour: an error, the file does not change.
 	s.palEd[1].SetText("oops")
 	s.layout(frameContext(700, 650))
 	if s.palErr == "" || settings.Load().Palette[1] != settings.DefaultPalette[1] || settings.Load().Palette[0] != "#FF0000" {
 		t.Errorf("неверный цвет должен отклоняться целиком: ошибка=%q, палитра %v", s.palErr, settings.Load().Palette)
 	}
 
-	// Кнопка «По умолчанию».
+	// The "Default" button.
 	s.palEd[1].SetText("")
 	s.palEd[0].SetText("00ff00")
 	s.layout(frameContext(700, 650))
@@ -450,7 +450,7 @@ func TestCursorCheckboxIsSavedToDisk(t *testing.T) {
 	}
 }
 
-// waitDone ждёт, пока фоновое действие закончится.
+// waitDone waits until the background action finishes.
 func waitDone(t *testing.T, tk *task) {
 	t.Helper()
 	deadline := time.Now().Add(3 * time.Second)
@@ -509,7 +509,7 @@ func TestMonitorsButtonReportsProgress(t *testing.T) {
 	if msg, _, running := s.monitors.status(); !running || !strings.HasPrefix(msg, "Диалог 1") {
 		t.Fatalf("пока диалоги идут, видна подсказка: %q, идёт=%v", msg, running)
 	}
-	// Повторное нажатие во время работы ничего не запускает.
+	// Pressing again while it is running starts nothing.
 	s.monitors.btn.Click()
 	s.layout(frameContext(700, 650))
 
@@ -542,7 +542,7 @@ func TestHotkeyButton(t *testing.T) {
 		t.Errorf("комбинация %q, бинарник %q, сообщение %q (ошибка %v)", gotAccel, gotBin, msg, failed)
 	}
 
-	// Неверная запись отклоняется до обращения к gsettings.
+	// An invalid entry is rejected before gsettings is called.
 	gotAccel = ""
 	s.hotkeyEd.SetText("Ctrl+S")
 	s.hotkey.btn.Click()
@@ -552,7 +552,7 @@ func TestHotkeyButton(t *testing.T) {
 		t.Errorf("неверная комбинация: %q (ошибка %v, вызов %q)", msg, failed, gotAccel)
 	}
 
-	// Конфликт с чужим ярлыком показывается в окне.
+	// A conflict with someone else's shortcut is shown in the window.
 	assignHotkey = func(string, string) (hotkey.Result, error) {
 		return hotkey.Result{}, &hotkey.Conflict{Name: "Handy", Accel: "Print"}
 	}
@@ -588,7 +588,7 @@ func TestKeyAssignment(t *testing.T) {
 		t.Errorf("F5 должна сохраниться: %q, ошибка %q", got, restore.err)
 	}
 
-	// Клавиша, занятая другим действием (A у «добавить в подборку»), отклоняется.
+	// A key taken by another action (A is "Add another") is rejected.
 	s.assignKey(restore, "A")
 	if restore.err == "" || !strings.Contains(restore.err, "Add to the collection") {
 		t.Errorf("ожидали сообщение о занятой клавише: %q", restore.err)
@@ -602,15 +602,15 @@ func TestKeyAssignment(t *testing.T) {
 		t.Error("неизвестный модификатор должен давать ошибку")
 	}
 
-	// Освободившаяся клавиша R доступна другому действию.
+	// A key that was freed (R) is available to another action.
 	add := keyRowFor(t, s, settings.ActionAdd)
 	s.assignKey(add, "R")
 	if got := settings.Load().Keys; got.Of(settings.ActionAdd) != "R" || got.Of(settings.ActionRestore) != "F5" {
 		t.Errorf("клавиши: %+v", got)
 	}
 
-	// Сброс возвращает умолчание.
-	s.assignKey(restore, "") // умолчание R занято действием «добавить»: сброс не проходит
+	// Reset restores the default.
+	s.assignKey(restore, "") // the default R is taken by the "Add another" action: the reset fails
 	if restore.err == "" || settings.Load().Keys.Of(settings.ActionRestore) != "F5" {
 		t.Errorf("сброс в занятую клавишу должен отклоняться: %q", restore.err)
 	}
@@ -620,7 +620,7 @@ func TestKeyAssignment(t *testing.T) {
 		t.Errorf("после сброса ожидали умолчания: %+v", got)
 	}
 
-	// Нажатие кнопки сброса из окна.
+	// Pressing the reset button in the window.
 	s.assignKey(restore, "F6")
 	restore.reset.Click()
 	s.layout(frameContext(700, 650))
@@ -643,7 +643,7 @@ func TestLanguageSwitchesImmediately(t *testing.T) {
 	if i18n.Language() != i18n.EN {
 		t.Fatalf("язык интерфейса не переключился: %q", i18n.Language())
 	}
-	// Окно строится заново на каждом кадре, поэтому тексты уже английские.
+	// The window is rebuilt on every frame, so the texts are already English.
 	if got := i18n.T("Close"); got != "Close" {
 		t.Errorf("перевод: %q", got)
 	}
@@ -654,7 +654,8 @@ func TestLanguageSwitchesImmediately(t *testing.T) {
 	}
 }
 
-// Ни один экран окна настроек не должен падать на исходном английском и на русском, а ключевые тексты переведены.
+// No screen of the settings window may fail in the original English or in Russian, and
+// the key texts are translated.
 func TestRenderEnglishWindow(t *testing.T) {
 	defer i18n.SetLanguage(i18n.EN)
 	i18n.SetLanguage(i18n.EN)
@@ -669,7 +670,7 @@ func TestRenderEnglishWindow(t *testing.T) {
 	}
 }
 
-// TestRenderEnglishPicture рисует окно на английском для просмотра (SCRAWL_TEST_OUT).
+// TestRenderEnglishPicture draws the window in English for visual inspection (SCRAWL_TEST_OUT).
 func TestRenderEnglishPicture(t *testing.T) {
 	path := os.Getenv("SCRAWL_TEST_OUT")
 	if path == "" {
@@ -721,7 +722,7 @@ func TestAutostartCheckbox(t *testing.T) {
 		t.Errorf("выключение: файл %v, ошибка %q", enabled, s.autoErr)
 	}
 
-	// Ошибка записи: галочка возвращается в состояние файла, причина видна в окне.
+	// Write error: the checkbox returns to the file's state, the reason is visible in the window.
 	autostartEnable = func(string) error { return errors.New("диск только для чтения") }
 	s.autostart.Value = true
 	s.layout(frameContext(700, 650))
@@ -743,7 +744,7 @@ func TestUpdateButtonAndSwitch(t *testing.T) {
 		calls++
 		return update.Result{Latest: "v9.9.9", URL: "https://example/r", Newer: true, Comparable: true}, nil
 	}
-	// Кнопка работает при выключенной проверке.
+	// The button works while the check is turned off.
 	s.update.btn.Click()
 	s.layout(frameContext(700, 650))
 	waitDone(t, &s.update)
@@ -766,8 +767,8 @@ func TestUpdateButtonAndSwitch(t *testing.T) {
 	}
 }
 
-// TestDocSettingsImages рисует окно настроек на двух языках для README
-// (папка в переменной SCRAWL_DOC_IMAGES).
+// TestDocSettingsImages draws the settings window in two languages for the README
+// (the directory is in the SCRAWL_DOC_IMAGES variable).
 func TestDocSettingsImages(t *testing.T) {
 	dir := os.Getenv("SCRAWL_DOC_IMAGES")
 	if dir == "" {
@@ -777,10 +778,10 @@ func TestDocSettingsImages(t *testing.T) {
 	const W, H = 820, 640
 	for lang, name := range map[string]string{i18n.RU: "settings-ru.png", i18n.EN: "settings-en.png"} {
 		i18n.SetLanguage(lang)
-		testenv.Config(t, "/home/you/.config") // красивый путь в подписи; файл не создаётся
+		testenv.Config(t, "/home/you/.config") // a pretty path in the label; the file is not created
 		testenv.Cache(t, t.TempDir())
 		s := newState(settings.NewStore())
-		s.selectTab(1) // «Инструменты»: на ней больше всего видно
+		s.selectTab(1) // the "Tools" tab: the most is visible on it
 		win, err := headless.NewWindow(W, H)
 		if err != nil {
 			t.Skipf("headless рендер недоступен: %v", err)
@@ -817,9 +818,9 @@ func TestCaptureRowsDependOnSession(t *testing.T) {
 	if wayland != 3 || x11 != 2 {
 		t.Errorf("строк захвата: Wayland %d (ожидали 3), X11 %d (ожидали 2: без кнопок портала)", wayland, x11)
 	}
-	s.layout(frameContext(700, 3300)) // окно в сеансе X11 рисуется без ошибок
+	s.layout(frameContext(700, 3300)) // the window is drawn in an X11 session without errors
 
-	// Windows: ни портала, ни GNOME, остаётся одна строка с горячей клавишей.
+	// Windows: no portal and no GNOME, only a single hotkey line remains.
 	onWindows = true
 	if n := len(s.captureRows()); n != 1 {
 		t.Errorf("строк захвата в Windows %d, ожидали 1", n)
@@ -841,7 +842,7 @@ func TestTabs(t *testing.T) {
 		seen[tb.label] = true
 	}
 
-	// Каждая вкладка рисуется без ошибок, при любой ширине окна и на обоих языках.
+	// Every tab is drawn without errors, at any window width and in both languages.
 	defer i18n.SetLanguage(i18n.EN)
 	for _, l := range i18n.Languages {
 		lang := l.Code
@@ -854,27 +855,27 @@ func TestTabs(t *testing.T) {
 		}
 	}
 
-	// Переключение вкладки возвращает прокрутку наверх.
+	// Switching tabs scrolls back to the top.
 	s.selectTab(0)
 	s.list.Position.First = 4
 	s.selectTab(1)
 	if s.list.Position.First != 0 || s.tab != 1 {
 		t.Errorf("после переключения: вкладка %d, прокрутка с %d", s.tab, s.list.Position.First)
 	}
-	s.selectTab(99) // за пределами списка: вкладка подрезается при рисовании
+	s.selectTab(99) // outside the list: the tab is clipped when drawn
 	s.layout(frameContext(820, 700))
 	if s.tab != len(tabs)-1 {
 		t.Errorf("несуществующая вкладка должна сжаться до последней: %d", s.tab)
 	}
 
-	// Нажатие на кнопку вкладки её выбирает.
+	// Clicking a tab button selects it.
 	s.tabBtns[2].Click()
 	s.layout(frameContext(820, 700))
 	if s.tab != 2 {
 		t.Errorf("клик по вкладке: выбрана %d", s.tab)
 	}
-	// Содержимое меняется в том же кадре, где пришёл клик: следующего кадра может
-	// не быть до нового события, и клик казался бы запоздавшим.
+	// The content changes in the same frame in which the click arrived: there may be no next
+	// frame until a new event, and the click would seem late.
 	s.tabBtns[5].Click()
 	s.layout(frameContext(820, 700))
 	if s.shownTab != 5 {
@@ -882,10 +883,10 @@ func TestTabs(t *testing.T) {
 	}
 }
 
-// Ряд вкладок помещается в окно минимальной ширины на обоих языках.
+// The row of tabs fits in a window of minimum width in both languages.
 func TestTabBarFitsMinimumWidth(t *testing.T) {
 	defer i18n.SetLanguage(i18n.EN)
-	const minWindowDp, padding = 700, 44 // MinSize окна и отступы по 22 с каждой стороны
+	const minWindowDp, padding = 700, 44 // the window's MinSize and 22 px padding on each side
 	for _, l := range i18n.Languages {
 		lang := l.Code
 		i18n.SetLanguage(lang)
@@ -915,7 +916,7 @@ func TestEveryLanguageCanBeChosen(t *testing.T) {
 			t.Errorf("язык %s: действует %q", l.Code, i18n.Language())
 		}
 	}
-	// «Как в системе» возвращает автоопределение.
+	// "Same as the system" restores autodetection.
 	t.Setenv("LC_ALL", "de_DE.UTF-8")
 	s.lang.Value = i18n.Auto
 	s.layout(frameContext(820, 700))
@@ -929,12 +930,12 @@ func TestLastTabIsRemembered(t *testing.T) {
 	if s.tab != 0 {
 		t.Fatalf("в чистом кэше окно открывается на первой вкладке: %d", s.tab)
 	}
-	s.selectTab(6) // «Система»
+	s.selectTab(6) // "System"
 	again := newState(settings.NewStore())
 	if again.tab != 6 || again.tabs()[again.tab].id != "system" {
 		t.Errorf("после перезапуска ожидали вкладку «system», открыта %d", again.tab)
 	}
-	// Неизвестное имя в файле не ломает окно.
+	// An unknown name in the file does not break the window.
 	saveTab("такой вкладки нет")
 	if got := newState(settings.NewStore()).tab; got != 0 {
 		t.Errorf("неизвестная вкладка: %d", got)
@@ -961,7 +962,7 @@ func TestFontHintShownOnlyWhenFontIsMissing(t *testing.T) {
 	}
 }
 
-// tmpX: абсолютный путь на любой платформе (на Windows нужна буква диска).
+// tmpX: an absolute path on any platform (Windows needs a drive letter).
 var tmpX = func() string {
 	if runtime.GOOS == "windows" {
 		return "C:/tmp/x"

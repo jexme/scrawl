@@ -9,11 +9,11 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// held держит дескрипторы мьютексов до конца процесса: пока дескриптор открыт, второй
-// экземпляр видит имя занятым.
+// held keeps the mutex handles until the process ends: while a handle is open, a second
+// instance sees the name as taken.
 var held []windows.Handle
 
-// Acquire занимает именованный мьютекс сеанса. false: такой экземпляр уже запущен.
+// Acquire takes the session's named mutex. false: such an instance is already running.
 func Acquire(name string) (bool, error) {
 	n, err := windows.UTF16PtrFromString(`Local\scrawl-` + strings.ReplaceAll(name, `\`, "_"))
 	if err != nil {

@@ -1,6 +1,6 @@
 //go:build linux
 
-// Package singleton не даёт запустить второй экземпляр программы.
+// Package singleton prevents a second instance of the program from starting.
 package singleton
 
 import (
@@ -9,13 +9,13 @@ import (
 	"syscall"
 )
 
-// held хранит открытые файлы блокировок: если потерять ссылку, сборщик мусора
-// закроет файл и блокировка снимется.
+// held keeps the open lock files: if the reference is lost, the garbage collector
+// will close the file and the lock will be released.
 var held []*os.File
 
-// Acquire берёт эксклюзивную блокировку файла в XDG_RUNTIME_DIR. Возвращает
-// false, если другой экземпляр уже работает. Блокировка снимается сама, когда
-// процесс завершается, даже аварийно, поэтому «застрявших» блокировок не бывает.
+// Acquire takes an exclusive file lock in XDG_RUNTIME_DIR. It returns
+// false if another instance is already running. The lock is released automatically when the
+// process exits, even abnormally, so there are no "stuck" locks.
 func Acquire(name string) (bool, error) {
 	dir := os.Getenv("XDG_RUNTIME_DIR")
 	if dir == "" {

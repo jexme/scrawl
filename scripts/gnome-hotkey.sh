@@ -1,13 +1,13 @@
 #!/bin/sh
-# Назначает горячую клавишу GNOME на scrawl (настройка пользовательских
-# комбинаций через gsettings). Использование:
-#   scripts/gnome-hotkey.sh [КОМБИНАЦИЯ] [ПУТЬ_К_БИНАРНИКУ] [--dry-run] [--auto]
-# По умолчанию: Print и ~/.local/bin/scrawl. Если комбинация уже занята
-# другим пользовательским ярлыком, скрипт ничего не меняет и говорит, кем занята.
+# Assigns a GNOME hotkey to scrawl (custom shortcuts configured via gsettings). Usage:
+#   scripts/gnome-hotkey.sh [COMBINATION] [PATH_TO_BINARY] [--dry-run] [--auto]
+# Default: Print and ~/.local/bin/scrawl. If the combination is already taken by
+# another custom shortcut, the script changes nothing and says who holds it.
 #
-# С --auto скрипт ничего не печатает, а итог сообщает кодом выхода (для install.sh):
-#   0 назначено, 10 ярлык scrawl уже есть, 11 не GNOME или нет gsettings,
-#   12 комбинация занята чужим ярлыком, 13 не удалось записать настройки.
+# With --auto the script prints nothing and reports the outcome through its exit code
+# (for install.sh):
+#   0 assigned, 10 a scrawl shortcut already exists, 11 not GNOME or no gsettings,
+#   12 the combination is taken by a foreign shortcut, 13 could not write the settings.
 set -eu
 
 accel="Print"
@@ -37,7 +37,7 @@ if [ "$auto" = 1 ]; then
 fi
 list=$(gsettings get "$schema" custom-keybindings)
 
-# Занята ли комбинация другим пользовательским ярлыком.
+# Whether the combination is taken by another custom shortcut.
 for path in $(echo "$list" | tr -d "[]'," ); do
 	cur=$(gsettings get "$schema.custom-keybinding:$path" binding)
 	if [ "$cur" = "'$accel'" ]; then
@@ -51,7 +51,7 @@ for path in $(echo "$list" | tr -d "[]'," ); do
 	fi
 done
 
-# Первый свободный номер ярлыка.
+# The first free shortcut number.
 n=0
 while echo "$list" | grep -q "custom-keybindings/custom$n/"; do n=$((n + 1)); done
 path="$base/custom$n/"

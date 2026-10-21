@@ -19,20 +19,20 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// withKey дописывает к подписи кнопки клавишу действия из настроек.
+// withKey appends the action's key from the settings to the button label.
 func (m *monitor) withKey(label, action string) string {
 	return label + "  ·  " + m.store.Get().Keys.Of(action)
 }
 
-// dock — плавающая панель внизу по центру: подборка («было/стало») и возврат
-// прошлой области. Не перекрывает выделение и панель инструментов: если место
-// занято, переезжает наверх.
+// dock is a floating panel at the bottom centre: the collection ("before/after") and
+// restoring the previous area. It does not cover the selection or the toolbar: if the
+// place is taken, it moves to the top.
 type dock struct {
 	add, glue, separate, clear widget.Clickable
 	restore                    widget.Clickable
 }
 
-// applyLast возвращает область предыдущего скриншота.
+// applyLast restores the area of the previous screenshot.
 func (m *monitor) applyLast() {
 	if !m.hasLast || m.hasSel {
 		return
@@ -43,7 +43,7 @@ func (m *monitor) applyLast() {
 	m.useDefaultTool()
 }
 
-// label рендерит текст и возвращает макрос с его размером.
+// label renders text and returns a macro with its size.
 func (m *monitor) label(gtx layout.Context, txt string, sp float32, col color.NRGBA) (op.CallOp, image.Point) {
 	rec := op.Record(gtx.Ops)
 	paint.ColorOp{Color: col}.Add(gtx.Ops)
@@ -55,7 +55,7 @@ func (m *monitor) label(gtx layout.Context, txt string, sp float32, col color.NR
 	return rec.Stop(), dims.Size
 }
 
-// layoutDock выбирает, что показать: подборку или возврат прошлой области.
+// layoutDock chooses what to show: the collection or the restore-previous-area button.
 func (m *monitor) layoutDock(gtx layout.Context, win image.Point) {
 	if m.dragging || m.editing {
 		return
@@ -68,8 +68,8 @@ func (m *monitor) layoutDock(gtx layout.Context, win image.Point) {
 	}
 }
 
-// placeDock ставит панель размера w×h по центру: внизу, а если там выделение
-// или панель инструментов, то наверху.
+// placeDock places a panel of size w×h at the centre: at the bottom, or at the top if the
+// selection or the toolbar is there.
 func (m *monitor) placeDock(gtx layout.Context, win image.Point, w, h int) image.Point {
 	x := (win.X - w) / 2
 	bottom := image.Pt(x, win.Y-h-gtx.Dp(40))
@@ -91,11 +91,11 @@ func (m *monitor) placeDock(gtx layout.Context, win image.Point, w, h int) image
 	return bottom
 }
 
-// layoutRestoreDock рисует кнопку «Восстановить прошлую область».
+// layoutRestoreDock draws the "Restore the previous area" button.
 func (m *monitor) layoutRestoreDock(gtx layout.Context, win image.Point) {
 	if m.dock.restore.Clicked(gtx) {
 		m.applyLast()
-		gtx.Execute(op.InvalidateCmd{}) // панель уже не нужна: следующий кадр без неё не ждёт движения мыши
+		gtx.Execute(op.InvalidateCmd{}) // the panel is no longer needed: the next frame without it does not wait for mouse movement
 		return
 	}
 	txt, size := m.label(gtx, m.withKey(i18n.T("Restore the previous area"), settings.ActionRestore), 15, iconColor)
@@ -113,7 +113,7 @@ func (m *monitor) layoutRestoreDock(gtx layout.Context, win image.Point) {
 		if m.dock.restore.Hovered() {
 			paint.FillShape(g.Ops, accent, clip.Stroke{Path: pill.Path(g.Ops), Width: 2}.Op())
 		}
-		// Иконка рисуется на iconShare от квадрата: берём квадрат больше и сдвигаем.
+		// The icon is drawn at iconShare of the square: take a bigger square and shift it.
 		big := int(float32(icon) / iconShare)
 		shift := (big - icon) / 2
 		st := op.Offset(image.Pt(padX-shift, (h-icon)/2-shift)).Push(g.Ops)
@@ -136,7 +136,7 @@ type dockItem struct {
 	do      func()
 }
 
-// collectItems собирает доступные действия подборки.
+// collectItems gathers the available collection actions.
 func (m *monitor) collectItems() []dockItem {
 	var items []dockItem
 	total := m.queued + boolInt(m.hasSel)
@@ -162,13 +162,13 @@ func (m *monitor) collectItems() []dockItem {
 	return items
 }
 
-// layoutCollectDock рисует панель подборки: счётчик и действия.
+// layoutCollectDock draws the collection panel: the counter and the actions.
 func (m *monitor) layoutCollectDock(gtx layout.Context, win image.Point) {
 	items := m.collectItems()
 	for _, it := range items {
 		if it.btn.Clicked(gtx) {
 			it.do()
-			gtx.Execute(op.InvalidateCmd{}) // этот кадр пропущен, панель с новым состоянием рисуем сразу следом
+			gtx.Execute(op.InvalidateCmd{}) // this frame is skipped, the panel with the new state is drawn right after
 			return
 		}
 	}

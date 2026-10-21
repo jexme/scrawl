@@ -65,7 +65,7 @@ func TestLoupeActive(t *testing.T) {
 		}
 	}
 
-	// Выключенная в настройках лупа не показывается ни в одном режиме.
+	// A magnifier turned off in the settings is not shown in any mode.
 	m := newM()
 	if err := m.store.Update(func(c *settings.Settings) { c.ShowLoupe = false }); err != nil {
 		t.Fatal(err)
@@ -104,7 +104,7 @@ func TestLoupePlacement(t *testing.T) {
 		name string
 		cur  image.Point
 		dir  image.Point
-		want image.Point // левый верхний угол
+		want image.Point // top-left corner
 	}{
 		{"справа снизу от курсора", image.Pt(100, 100), image.Pt(1, 1), image.Pt(130, 130)},
 		{"слева сверху от курсора", image.Pt(500, 400), image.Pt(-1, -1), image.Pt(500-gap-side, 400-gap-side)},
@@ -122,15 +122,16 @@ func TestLoupePlacement(t *testing.T) {
 			t.Errorf("%s: лупа %v вышла за окно", tc.name, r)
 		}
 	}
-	// Окно меньше лупы: прижимаем к нулю, а не уходим в минус.
+	// The window is smaller than the magnifier: clamp to zero rather than going negative.
 	if r := loupePlacement(image.Pt(5, 5), side, gap, image.Pt(100, 100), image.Pt(1, 1)); r.Min != (image.Point{}) {
 		t.Errorf("в маленьком окне: %v", r)
 	}
 }
 
-// TestRenderLoupe рисует лупу над кадром в виде шахматки 1×1 px: и для готовой рамки, и для
-// первого выделения. Проверяет, что пиксели увеличены без сглаживания, фокус стоит в центре,
-// а лупа не закрывает выделение. С SCRAWL_TEST_OUT=путь.png результаты сохраняются.
+// TestRenderLoupe draws the magnifier over the frame as a 1×1 px checkerboard: both for a
+// finished frame and for the first selection. It checks that pixels are magnified without
+// smoothing, the focus is at the center, and the magnifier does not cover the selection.
+// With SCRAWL_TEST_OUT=path.png the results are saved.
 func TestRenderLoupe(t *testing.T) {
 	testenv.Config(t, t.TempDir())
 	const W, H = 700, 500
@@ -185,16 +186,16 @@ func TestRenderLoupe(t *testing.T) {
 			side := int(loupeCells * loupeZoom)
 			start := m.selStart
 			if m.loupeAiming() {
-				start = m.hover // целятся: области ещё нет, лупа справа снизу
+				start = m.hover // aiming: there is no area yet, the magnifier is at the bottom right
 			}
 			dir := loupeDir(m.adjEdge, m.dragging || m.loupeAiming(), start, m.hover)
 			box := loupePlacement(image.Pt(int(m.hover.X), int(m.hover.Y)), side, gtx.Dp(28), image.Pt(W, H), dir)
 			if box.Overlaps(m.sel) {
 				t.Errorf("лупа %v закрывает выделение %v", box, m.sel)
 			}
-			// Границы ячеек лежат на кратных loupeZoom от левого верхнего угла лупы: пробы внутри
-			// соседних ячеек, вдали от рамки, различаются, а внутри одной ячейки совпадают
-			// (при сглаживании на границе были бы промежуточные цвета).
+			// Cell boundaries lie at multiples of loupeZoom from the magnifier's top-left corner:
+			// probes inside neighboring cells, away from the border, differ, while inside one cell
+			// they match (with smoothing there would be intermediate colors at the boundary).
 			z := int(loupeZoom)
 			a := out.RGBAAt(box.Min.X+z+z/2, box.Min.Y+z+z/2)
 			b := out.RGBAAt(box.Min.X+z+z/2+z, box.Min.Y+z+z/2)
@@ -204,11 +205,11 @@ func TestRenderLoupe(t *testing.T) {
 			if a2 := out.RGBAAt(box.Min.X+z+z/2+1, box.Min.Y+z+z/2+1); a2 != a {
 				t.Errorf("пиксель кадра в лупе не залит ровно: %v и %v", a, a2)
 			}
-			// Кадр вне лупы не тронут.
+			// The frame outside the magnifier is untouched.
 			if got, want := out.RGBAAt(5, 5), src.RGBAAt(5, 5); got != want {
 				t.Errorf("вне лупы пиксель изменился: %v, было %v", got, want)
 			}
-			// Крестик в центре лупы красный.
+			// The crosshair at the center of the magnifier is red.
 			cx, cy := box.Min.X+box.Dx()/2, box.Min.Y+box.Dy()/2
 			if c := out.RGBAAt(cx+4, cy); c.R < 150 || c.G > 120 {
 				t.Errorf("крестик в центре лупы не найден: %v", c)
@@ -227,9 +228,10 @@ func TestRenderLoupe(t *testing.T) {
 	}
 }
 
-// Курсор ушёл на оверлей другого монитора: окно получает pointer.Cancel (Windows) или
-// pointer.Leave (Wayland, X11) и обязано погасить лупу. Раньше Cancel отбрасывался фильтром,
-// и на покинутом мониторе лупа оставалась рядом с последней позицией курсора.
+// The cursor moved to another monitor's overlay: the window receives pointer.Cancel
+// (Windows) or pointer.Leave (Wayland, X11) and must hide the magnifier. Previously Cancel
+// was dropped by the filter, and on the monitor that was left the magnifier stayed near
+// the last cursor position.
 func TestLoupeHidesWhenPointerLeavesWindow(t *testing.T) {
 	testenv.Config(t, t.TempDir())
 	const W, H = 800, 600

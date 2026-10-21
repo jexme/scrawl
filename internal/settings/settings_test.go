@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-// abs даёт путь, абсолютный на любой платформе: на Windows нужна буква диска.
+// abs gives a path that is absolute on any platform: Windows needs a drive letter.
 func abs(p string) string {
 	if runtime.GOOS == "windows" {
 		return "C:" + p
@@ -43,7 +43,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	if got := Load(); got != want {
 		t.Errorf("после записи получили %+v, ожидали %+v", got, want)
 	}
-	// Временные файлы не остаются.
+	// No temporary files are left.
 	left, _ := filepath.Glob(filepath.Join(filepath.Dir(Path()), "*.tmp"))
 	if len(left) != 0 {
 		t.Errorf("остались временные файлы: %v", left)
@@ -54,12 +54,12 @@ func TestInvalidValuesFallBack(t *testing.T) {
 	sandbox(t)
 	os.MkdirAll(filepath.Dir(Path()), 0o755)
 
-	// Неверное значение заменяется, остальное сохраняется.
+	// An invalid value is replaced, the rest is kept.
 	os.WriteFile(Path(), []byte(`{"double_click":"explode","save_dir":"`+xDir+`"}`), 0o644)
 	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != xDir {
 		t.Errorf("неверный double_click должен стать off, остальное остаться: %+v", got)
 	}
-	// Битый JSON: всё по умолчанию.
+	// Broken JSON: everything is default.
 	os.WriteFile(Path(), []byte(`{oops`), 0o644)
 	if got := Load(); got != Default() {
 		t.Errorf("битый файл должен дать настройки по умолчанию: %+v", got)
@@ -87,7 +87,7 @@ func TestEachKeyIsReadIndependently(t *testing.T) {
 	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != xDir {
 		t.Errorf("отсутствующий ключ должен получить значение по умолчанию: %+v", got)
 	}
-	// Неверный тип одного ключа не отбрасывает остальные.
+	// An invalid type of one key does not discard the others.
 	writeConfig(t, `{"double_click":5,"save_dir":"`+xDir+`"}`)
 	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != xDir {
 		t.Errorf("число вместо строки: ожидали copy и /x, получили %+v", got)
@@ -96,12 +96,12 @@ func TestEachKeyIsReadIndependently(t *testing.T) {
 	if got := Load(); got.DoubleClick != DoubleClickCopySave || got.SaveDir != "" {
 		t.Errorf("массив вместо строки: ожидали copy_save и пустую папку, получили %+v", got)
 	}
-	// Относительный путь отклоняется так же, как в окне настроек.
+	// A relative path is rejected the same way as in the settings window.
 	writeConfig(t, `{"double_click":"copy","save_dir":"relative/dir"}`)
 	if got := Load(); got.DoubleClick != DoubleClickCopy || got.SaveDir != "" {
 		t.Errorf("относительная папка должна сброситься: %+v", got)
 	}
-	// Не объект: всё по умолчанию.
+	// Not an object: everything is default.
 	for _, body := range []string{`[]`, `null`, `"text"`, ``} {
 		writeConfig(t, body)
 		if got := Load(); got != Default() {
@@ -272,7 +272,7 @@ func TestFilePrefix(t *testing.T) {
 			t.Errorf("%q должен быть отклонён", bad)
 		}
 	}
-	// Неверный префикс в файле сбрасывается, остальное читается.
+	// An invalid prefix in the file is reset, the rest is read.
 	writeConfig(t, `{"file_prefix":"a/b","save_dir":"`+xDir+`"}`)
 	if got := Load(); got.FilePrefix != "" || got.SaveDir != xDir {
 		t.Errorf("неверный префикс должен сброситься: %+v", got)
@@ -290,7 +290,7 @@ func TestDimPercentClamped(t *testing.T) {
 		`{"dim_percent":150}`:  100,
 		`{"dim_percent":-5}`:   0,
 		`{"dim_percent":"x"}`:  86,
-		`{"dim_percent":12.5}`: 86, // не целое: значение по умолчанию
+		`{"dim_percent":12.5}`: 86, // not an integer: the default value
 	} {
 		writeConfig(t, body)
 		if got := Load().DimPercent; got != want {
@@ -347,7 +347,7 @@ func TestHandleRadius(t *testing.T) {
 		t.Errorf("радиус ручек по умолчанию 3, а не %v", got)
 	}
 	for body, want := range map[string]float64{
-		`{"handle_radius":0}`:   0, // ручки спрятаны
+		`{"handle_radius":0}`:   0, // handles are hidden
 		`{"handle_radius":6.5}`: 6.5,
 		`{"handle_radius":100}`: MaxHandleRadius,
 		`{"handle_radius":-1}`:  0,
@@ -389,7 +389,7 @@ func TestToolDefaults(t *testing.T) {
 		t.Errorf("по умолчанию выбор области и пустые стили: %+v", got)
 	}
 
-	// Неверное значение одного поля не портит соседние, в том числе вложенные.
+	// An invalid value of one field does not spoil its neighbours, including nested ones.
 	writeConfig(t, `{"default_tool":"pen","tools":{
 		"pen":{"color":"e53935","width":"толстая"},
 		"arrow":{"color":"red","width":99},
@@ -443,7 +443,7 @@ func TestPalette(t *testing.T) {
 	if got[0] != "#FF0000" || got[1] != DefaultPalette[1] || got[2] != DefaultPalette[2] || got[3] != "#00FF00" || got[7] != DefaultPalette[7] {
 		t.Errorf("пустые и неверные цвета заменяются, остальные нормализуются: %v", got)
 	}
-	// Палитра не того типа: целиком по умолчанию, соседние ключи целы.
+	// A palette of the wrong type: entirely default, neighbouring keys intact.
 	writeConfig(t, `{"palette":"red","dim_percent":30}`)
 	if got := Load(); got.Palette != DefaultPalette || got.DimPercent != 30 {
 		t.Errorf("неверный тип палитры: %+v", got)
@@ -493,7 +493,7 @@ func TestGlueLabels(t *testing.T) {
 		t.Errorf("своё слово для четырёх: %v", got)
 	}
 
-	// Неверное значение одной подписи сбрасывает только её.
+	// An invalid value of one caption resets only that caption.
 	writeConfig(t, `{"glue":{"before":"a\nb","after":"После","step":5}}`)
 	g = Load().Glue
 	if got := g.Labels(2); got[0] != "Before" || got[1] != "После" {
@@ -602,7 +602,7 @@ func TestLegacyConfigIsReadAndKept(t *testing.T) {
 	const old = `{"double_click":"copy","dim_percent":40,"future":"x"}`
 	writeLegacy(t, old)
 
-	// Нового файла нет: настройки берутся из старого, но ничего не пишется.
+	// There is no new file: settings are taken from the old one, but nothing is written.
 	if got := Load(); got.DoubleClick != DoubleClickCopy || got.DimPercent != 40 {
 		t.Errorf("настройки прежней программы должны подхватиться: %+v", got)
 	}
@@ -610,7 +610,7 @@ func TestLegacyConfigIsReadAndKept(t *testing.T) {
 		t.Error("чтение не должно создавать новый файл")
 	}
 
-	// Первое изменение создаёт новый файл с прежними значениями и чужими ключами.
+	// The first change creates a new file with the previous values and the foreign keys.
 	st := NewStore()
 	if err := st.Update(func(s *Settings) { s.DimPercent = 55 }); err != nil {
 		t.Fatal(err)
@@ -626,13 +626,13 @@ func TestLegacyConfigIsReadAndKept(t *testing.T) {
 		t.Error("старый файл не копируется в .bak")
 	}
 
-	// Дальше действует только новый файл.
+	// From then on only the new file is in effect.
 	writeLegacy(t, `{"dim_percent":10}`)
 	if got := Load().DimPercent; got != 55 {
 		t.Errorf("новый файл главнее старого: %d", got)
 	}
 
-	// Повреждённый старый файл даёт значения по умолчанию.
+	// A damaged old file gives the default values.
 	sandbox(t)
 	writeLegacy(t, `{oops`)
 	if got := Load(); got != Default() {
@@ -669,7 +669,7 @@ func TestKeys(t *testing.T) {
 		t.Error("клавиши по умолчанию не должны конфликтовать")
 	}
 
-	// Свои клавиши читаются в каноническом виде; значения по умолчанию хранятся пустыми.
+	// Custom keys are read in canonical form; default values are stored empty.
 	writeConfig(t, `{"keys":{"restore":"f5","add":"ctrl+shift+a","undo":"Ctrl+Z","glue":"nonsense","send":5}}`)
 	k = Load().Keys
 	if k.Of(ActionRestore) != "F5" || k.Of(ActionAdd) != "Ctrl+Shift+A" {
@@ -679,13 +679,13 @@ func TestKeys(t *testing.T) {
 		t.Errorf("неверные и умолчательные клавиши: %+v", k)
 	}
 
-	// Две одинаковые клавиши: всё возвращается к умолчаниям.
+	// Two identical keys: everything returns to the defaults.
 	writeConfig(t, `{"keys":{"restore":"X","add":"x","glue":"F2"}}`)
 	k = Load().Keys
 	if k != (Keys{}) {
 		t.Errorf("при конфликте ожидали умолчания: %+v", k)
 	}
-	// Клавиша действия совпала с умолчанием другого: тоже конфликт.
+	// An action key coincides with another action's default: a conflict as well.
 	writeConfig(t, `{"keys":{"restore":"A"}}`)
 	if k := Load().Keys; k != (Keys{}) {
 		t.Errorf("R -> A конфликтует с добавлением в подборку: %+v", k)
@@ -702,7 +702,7 @@ func TestKeys(t *testing.T) {
 	}
 }
 
-// У каждого инструмента есть клавиша, и ключ в файле называется «tool_» + имя инструмента.
+// Every tool has a key, and the key in the file is named "tool_" + the tool name.
 func TestToolKeys(t *testing.T) {
 	sandbox(t)
 	for _, name := range ToolNames {
@@ -716,7 +716,7 @@ func TestToolKeys(t *testing.T) {
 	if k.Of(ActionToolPen) != "Q" || k.Of(ActionToolText) != "Ctrl+T" || k.Of(ActionToolLine) != "L" {
 		t.Errorf("свои клавиши инструментов: %+v", k)
 	}
-	// Клавиша инструмента совпала с умолчанием действия: конфликт, всё по умолчанию.
+	// A tool key coincides with an action's default: a conflict, everything is default.
 	writeConfig(t, `{"keys":{"tool_pen":"A"}}`)
 	if k := Load().Keys; k != (Keys{}) {
 		t.Errorf("P -> A конфликтует с добавлением в подборку: %+v", k)
@@ -755,7 +755,8 @@ func TestLanguageSetting(t *testing.T) {
 	}
 }
 
-// У размытия «толщина» это уровень 1-6: большее значение из файла подрезается до последнего уровня.
+// For blur, "thickness" is the level 1-6: a larger value from the file is clamped to the
+// last level.
 func TestBlurWidthIsLevel(t *testing.T) {
 	sandbox(t)
 	writeConfig(t, `{"tools":{"blur":{"width":30},"arrow":{"width":30},"text":{"width":3}}}`)

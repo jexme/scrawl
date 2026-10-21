@@ -47,12 +47,12 @@ func TestApplyResize(t *testing.T) {
 	if want := image.Rect(100, 100, 400, 350); got != want {
 		t.Errorf("правый нижний угол: %v, ожидали %v", got, want)
 	}
-	// Нельзя вывернуть рамку: левая сторона упирается в правую минус минимум.
+	// The frame cannot be turned inside out: the left side stops at the right minus the minimum.
 	got = applyResize(start, edge{-1, 0}, f32.Pt(500, 150), bounds)
 	if got.Dx() != minSelection || got.Max.X != 300 {
 		t.Errorf("левая сторона за правую: %v", got)
 	}
-	// Выход за кадр обрезается.
+	// Going outside the frame is clipped.
 	got = applyResize(start, edge{1, 1}, f32.Pt(5000, 5000), bounds)
 	if got.Max != bounds.Max {
 		t.Errorf("за границей кадра: %v", got)
@@ -83,7 +83,7 @@ func TestLastRegionRoundTrip(t *testing.T) {
 		t.Fatalf("после сохранения: %v/%v, ожидали %v", got, ok, want)
 	}
 
-	// Другой монитор или другой размер кадра: область не подходит.
+	// Another monitor or another frame size: the area does not fit.
 	other := &screencast.Frame{X: 0, Y: 0, Img: image.NewRGBA(image.Rect(0, 0, 2560, 1440))}
 	if _, ok := loadLastRegion(other); ok {
 		t.Error("область чужого монитора не должна загружаться")
@@ -94,8 +94,8 @@ func TestLastRegionRoundTrip(t *testing.T) {
 	}
 }
 
-// TestRememberRegionSetting: с выключенной настройкой область не запоминается,
-// не подхватывается, а старая запись стирается.
+// TestRememberRegionSetting: with the setting off, the area is not remembered or
+// picked up, and the old record is erased.
 func TestRememberRegionSetting(t *testing.T) {
 	sandbox(t)
 	m, _ := newTestMonitor(t)
@@ -114,7 +114,7 @@ func TestRememberRegionSetting(t *testing.T) {
 		t.Error("при выключенной настройке старая область должна стираться")
 	}
 
-	// Запись, оставшаяся от прошлых запусков, при новом старте не подхватывается.
+	// A record left over from earlier runs is not picked up on a new start.
 	saveLastRegion(m.frame, m.sel)
 	again := newMonitor(Config{}, m.frame, func() {})
 	if again.hasLast {

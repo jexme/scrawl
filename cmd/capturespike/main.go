@@ -1,8 +1,8 @@
-// capturespike измеряет задержку захвата экрана на GNOME/Wayland.
+// capturespike measures screen capture latency on GNOME/Wayland.
 //
-// Пробует два пути:
-//  1. xdg-desktop-portal Screenshot (non-interactive), основной путь.
-//  2. org.gnome.Shell.Screenshot напрямую, ожидаемо закрыт для сторонних приложений.
+// It tries two paths:
+//  1. xdg-desktop-portal Screenshot (non-interactive), the main path.
+//  2. org.gnome.Shell.Screenshot directly, expected to be closed to third-party applications.
 package main
 
 import (
@@ -29,8 +29,8 @@ const (
 )
 
 type timing struct {
-	portal time.Duration // вызов -> сигнал Response
-	read   time.Duration // открытие файла
+	portal time.Duration // call -> Response signal
+	read   time.Duration // opening the file
 	decode time.Duration // png.Decode
 	w, h   int
 }
@@ -78,7 +78,7 @@ func viaPortal(conn *dbus.Conn, keep bool) (timing, error) {
 	sender := strings.ReplaceAll(strings.TrimPrefix(conn.Names()[0], ":"), ".", "_")
 	reqPath := dbus.ObjectPath(fmt.Sprintf("/org/freedesktop/portal/desktop/request/%s/%s", sender, token))
 
-	// Подписка должна быть до вызова, иначе Response можно пропустить.
+	// The subscription must come before the call, otherwise the Response could be missed.
 	matchOpts := []dbus.MatchOption{
 		dbus.WithMatchObjectPath(reqPath),
 		dbus.WithMatchInterface(requestIface),

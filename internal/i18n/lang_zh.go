@@ -1,6 +1,6 @@
 package i18n
 
-// zh — перевод интерфейса: китайский. Ключ это английский текст из кода.
+// zh is the interface translation: Chinese (Simplified). The key is the English text from the code.
 var zh = map[string]string{
 	"pick the monitors again (shows GNOME dialogs)": "重新选择显示器（会显示 GNOME 对话框）",
 	"print timings": "打印耗时",

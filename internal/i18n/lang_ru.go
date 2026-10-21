@@ -1,6 +1,6 @@
 package i18n
 
-// ru — перевод интерфейса: русский. Ключ это английский текст из кода.
+// ru is the interface translation: Russian. The key is the English text from the code.
 var ru = map[string]string{
 	"pick the monitors again (shows GNOME dialogs)": "заново выбрать мониторы (покажет диалоги GNOME)",
 	"print timings": "печатать замеры времени",

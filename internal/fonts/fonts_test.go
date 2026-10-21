@@ -26,7 +26,7 @@ func TestCJKFallbackWhenSystemFontExists(t *testing.T) {
 		if got := len(Collection(lang)); got != len(gofont.Collection())+1 {
 			t.Errorf("%s: %d шрифтов, ожидали встроенные и один системный", lang, got)
 		}
-		// Повторный вызов берёт результат из кэша.
+		// A repeated call takes the result from the cache.
 		if len(Collection(lang)) != len(Collection(lang)) {
 			t.Errorf("%s: кэш даёт разный результат", lang)
 		}

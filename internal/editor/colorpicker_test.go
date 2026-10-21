@@ -36,7 +36,7 @@ func TestHSVRoundTrip(t *testing.T) {
 	}
 }
 
-// newPickerMonitor делает монитор с открытым окошком цвета и областью под панелью.
+// newPickerMonitor makes a monitor with the colour window open and an area under the toolbar.
 func newPickerMonitor(t *testing.T, w, h int) *monitor {
 	t.Helper()
 	testenv.Config(t, t.TempDir())
@@ -49,8 +49,9 @@ func newPickerMonitor(t *testing.T, w, h int) *monitor {
 	return m
 }
 
-// TestPickerPointer проверяет, что нажатие в квадрате и на полосе меняет цвет в нужную сторону
-// (позиция события считается от угла окошка), а отпускание запоминает цвет в настройках.
+// TestPickerPointer checks that a press in the square and on the strip moves the colour the
+// right way (the event position is counted from the window's corner), and that release
+// remembers the colour in the settings.
 func TestPickerPointer(t *testing.T) {
 	const W, H = 900, 500
 	m := newPickerMonitor(t, W, H)
@@ -78,17 +79,17 @@ func TestPickerPointer(t *testing.T) {
 		frame()
 	}
 
-	// Правый нижний угол квадрата: насыщенность 1, яркость 0, чёрный.
+	// Bottom-right corner of the square: saturation 1, value 0, black.
 	press(pointer.Press, at(pad+inner-1, pad+svH-1))
 	if m.pick.hsv.S < 0.99 || m.pick.hsv.V > 0.02 {
 		t.Errorf("правый нижний угол квадрата: %+v", m.pick.hsv)
 	}
-	// Левый верхний: белый.
+	// Top-left: white.
 	press(pointer.Move, at(pad+1, pad+1))
 	if m.pick.hsv.S > 0.02 || m.pick.hsv.V < 0.98 {
 		t.Errorf("левый верхний угол квадрата: %+v", m.pick.hsv)
 	}
-	// Середина квадрата.
+	// The middle of the square.
 	press(pointer.Move, at(pad+inner/2, pad+svH/2))
 	if s, v := m.pick.hsv.S, m.pick.hsv.V; s < 0.45 || s > 0.55 || v < 0.45 || v > 0.55 {
 		t.Errorf("середина квадрата: %+v", m.pick.hsv)
@@ -102,7 +103,7 @@ func TestPickerPointer(t *testing.T) {
 		t.Errorf("цвет не запомнился: %q, ожидали %q", got, settings.FormatColor(mid))
 	}
 
-	// Полоса оттенка: треть ширины это зелёный (120°).
+	// The hue strip: a third of the width is green (120°).
 	hueY := pad + svH + pad/2 + hueH/2
 	press(pointer.Press, at(pad+inner/3, hueY))
 	if h := m.pick.hsv.H; h < 118 || h > 122 {
@@ -110,8 +111,8 @@ func TestPickerPointer(t *testing.T) {
 	}
 }
 
-// TestRenderPicker рисует окошко и проверяет цвета в углах квадрата и на полосе. С
-// SCRAWL_TEST_OUT=путь.png результат сохраняется.
+// TestRenderPicker draws the window and checks the colours at the corners of the square
+// and on the strip. With SCRAWL_TEST_OUT=path.png the result is saved.
 func TestRenderPicker(t *testing.T) {
 	const W, H = 900, 500
 	m := newPickerMonitor(t, W, H)
@@ -149,7 +150,7 @@ func TestRenderPicker(t *testing.T) {
 		}
 		return d(got.R, want.R) <= tol && d(got.G, want.G) <= tol && d(got.B, want.B) <= tol
 	}
-	// Оттенок 60 (жёлтый): справа вверху чистый жёлтый, слева вверху белый, внизу чёрный.
+	// Hue 60 (yellow): pure yellow at top right, white at top left, black at the bottom.
 	if c := px(pad+inner-6, pad+6); !near(c, color.NRGBA{R: 235, G: 235, B: 20}, 45) {
 		t.Errorf("правый верхний угол квадрата не жёлтый: %v", c)
 	}
@@ -159,8 +160,8 @@ func TestRenderPicker(t *testing.T) {
 	if c := px(pad+inner/2, pad+svH-1); !near(c, color.NRGBA{}, 45) {
 		t.Errorf("низ квадрата не чёрный: %v", c)
 	}
-	// Полоса оттенка (метка стоит на 60°, то есть на шестой части): красный в начале, зелёный
-	// на трети, синий на двух третях; границы кусков градиента точные.
+	// The hue strip (the marker is at 60°, i.e. a sixth of the way): red at the start, green
+	// at a third, blue at two thirds; the gradient piece boundaries are exact.
 	hueY := pad + svH + pad/2 + hueH/2
 	if c := px(pad+2, hueY); !near(c, color.NRGBA{R: 255}, 90) {
 		t.Errorf("начало полосы не красное: %v", c)

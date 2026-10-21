@@ -15,36 +15,36 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// Env — всё, что нужно фигурам для отрисовки помимо самих координат.
+// Env is everything the shapes need for drawing besides their own coordinates.
 type Env struct {
 	Shaper *text.Shaper
 	Blur   *Blurrer
 }
 
-// BlurMode — способ размытия. Он зависит от уровня силы: слабые уровни размывают по Гауссу и
-// оставляют картинку узнаваемой, сильные превращают область в мозаику, из которой текст не
-// восстановить.
+// BlurMode is the blur method. It depends on the strength level: weak levels blur with a
+// Gaussian and leave the image recognizable, strong ones turn the area into a mosaic from
+// which text cannot be recovered.
 type BlurMode int
 
 const (
-	BlurSoft   BlurMode = iota // уровни 1-3: гауссово размытие
-	BlurMosaic                 // уровни 4-6: мозаика из квадратов
+	BlurSoft   BlurMode = iota // levels 1-3: Gaussian blur
+	BlurMosaic                 // levels 4-6: mosaic of squares
 )
 
-// Уровни силы: у размытия «толщина» это уровень от 1 до MaxBlurLevel, а не пиксели.
+// Strength levels: for blur, the "width" is a level from 1 to MaxBlurLevel, not pixels.
 const (
-	DefaultBlurLevel = 2 // мягкое размытие, после которого обычный текст не прочитать
+	DefaultBlurLevel = 2 // soft blur after which ordinary text cannot be read
 	MaxBlurLevel     = 6
-	softLevels       = 3 // уровни до этого размывают по Гауссу, остальные это мозаика
+	softLevels       = 3 // lower levels blur with a Gaussian, the rest are a mosaic
 )
 
-// Сигма гауссова размытия по уровням 1-3 и сторона квадрата мозаики по уровням 4-6, в пикселях.
+// Gaussian blur sigma for levels 1-3 and mosaic square size for levels 4-6, in pixels.
 var (
 	softSigma   = [softLevels]float64{3, 6, 10}
 	mosaicSizes = [MaxBlurLevel - softLevels]int{8, 14, 24}
 )
 
-// ModeOf возвращает режим размытия для уровня силы width.
+// ModeOf returns the blur mode for strength level width.
 func ModeOf(width float32) BlurMode {
 	if blurLevel(width) <= softLevels {
 		return BlurSoft
@@ -52,7 +52,7 @@ func ModeOf(width float32) BlurMode {
 	return BlurMosaic
 }
 
-// Label возвращает название режима для плашки со значением силы.
+// Label returns the mode name for the badge showing the strength value.
 func (m BlurMode) Label() string {
 	if m == BlurMosaic {
 		return i18n.T("Mosaic")
@@ -60,38 +60,39 @@ func (m BlurMode) Label() string {
 	return i18n.T("Blur")
 }
 
-// blurLevel округляет силу до уровня 1..MaxBlurLevel.
+// blurLevel rounds the strength to a level 1..MaxBlurLevel.
 func blurLevel(width float32) int {
 	return min(max(int(math.Round(float64(width))), 1), MaxBlurLevel)
 }
 
-// gaussSigma возвращает сигму гауссова размытия для уровня width.
+// gaussSigma returns the Gaussian blur sigma for level width.
 func gaussSigma(width float32) float64 { return softSigma[min(blurLevel(width), softLevels)-1] }
 
-// mosaicBlock возвращает сторону квадрата мозаики в пикселях для уровня width.
+// mosaicBlock returns the mosaic square side in pixels for level width.
 func mosaicBlock(width float32) int {
 	return mosaicSizes[max(blurLevel(width), softLevels+1)-softLevels-1]
 }
 
-// Blurrer готовит обработанные копии кадра: размытые и мозаичные. Копия считается один раз на
-// каждую силу и хранится, пока не вытеснят новые. Не потокобезопасен.
+// Blurrer prepares processed copies of the frame: blurred and mosaic. A copy is computed once
+// per strength and kept until newer ones evict it. Not safe for concurrent use.
 type Blurrer struct {
 	src   *image.RGBA
 	cache map[blurKey]paint.ImageOp
-	order []blurKey // порядок появления в кэше: самые старые вытесняются
+	order []blurKey // order of appearance in the cache: the oldest are evicted
 }
 
 type blurKey struct {
 	mode  BlurMode
-	param int             // сигма в десятых долях пикселя или сторона квадрата
-	rect  image.Rectangle // область мозаики: клетки отсчитываются от её угла; у размытия пусто
+	param int             // sigma in tenths of a pixel or the square side
+	rect  image.Rectangle // mosaic area: cells are counted from its corner; empty for blur
 }
 
-// maxCached — сколько обработанных копий держать: размытая копия это кадр целиком в памяти и на GPU
-// (их всего три), мозаика только своя область, но при перетаскивании рамки новая появляется каждый кадр.
+// maxCached is how many processed copies to keep: a blurred copy is a whole frame in
+// memory and on the GPU (there are only three of them), a mosaic covers only its own area,
+// but while the frame is dragged a new one appears every frame.
 const maxCached = 24
 
-// NewBlurrer создаёт размыватель для кадра src.
+// NewBlurrer creates a blurrer for frame src.
 func NewBlurrer(src *image.RGBA) *Blurrer {
 	return &Blurrer{src: src, cache: make(map[blurKey]paint.ImageOp)}
 }
@@ -110,16 +111,16 @@ func (b *Blurrer) get(key blurKey, build func() paint.ImageOp) paint.ImageOp {
 	return o
 }
 
-// gauss возвращает кадр целиком, размытый по Гауссу с сигмой sigma.
+// gauss returns the whole frame blurred with a Gaussian of sigma sigma.
 func (b *Blurrer) gauss(sigma float64) paint.ImageOp {
 	return b.get(blurKey{mode: BlurSoft, param: int(math.Round(sigma * 10))}, func() paint.ImageOp {
 		return paint.NewImageOp(gaussBlur(b.src, sigma))
 	})
 }
 
-// mosaic возвращает мозаику области rect: клетки block×block считаются от её левого верхнего угла,
-// поэтому все они целые, а содержимое снаружи области в них не попадает. Растягивается обратно
-// без сглаживания, получаются чёткие квадраты.
+// mosaic returns the mosaic of area rect: block×block cells are counted from its top-left
+// corner, so all of them are whole and content outside the area does not get into them. It
+// is scaled back up without smoothing, which gives crisp squares.
 func (b *Blurrer) mosaic(rect image.Rectangle, block int) paint.ImageOp {
 	return b.get(blurKey{mode: BlurMosaic, param: block, rect: rect}, func() paint.ImageOp {
 		o := paint.NewImageOp(downsample(b.src, rect, block))
@@ -128,8 +129,8 @@ func (b *Blurrer) mosaic(rect image.Rectangle, block int) paint.ImageOp {
 	})
 }
 
-// downsample усредняет клетки block×block внутри rect, начиная с его левого верхнего угла;
-// последние клетки у правого и нижнего краёв усредняют только то, что есть.
+// downsample averages block×block cells inside rect, starting from its top-left corner;
+// the last cells at the right and bottom edges average only what is there.
 func downsample(src *image.RGBA, rect image.Rectangle, block int) *image.RGBA {
 	rect = rect.Intersect(src.Bounds())
 	w, h := rect.Dx(), rect.Dy()
@@ -162,7 +163,7 @@ func downsample(src *image.RGBA, rect image.Rectangle, block int) *image.RGBA {
 	return dst
 }
 
-// parallel делит n строк (или столбцов) между всеми ядрами.
+// parallel splits n rows (or columns) among all cores.
 func parallel(n int, fn func(lo, hi int)) {
 	workers := min(runtime.NumCPU(), n)
 	if workers < 1 {
@@ -180,13 +181,13 @@ func parallel(n int, fn func(lo, hi int)) {
 	wg.Wait()
 }
 
-// gaussBlur размывает кадр по Гауссу. Три прохода «коробочным» размытием по каждой оси дают
-// гаусс с точностью до глаза, а стоят столько же при любой сигме: быстро даже на 4K.
-// Края кадра продолжаются крайними пикселями.
+// gaussBlur blurs the frame with a Gaussian. Three passes of a "box" blur along each axis give
+// a Gaussian accurate to the eye, and cost the same for any sigma: fast even at 4K.
+// The frame edges are extended with the edge pixels.
 func gaussBlur(src *image.RGBA, sigma float64) *image.RGBA {
 	b := src.Bounds()
 	w, h := b.Dx(), b.Dy()
-	// Рабочие копии с ровным шагом строки; результат тоже в таком виде.
+	// Working copies with an even row stride; the result is in the same form.
 	cur := image.NewRGBA(image.Rect(0, 0, w, h))
 	for y := 0; y < h; y++ {
 		copy(cur.Pix[y*cur.Stride:y*cur.Stride+w*4], src.Pix[(y+b.Min.Y-src.Rect.Min.Y)*src.Stride+(b.Min.X-src.Rect.Min.X)*4:])
@@ -205,7 +206,7 @@ func gaussBlur(src *image.RGBA, sigma float64) *image.RGBA {
 	return cur
 }
 
-// boxRadii подбирает радиусы n коробочных проходов, дающих гаусс с сигмой sigma.
+// boxRadii picks the radii of n box passes that give a Gaussian with sigma sigma.
 func boxRadii(sigma float64, n int) []int {
 	wIdeal := math.Sqrt(12*sigma*sigma/float64(n) + 1)
 	wl := int(math.Floor(wIdeal))
@@ -226,10 +227,11 @@ func boxRadii(sigma float64, n int) []int {
 	return radii
 }
 
-// boxH усредняет каждую строку из [lo, hi) окном шириной 2r+1, края продолжаются крайними пикселями.
+// boxH averages each row in [lo, hi) with a window of width 2r+1, the edges are extended
+// with the edge pixels.
 func boxH(src, dst []byte, w, stride, r, lo, hi int) {
 	div := 2*r + 1
-	half := div / 2 // округление, а не отбрасывание: иначе за шесть проходов кадр темнеет
+	half := div / 2 // rounding rather than truncation: otherwise the frame darkens over six passes
 	for y := lo; y < hi; y++ {
 		row := src[y*stride : y*stride+w*4]
 		out := dst[y*stride : y*stride+w*4]
@@ -251,8 +253,8 @@ func boxH(src, dst []byte, w, stride, r, lo, hi int) {
 	}
 }
 
-// boxV то же по вертикали для столбцов из [lo, hi). Идёт по строкам, а не по столбцам: так
-// память читается подряд.
+// boxV does the same vertically for the columns in [lo, hi). It goes by rows, not by
+// columns, so that memory is read sequentially.
 func boxV(src, dst []byte, w, h, stride, r, lo, hi int) {
 	div := 2*r + 1
 	half := div / 2
@@ -291,8 +293,8 @@ func clampInt(v, lo, hi int) int {
 	return v
 }
 
-// drawBlur закрашивает прямоугольник фигуры обработанной копией кадра: размытой, мозаичной или
-// матовой, по силе.
+// drawBlur paints the shape's rectangle with a processed copy of the frame: blurred, mosaic or
+// frosted, depending on the strength.
 func (s Shape) drawBlur(ops *op.Ops, env Env) {
 	if len(s.Pts) < 2 || env.Blur == nil {
 		return
@@ -306,7 +308,7 @@ func (s Shape) drawBlur(ops *op.Ops, env Env) {
 		block := mosaicBlock(s.Width)
 		img := env.Blur.mosaic(r, block)
 		defer clip.Rect(r).Push(ops).Pop()
-		// Клетки растягиваются в block раз и ставятся в левый верхний угол области.
+		// The cells are scaled up by block times and placed at the top-left corner of the area.
 		defer op.Affine(f32.Affine2D{}.Scale(f32.Pt(0, 0), f32.Pt(float32(block), float32(block))).Offset(f32.Pt(float32(r.Min.X), float32(r.Min.Y)))).Push(ops).Pop()
 		img.Add(ops)
 		paint.PaintOp{}.Add(ops)
@@ -318,7 +320,7 @@ func (s Shape) drawBlur(ops *op.Ops, env Env) {
 	}
 }
 
-// RectOf возвращает целочисленный прямоугольник по двум противоположным углам.
+// RectOf returns an integer rectangle from two opposite corners.
 func RectOf(a, b f32.Point) image.Rectangle {
 	return image.Rect(
 		int(min(a.X, b.X)), int(min(a.Y, b.Y)),

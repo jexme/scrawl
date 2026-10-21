@@ -1,7 +1,7 @@
 //go:build linux
 
-// Package pwcapture читает один кадр из потока PipeWire через libpipewire.
-// Заменяет внешний gst-launch: пользователю не нужен GStreamer.
+// Package pwcapture reads one frame from a PipeWire stream through libpipewire.
+// It replaces the external gst-launch: the user does not need GStreamer.
 package pwcapture
 
 /*
@@ -20,15 +20,15 @@ import (
 	"unsafe"
 )
 
-// ErrTimeout означает, что кадр не пришёл за отведённое время. На статичном
-// мониторе так бывает постоянно: Mutter отдаёт кадры только при перерисовке.
+// ErrTimeout means the frame did not arrive in the allotted time. On a static
+// monitor this happens all the time: Mutter delivers frames only on a redraw.
 var ErrTimeout = errors.New("the PipeWire frame did not arrive in time")
 
 var initOnce sync.Once
 
-// Capture подключается к узлу node через fd от xdg-desktop-portal и возвращает
-// первый кадр. fd переходит во владение библиотеки и закрывается внутри,
-// после вызова его использовать нельзя.
+// Capture connects to the given PipeWire node through the fd from xdg-desktop-portal and returns
+// the first frame. The fd passes into the library's ownership and is closed inside,
+// so it must not be used after the call.
 func Capture(fd int, node uint32, timeout time.Duration) (*image.RGBA, error) {
 	initOnce.Do(func() { C.sec_init() })
 

@@ -5,17 +5,18 @@ import (
 	"unicode/utf8"
 )
 
-// captionLen — длиннее этого подпись под кнопкой не помещается, и «Ctrl+» сокращается до «^».
+// captionLen: a caption longer than this does not fit under the button, and "Ctrl+" is
+// shortened to "^".
 const captionLen = 6
 
-// keyNames — короткие названия клавиш для подписи под кнопкой панели.
+// keyNames are short key names for the caption under a toolbar button.
 var keyNames = map[string]string{
 	"Escape": "Esc", "Backspace": "Bksp", "Delete": "Del", "PageUp": "PgUp", "PageDown": "PgDn",
 	"Up": "↑", "Down": "↓", "Left": "←", "Right": "→", "Plus": "+", "Minus": "-",
 }
 
-// keyCaption превращает сочетание из настроек («Ctrl+Z», «Escape») в короткую подпись
-// под кнопкой: «Ctrl+Z», «Esc». Не умещается, «Ctrl+» сокращается до «^».
+// keyCaption turns a combination from the settings ("Ctrl+Z", "Escape") into a short caption
+// under the button: "Ctrl+Z", "Esc". If it does not fit, "Ctrl+" is shortened to "^".
 func keyCaption(chord string) string {
 	parts := strings.Split(chord, "+")
 	for i, p := range parts {

@@ -7,7 +7,7 @@ import (
 	"github.com/jexme/scrawl/internal/update"
 )
 
-// Тесты не должны трогать настройки GNOME и portal пользователя.
+// Tests must not touch the user's GNOME and portal settings.
 func init() {
 	currentHotkey = func() string { return "" }
 	hotkeyBinary = func() (string, error) { return "/test/bin/scrawl", nil }

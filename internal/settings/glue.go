@@ -9,57 +9,57 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// Glue — настройки склейки «было/стало».
+// Glue holds the "before/after" collage settings.
 type Glue struct {
-	// Подписи над картинками. Пусто: слова по умолчанию.
-	Before string `json:"before,omitempty"` // первая из двух картинок
-	After  string `json:"after,omitempty"`  // вторая из двух картинок
-	Step   string `json:"step,omitempty"`   // слово перед номером, если картинок больше двух
+	// Captions above the images. Empty means the default words.
+	Before string `json:"before,omitempty"` // the first of the two images
+	After  string `json:"after,omitempty"`  // the second of the two images
+	Step   string `json:"step,omitempty"`   // the word before the number when there are more than two images
 
-	// Layout — расположение картинок: рядом или друг под другом.
+	// Layout is the arrangement of the images: side by side or one under the other.
 	Layout GlueLayout `json:"layout"`
 
-	// Вид склейки: фон, отступ от краёв и между картинками, размер подписи
-	// (пиксели результата).
+	// The look of the collage: background, margin from the edges and between images, caption
+	// size (pixels of the result).
 	Background GlueBackground `json:"background"`
 	Pad        int            `json:"pad"`
 	LabelSize  int            `json:"label_size"`
 }
 
-// GlueBackground — цвет фона склейки.
+// GlueBackground is the collage background colour.
 type GlueBackground string
 
 const (
-	GlueLight GlueBackground = "light" // белый (по умолчанию)
-	GlueDark  GlueBackground = "dark"  // тёмный
+	GlueLight GlueBackground = "light" // white (default)
+	GlueDark  GlueBackground = "dark"  // dark
 )
 
-// Границы отступа и размера подписи склейки.
+// Bounds of the collage margin and caption size.
 const (
 	MaxGluePad       = 100
 	MinGlueLabelSize = 12
 	MaxGlueLabelSize = 64
 )
 
-// GlueLayout — расположение картинок в склейке.
+// GlueLayout is the arrangement of images in the collage.
 type GlueLayout string
 
 const (
-	GlueSide  GlueLayout = "side"  // в ряд, слева направо (по умолчанию)
-	GlueStack GlueLayout = "stack" // в столбик, сверху вниз
+	GlueSide  GlueLayout = "side"  // in a row, left to right (default)
+	GlueStack GlueLayout = "stack" // in a column, top to bottom
 )
 
 const maxGlueLabel = 30
 
-// Слова подписей склейки по умолчанию.
+// Default collage caption words.
 const (
 	DefaultGlueBefore = "Before"
 	DefaultGlueAfter  = "After"
 	DefaultGlueStep   = "Step"
 )
 
-// ValidateGlueLabel проверяет подпись: пусто (по умолчанию) или короткий текст
-// без управляющих символов.
+// ValidateGlueLabel checks a caption: empty (the default) or short text
+// without control characters.
 func ValidateGlueLabel(s string) error {
 	if utf8.RuneCountInString(s) > maxGlueLabel {
 		return fmt.Errorf(i18n.T("at most %d characters"), maxGlueLabel)
@@ -72,7 +72,7 @@ func ValidateGlueLabel(s string) error {
 	return nil
 }
 
-// DefaultGlue возвращает настройки склейки по умолчанию.
+// DefaultGlue returns the default collage settings.
 func DefaultGlue() Glue {
 	return Glue{Layout: GlueSide, Background: GlueLight, Pad: 28, LabelSize: 28}
 }
@@ -93,8 +93,8 @@ func (g *Glue) normalize() {
 	}
 }
 
-// Labels возвращает подписи для n картинок: «Было» и «Стало» для двух, «Шаг N»
-// для остальных (слова из настроек или по умолчанию).
+// Labels returns captions for n images: "Before" and "After" for two, "Step N"
+// for the rest (words from the settings or the defaults).
 func (g Glue) Labels(n int) []string {
 	pick := func(custom, def string) string {
 		if custom == "" {

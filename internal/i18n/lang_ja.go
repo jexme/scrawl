@@ -1,6 +1,6 @@
 package i18n
 
-// ja — перевод интерфейса: японский. Ключ это английский текст из кода.
+// ja is the interface translation: Japanese. The key is the English text from the code.
 var ja = map[string]string{
 	"pick the monitors again (shows GNOME dialogs)": "モニターを選び直す（GNOME のダイアログを表示します）",
 	"print timings": "所要時間を表示する",

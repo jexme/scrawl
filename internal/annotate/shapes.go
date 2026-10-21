@@ -1,8 +1,8 @@
-// Package annotate описывает аннотации поверх скриншота (стрелки, фигуры, текст)
-// и рисует их в Gio. Один и тот же код используется для показа на экране и для
-// экспорта в PNG, поэтому результат совпадает с тем, что видел пользователь.
+// Package annotate describes annotations over a screenshot (arrows, shapes, text)
+// and draws them in Gio. The same code is used for on-screen display and for
+// PNG export, so the result matches what the user saw.
 //
-// Все координаты и размеры задаются в пикселях кадра.
+// All coordinates and sizes are in frame pixels.
 package annotate
 
 import (
@@ -25,11 +25,11 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// Tool — инструмент рисования.
+// Tool is a drawing tool.
 type Tool int
 
 const (
-	ToolSelect Tool = iota // выделение области
+	ToolSelect Tool = iota // area selection
 	ToolPen
 	ToolLine
 	ToolArrow
@@ -37,19 +37,19 @@ const (
 	ToolMarker
 	ToolBlur
 	ToolText
-	ToolStamp // штамп с номером: кружок с цифрой, номера идут по порядку
+	ToolStamp // numbered stamp: a circle with a digit, numbers go in order
 )
 
-// Palette — цвета в панели инструментов.
+// Palette is the colors in the toolbar.
 var Palette = []color.NRGBA{
-	{R: 229, G: 57, B: 53, A: 255},   // красный
-	{R: 251, G: 140, B: 0, A: 255},   // оранжевый
-	{R: 253, G: 216, B: 53, A: 255},  // жёлтый
-	{R: 67, G: 160, B: 71, A: 255},   // зелёный
-	{R: 30, G: 136, B: 229, A: 255},  // синий
-	{R: 142, G: 36, B: 170, A: 255},  // фиолетовый
-	{R: 255, G: 255, B: 255, A: 255}, // белый
-	{R: 20, G: 20, B: 20, A: 255},    // чёрный
+	{R: 229, G: 57, B: 53, A: 255},   // red
+	{R: 251, G: 140, B: 0, A: 255},   // orange
+	{R: 253, G: 216, B: 53, A: 255},  // yellow
+	{R: 67, G: 160, B: 71, A: 255},   // green
+	{R: 30, G: 136, B: 229, A: 255},  // blue
+	{R: 142, G: 36, B: 170, A: 255},  // purple
+	{R: 255, G: 255, B: 255, A: 255}, // white
+	{R: 20, G: 20, B: 20, A: 255},    // black
 }
 
 const (
@@ -58,7 +58,7 @@ const (
 	MaxWidth     = 30
 )
 
-// DefaultWidthOf возвращает толщину инструмента по умолчанию: у размытия это уровень.
+// DefaultWidthOf returns the default thickness of a tool: for blur it is the level.
 func DefaultWidthOf(t Tool) float32 {
 	if t == ToolBlur {
 		return DefaultBlurLevel
@@ -66,7 +66,7 @@ func DefaultWidthOf(t Tool) float32 {
 	return DefaultWidth
 }
 
-// MaxWidthOf возвращает наибольшую толщину инструмента: у размытия это последний уровень.
+// MaxWidthOf returns the largest thickness of a tool: for blur it is the last level.
 func MaxWidthOf(t Tool) float32 {
 	if t == ToolBlur {
 		return MaxBlurLevel
@@ -74,35 +74,35 @@ func MaxWidthOf(t Tool) float32 {
 	return MaxWidth
 }
 
-// Shape — одна аннотация.
+// Shape is a single annotation.
 type Shape struct {
 	Tool  Tool
 	Color color.NRGBA
-	Width float32     // толщина линии, пиксели кадра
-	Pts   []f32.Point // ключевые точки
-	Text  string      // только для ToolText и ToolStamp (номер)
-	// Alpha — непрозрачность маркера, 1-255; 0 означает DefaultMarkerAlpha.
+	Width float32     // line thickness, frame pixels
+	Pts   []f32.Point // key points
+	Text  string      // only for ToolText and ToolStamp (the number)
+	// Alpha is the marker opacity, 1-255; 0 means DefaultMarkerAlpha.
 	Alpha uint8
 }
 
-// DefaultMarkerAlpha — непрозрачность маркера, если не задана иначе (43%).
+// DefaultMarkerAlpha is the marker opacity when not set otherwise (43%).
 const DefaultMarkerAlpha = 110
 
-// TextSize возвращает размер шрифта текстовой аннотации в пикселях кадра.
+// TextSize returns the font size of a text annotation in frame pixels.
 func TextSize(width float32) float32 { return 12 + width*3 }
 
-// StampRadius возвращает радиус штампа с номером по «толщине» инструмента.
+// StampRadius returns the radius of a numbered stamp from the tool "thickness".
 func StampRadius(width float32) float32 { return 12 + width*2.5 }
 
-// NewShaper создаёт шрифтовой шейпер для текстовых аннотаций.
+// NewShaper creates a font shaper for text annotations.
 func NewShaper() *text.Shaper {
 	return text.NewShaper(text.WithCollection(fonts.Collection(i18n.Language())))
 }
 
-// Font — шрифт текстовых аннотаций.
+// Font is the font of text annotations.
 var Font = gofont.Collection()[0].Font
 
-// Degenerate сообщает, что фигура слишком мала, чтобы её сохранять.
+// Degenerate reports that the shape is too small to be kept.
 func (s Shape) Degenerate() bool {
 	switch s.Tool {
 	case ToolText:
@@ -123,7 +123,7 @@ func (s Shape) Degenerate() bool {
 	}
 }
 
-// Draw рисует фигуру. Координаты фигуры считаются координатами пространства ops.
+// Draw draws the shape. The shape's coordinates are treated as coordinates in the ops space.
 func (s Shape) Draw(ops *op.Ops, env Env) {
 	if len(s.Pts) == 0 {
 		return
@@ -161,7 +161,7 @@ func (s Shape) Draw(ops *op.Ops, env Env) {
 	}
 }
 
-// DrawAll рисует все фигуры по порядку.
+// DrawAll draws all shapes in order.
 func DrawAll(ops *op.Ops, env Env, shapes []Shape) {
 	for _, s := range shapes {
 		s.Draw(ops, env)
@@ -177,7 +177,7 @@ func stroke(ops *op.Ops, c color.NRGBA, width float32, pts ...f32.Point) {
 		return
 	}
 	if len(pts) == 1 {
-		// Точка: короткий отрезок, чтобы штрих был виден.
+		// A point: a short segment so the stroke is visible.
 		pts = []f32.Point{pts[0], pts[0].Add(f32.Pt(0.01, 0))}
 	}
 	var p clip.Path
@@ -200,7 +200,7 @@ func strokeClosed(ops *op.Ops, c color.NRGBA, width float32, pts ...f32.Point) {
 	paint.FillShape(ops, c, clip.Stroke{Path: p.End(), Width: width}.Op())
 }
 
-// drawArrow рисует линию с треугольным наконечником в точке to.
+// drawArrow draws a line with a triangular arrowhead at the point to.
 func drawArrow(ops *op.Ops, c color.NRGBA, width float32, from, to f32.Point) {
 	d := to.Sub(from)
 	length := dist(from, to)
@@ -217,7 +217,7 @@ func drawArrow(ops *op.Ops, c color.NRGBA, width float32, from, to f32.Point) {
 	half := head * 0.5
 	base := to.Sub(dir.Mul(head))
 
-	// Древко заканчивается внутри наконечника, чтобы не было щели.
+	// The shaft ends inside the arrowhead so there is no gap.
 	stroke(ops, c, width, from, base.Add(dir.Mul(head*0.3)))
 
 	var p clip.Path
@@ -229,8 +229,8 @@ func drawArrow(ops *op.Ops, c color.NRGBA, width float32, from, to f32.Point) {
 	paint.FillShape(ops, c, clip.Outline{Path: p.End()}.Op())
 }
 
-// drawText рисует текст в пространстве кадра: метрика единичная, поэтому
-// размер шрифта задаётся в пикселях кадра независимо от масштаба окна.
+// drawText draws text in frame space: the metric is unit, so
+// the font size is given in frame pixels regardless of the window scale.
 func drawText(ops *op.Ops, shaper *text.Shaper, c color.NRGBA, width float32, at f32.Point, txt string) {
 	if txt == "" || shaper == nil {
 		return
@@ -247,7 +247,7 @@ func drawText(ops *op.Ops, shaper *text.Shaper, c color.NRGBA, width float32, at
 	widget.Label{}.Layout(gtx, shaper, Font, unit.Sp(TextSize(width)), txt, mat)
 }
 
-// onColor возвращает цвет текста, читаемый на фоне c: тёмный на светлом, белый на тёмном.
+// onColor returns a text color readable on the background c: dark on light, white on dark.
 func onColor(c color.NRGBA) color.NRGBA {
 	if lum := 0.299*float32(c.R) + 0.587*float32(c.G) + 0.114*float32(c.B); lum > 150 {
 		return color.NRGBA{R: 20, G: 20, B: 20, A: 255}
@@ -255,7 +255,7 @@ func onColor(c color.NRGBA) color.NRGBA {
 	return color.NRGBA{R: 255, G: 255, B: 255, A: 255}
 }
 
-// stampTextSize подбирает размер цифр в штампе: чем длиннее номер, тем мельче.
+// stampTextSize picks the digit size in a stamp: the longer the number, the smaller.
 func stampTextSize(r float32, digits int) float32 {
 	switch {
 	case digits <= 1:
@@ -268,11 +268,11 @@ func stampTextSize(r float32, digits int) float32 {
 	return r * 0.64
 }
 
-// stampFont — шрифт цифр штампа: жирный, чтобы цифры читались на любом фоне.
+// stampFont is the stamp digit font: bold, so the digits are readable on any background.
 var stampFont = font.Font{Typeface: Font.Typeface, Weight: font.Bold}
 
-// drawStamp рисует штамп: цветной круг в ободке цвета цифр (светлом на тёмном, тёмном на
-// светлом), мягкая тень снизу и жирный номер строго в середине.
+// drawStamp draws a stamp: a colored circle in a rim of the digit color (light on dark,
+// dark on light), a soft shadow below and a bold number exactly in the middle.
 func drawStamp(ops *op.Ops, shaper *text.Shaper, c color.NRGBA, width float32, at f32.Point, num string) {
 	r := StampRadius(width)
 	fg := onColor(c)
@@ -282,7 +282,7 @@ func drawStamp(ops *op.Ops, shaper *text.Shaper, c color.NRGBA, width float32, a
 			int(math.Round(float64(at.X-radius))), int(math.Round(float64(at.Y+dy-radius))),
 			int(math.Round(float64(at.X+radius))), int(math.Round(float64(at.Y+dy+radius))))).Op(ops)
 	}
-	// Тень: несколько прозрачных кругов друг в друге, чуть сдвинутых вниз.
+	// Shadow: several translucent circles nested in each other, shifted slightly down.
 	for _, sh := range []struct {
 		grow float32
 		a    uint8
@@ -307,12 +307,13 @@ func drawStamp(ops *op.Ops, shaper *text.Shaper, c color.NRGBA, width float32, a
 	rec = op.Record(ops)
 	dims := widget.Label{MaxLines: 1}.Layout(gtx, shaper, stampFont, unit.Sp(size), num, mat)
 	label := rec.Stop()
-	// Цифра стоит на базовой линии: середину цифр (половина её высоты над линией) ставим в центр круга.
+	// A digit sits on the baseline: put the middle of the digits (half their height above the
+	// line) at the circle center.
 	baseline := float32(dims.Size.Y - dims.Baseline)
 	top := at.Y - baseline + size*digitHeight/2
 	defer op.Offset(image.Pt(int(math.Round(float64(at.X)))-dims.Size.X/2, int(math.Round(float64(top))))).Push(ops).Pop()
 	label.Add(ops)
 }
 
-// digitHeight — высота цифры шрифта Go в долях размера шрифта.
+// digitHeight is the height of a Go font digit as a fraction of the font size.
 const digitHeight = 0.72

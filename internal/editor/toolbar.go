@@ -28,7 +28,7 @@ var (
 	iconColor = color.NRGBA{R: 235, G: 235, B: 235, A: 255}
 )
 
-// iconFunc рисует иконку в квадрате со стороной s с началом в (0, 0).
+// iconFunc draws an icon in a square of side s with its origin at (0, 0).
 type iconFunc func(ops *op.Ops, s float32, c color.NRGBA)
 
 type toolButton struct {
@@ -40,15 +40,15 @@ type toolButton struct {
 type actionButton struct {
 	icon   iconFunc
 	btn    widget.Clickable
-	action string // действие с клавишей из настроек: её буква пишется под кнопкой; пусто: клавиши нет
+	action string // action with a key from the settings: its letter is shown under the button; "": no key
 }
 
-// toolbar хранит кнопки панели инструментов. Состояние выбранного инструмента
-// и цвета лежит в monitor.
+// toolbar holds the toolbar buttons. The selected tool and color state
+// live in monitor.
 type toolbar struct {
 	tools    []*toolButton
 	colors   []widget.Clickable
-	custom   widget.Clickable // свой цвет: открывает окошко выбора
+	custom   widget.Clickable // custom color: opens the picker popup
 	wMinus   actionButton
 	wPlus    actionButton
 	settings actionButton
@@ -57,8 +57,9 @@ type toolbar struct {
 	copy     actionButton
 	save     actionButton
 	close    actionButton
-	more     actionButton // меню «⋯»: настройки и «в подборку»
-	// Теги областей ввода, не пропускающих клики на холст: основной ряд, ряд цветов и меню.
+	more     actionButton // the "⋯" menu: settings and "to collection"
+	// Tags of the input areas that do not pass clicks through to the canvas: the main row, the
+	// color row and the menu.
 	area, area2, menuArea int
 }
 
@@ -88,23 +89,24 @@ func newToolbar() *toolbar {
 	}
 }
 
-// rowWidth считает ширину ряда из n кнопок с seps разделителями: между кнопками зазор gap,
-// на месте разделителя sep.
+// rowWidth computes the width of a row of n buttons with seps separators: a gap of gap between
+// buttons, sep at a separator.
 func rowWidth(n, seps, btn, gap, sep, pad int) int {
 	return 2*pad + n*btn + (n-1-seps)*gap + seps*sep
 }
 
-// mainWidth возвращает ширину основного ряда: инструменты | отмена, копировать, сохранить | «⋯», закрыть.
+// mainWidth returns the width of the main row: tools | undo, copy, save | "⋯", close.
 func (t *toolbar) mainWidth(btn, gap, sep, pad int) int {
 	return rowWidth(len(t.tools)+3+2, 2, btn, gap, sep, pad)
 }
 
-// styleWidth возвращает ширину ряда цветов и толщины: цвета и свой цвет | «−», значение, «+».
+// styleWidth returns the width of the color and thickness row: colors and custom color |
+// "−", value, "+".
 func (t *toolbar) styleWidth(btn, gap, sep, pad int) int {
 	return rowWidth(len(t.colors)+1+3, 1, btn, gap, sep, pad)
 }
 
-// rowPlacer раскладывает кнопки ряда слева направо в координатах ряда.
+// rowPlacer lays out the row buttons left to right in row coordinates.
 type rowPlacer struct {
 	gtx                layout.Context
 	cursor             int
@@ -120,14 +122,14 @@ func (p *rowPlacer) place(w func(gtx layout.Context) layout.Dimensions) {
 	p.cursor += p.btn + p.gap
 }
 
-// divider ставит разделитель вместо обычного зазора.
+// divider puts a separator in place of the usual gap.
 func (p *rowPlacer) divider() { p.cursor += p.sep - p.gap }
 
-// center возвращает середину очередной кнопки по горизонтали (в координатах ряда).
+// center returns the horizontal middle of the next button (in row coordinates).
 func (p *rowPlacer) center() int { return p.cursor + p.btn/2 }
 
-// toolbarActions — кнопки действий основного ряда и что они делают: отмена, копировать,
-// сохранить и закрыть. Настройки и «в подборку» лежат в меню «⋯», см. menuItems.
+// toolbarActions lists the action buttons of the main row and what they do: undo, copy,
+// save and close. Settings and "to collection" live in the "⋯" menu, see menuItems.
 func (m *monitor) toolbarActions() []struct {
 	a  *actionButton
 	do func()
@@ -144,7 +146,7 @@ func (m *monitor) toolbarActions() []struct {
 	}
 }
 
-// menuItems — пункты меню «⋯».
+// menuItems lists the items of the "⋯" menu.
 func (m *monitor) menuItems() []struct {
 	a     *actionButton
 	label string
@@ -161,9 +163,10 @@ func (m *monitor) menuItems() []struct {
 	}
 }
 
-// toolbarClicks применяет нажатия на кнопки панели. Вызывается до того, как кнопки нарисованы:
-// иначе кнопки левее нажатой рисовались бы со старым состоянием (подсвечены оба инструмента), а
-// нового кадра никто бы не запросил, пока не придёт следующее событие мыши.
+// toolbarClicks applies clicks on the toolbar buttons. It is called before the buttons are
+// drawn: otherwise the buttons to the left of the clicked one would be drawn with the old
+// state (both tools highlighted), and no new frame would be requested until the next mouse
+// event.
 func (m *monitor) toolbarClicks(gtx layout.Context) {
 	t := m.bar
 	var clicked, toggledMenu bool
@@ -180,7 +183,7 @@ func (m *monitor) toolbarClicks(gtx layout.Context) {
 			clicked = true
 		}
 	}
-	// Свой цвет: нажатие выбирает его и открывает окошко с палитрой, второе нажатие закрывает.
+	// Custom color: a click selects it and opens the palette popup, a second click closes it.
 	if t.custom.Clicked(gtx) {
 		clicked = true
 		if m.pick.open {
@@ -193,7 +196,7 @@ func (m *monitor) toolbarClicks(gtx layout.Context) {
 			m.color, m.colorPicked = m.customColor, true
 		}
 	}
-	// Толщина: у «выделения» её нет.
+	// Thickness: the selection tool has none.
 	if t.wMinus.btn.Clicked(gtx) {
 		m.bumpWidth(-1)
 		clicked = true
@@ -221,15 +224,15 @@ func (m *monitor) toolbarClicks(gtx layout.Context) {
 	}
 	if clicked {
 		if !toggledMenu {
-			m.menuOpen = false // любое другое нажатие на панель закрывает меню
+			m.menuOpen = false // any other click on the toolbar closes the menu
 		}
-		gtx.Execute(op.InvalidateCmd{}) // кадр с новым состоянием не ждёт следующего движения мыши
+		gtx.Execute(op.InvalidateCmd{}) // a frame with the new state does not wait for the next mouse movement
 	}
 }
 
-// layoutToolbar рисует панель рядом с выделением sel (в пикселях окна) и применяет нажатия
-// кнопок к состоянию m. Основной ряд (инструменты, отмена, копировать, сохранить, меню «⋯»,
-// закрыть) виден всегда, ряд цветов и толщины под ним только при рисующем инструменте.
+// layoutToolbar draws the toolbar next to the selection sel (in window pixels) and applies
+// button clicks to the state of m. The main row (tools, undo, copy, save, the "⋯" menu,
+// close) is always visible; the color and thickness row below it only for a drawing tool.
 func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.Rectangle) {
 	t := m.bar
 	m.toolbarClicks(gtx)
@@ -238,15 +241,15 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	sep := gtx.Dp(10)
 	pad := gtx.Dp(6)
 	margin := gtx.Dp(8)
-	capH := gtx.Dp(13)         // строка под кнопками: клавиша быстрого вызова
-	rowH := btn + capH + 2*pad // основной ряд: под кнопками подписаны клавиши
-	rowH2 := btn + 2*pad       // ряд цветов и толщины без подписей
+	capH := gtx.Dp(13)         // row under the buttons: the hotkey
+	rowH := btn + capH + 2*pad // main row: keys are captioned under the buttons
+	rowH2 := btn + 2*pad       // color and thickness row without captions
 	vGap := gtx.Dp(4)
 
 	w1, w2 := t.mainWidth(btn, gap, sep, pad), t.styleWidth(btn, gap, sep, pad)
 	showStyle := m.tool != annotate.ToolSelect
 	if !showStyle {
-		m.pick.open = false // у «выделения» нет цвета, окошко цвета не нужно
+		m.pick.open = false // the selection has no color, so no color popup is needed
 	}
 
 	x1 := sel.Max.X - w1
@@ -261,14 +264,14 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 		x2 = max(win.X-margin-w2, margin)
 	}
 
-	// Место считается под оба ряда, чтобы панель не прыгала, когда второй ряд появляется.
+	// Space is reserved for both rows so the toolbar does not jump when the second row appears.
 	reserve := rowH + vGap + rowH2
 	below := true
 	y1 := sel.Max.Y + margin
 	if y1+reserve > win.Y-margin {
 		if sel.Min.Y-margin-reserve >= margin {
 			below = false
-			y1 = sel.Min.Y - margin - rowH // основной ряд у выделения, второй дальше от него
+			y1 = sel.Min.Y - margin - rowH // main row next to the selection, the second one farther from it
 		} else {
 			y1 = sel.Max.Y - reserve - margin
 		}
@@ -288,7 +291,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	m.barBelow = below
 	capKey := func(action string) string { return keyCaption(m.store.Get().Keys.Of(action)) }
 
-	// Основной ряд.
+	// Main row.
 	func() {
 		defer op.Offset(r1.Min).Push(gtx.Ops).Pop()
 		bg := image.Rect(0, 0, w1, rowH)
@@ -339,7 +342,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 		})
 		drawAct(acts[3].a)
 
-		// Поглощаем события панели, чтобы они не уходили на холст.
+		// Absorb the toolbar events so they do not reach the canvas.
 		for {
 			if _, ok := gtx.Event(pointer.Filter{Target: &t.area, Kinds: pointer.Press | pointer.Release | pointer.Drag}); !ok {
 				break
@@ -347,7 +350,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 		}
 	}()
 
-	// Ряд цветов и толщины.
+	// Color and thickness row.
 	if showStyle {
 		func() {
 			defer op.Offset(r2.Min).Push(gtx.Ops).Pop()
@@ -380,7 +383,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 			})
 			p.divider()
 
-			// Толщина линии, размер текста, сила размытия: «−», текущее значение, «+».
+			// Line thickness, text size, blur strength: "−", current value, "+".
 			ic := iconColor
 			p.place(func(g layout.Context) layout.Dimensions {
 				return t.wMinus.btn.Layout(g, func(g layout.Context) layout.Dimensions {
@@ -412,8 +415,8 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 	m.layoutOverflowMenu(gtx, win)
 }
 
-// layoutOverflowMenu рисует меню «⋯» под панелью (над ней, если панель над выделением): пункты
-// «Настройки» и «В подборку» с клавишей.
+// layoutOverflowMenu draws the "⋯" menu below the toolbar (above it if the toolbar is
+// above the selection): the "Settings" and "To collection" items with their keys.
 func (m *monitor) layoutOverflowMenu(gtx layout.Context, win image.Point) {
 	if !m.menuOpen {
 		return
@@ -451,7 +454,7 @@ func (m *monitor) layoutOverflowMenu(gtx layout.Context, win image.Point) {
 	event.Op(gtx.Ops, &t.menuArea)
 	area.Pop()
 
-	big := int(float32(icon) / iconShare) // иконка рисуется на iconShare от квадрата: берём квадрат больше
+	big := int(float32(icon) / iconShare) // the icon is drawn at iconShare of the square: take a larger square
 	shift := (big - icon) / 2
 	for i, it := range items {
 		st := op.Offset(image.Pt(0, padY+i*itemH)).Push(gtx.Ops)
@@ -480,15 +483,16 @@ func (m *monitor) layoutOverflowMenu(gtx layout.Context, win image.Point) {
 	}
 }
 
-// handCursor делает курсор «рукой» над текущей кнопкой: вызывается в содержимом кнопки.
+// handCursor turns the cursor into a hand over the current button: called in the button
+// content.
 func handCursor(gtx layout.Context) {
 	area := clip.Rect(image.Rectangle{Max: gtx.Constraints.Min}).Push(gtx.Ops)
 	pointer.CursorPointer.Add(gtx.Ops)
 	area.Pop()
 }
 
-// drawKeyCaption пишет клавишу быстрого вызова мелко под кнопкой: center это
-// середина кнопки по горизонтали и нижний край кнопки.
+// drawKeyCaption writes the hotkey in small type under the button: center is the
+// horizontal middle of the button and the bottom edge of the button.
 func (m *monitor) drawKeyCaption(gtx layout.Context, center image.Point, txt string) {
 	if txt == "" {
 		return
@@ -504,8 +508,8 @@ func drawButton(gtx layout.Context, active, hovered bool, icon iconFunc) {
 	drawButtonColored(gtx, active, hovered, icon, iconColor)
 }
 
-// drawButtonColored рисует кнопку: нажатая (активный инструмент) закрашена акцентом, под мышью
-// слегка подсвечена, чтобы было видно, что на неё можно нажать.
+// drawButtonColored draws a button: a pressed one (the active tool) is filled with the
+// accent, one under the mouse is slightly highlighted to show it can be clicked.
 func drawButtonColored(gtx layout.Context, active, hovered bool, icon iconFunc, c color.NRGBA) {
 	s := gtx.Constraints.Min.X
 	switch {
@@ -519,7 +523,7 @@ func drawButtonColored(gtx layout.Context, active, hovered bool, icon iconFunc, 
 	icon(gtx.Ops, float32(s), c)
 }
 
-// drawWidthValue показывает число: толщину текущего инструмента (для размытия силу).
+// drawWidthValue shows a number: the thickness of the current tool (the strength for blur).
 func (m *monitor) drawWidthValue(gtx layout.Context, enabled bool) {
 	s := gtx.Constraints.Min.X
 	txt := "–"
@@ -540,8 +544,8 @@ func (m *monitor) drawWidthValue(gtx layout.Context, enabled bool) {
 	dims := widget.Label{MaxLines: 1}.Layout(lgtx, m.shaper, annotate.Font, unit.Sp(size), txt, mat)
 	label := rec.Stop()
 
-	// По горизонтали по ширине числа, по вертикали по середине цифр: цифра стоит на базовой линии
-	// и занимает около 0,72 размера шрифта, а не всю высоту строки.
+	// Horizontally by the width of the number, vertically by the middle of the digits: a digit
+	// sits on the baseline and takes about 0.72 of the font size, not the whole line height.
 	baseline := dims.Size.Y - dims.Baseline
 	top := s/2 - baseline + int(math.Round(size*0.72/2))
 	st := op.Offset(image.Pt((s-dims.Size.X)/2, top)).Push(gtx.Ops)
@@ -549,8 +553,8 @@ func (m *monitor) drawWidthValue(gtx layout.Context, enabled bool) {
 	st.Pop()
 }
 
-// drawCustomSwatch рисует кнопку своего цвета: радужное кольцо, а в середине выбранный цвет
-// (пока он не выбран, тёмная точка).
+// drawCustomSwatch draws the custom color button: a rainbow ring with the selected color
+// in the middle (a dark dot until one is selected).
 func drawCustomSwatch(gtx layout.Context, c color.NRGBA, has, active bool) {
 	s := gtx.Constraints.Min.X
 	inset := int(float32(s) * 0.22)
@@ -589,8 +593,8 @@ func drawSwatch(gtx layout.Context, c color.NRGBA, active bool) {
 	paint.FillShape(gtx.Ops, c, dot.Op(gtx.Ops))
 }
 
-// Иконки в стиле Tabler Icons (MIT): сетка 24×24, линия 2, скруглённые концы.
-// Рисуются на 60% размера кнопки по центру.
+// Icons in the Tabler Icons style (MIT): 24×24 grid, stroke 2, rounded caps.
+// Drawn at 60% of the button size, centered.
 const iconShare = 0.6
 
 func tabler(ops *op.Ops, s float32, c color.NRGBA, paths ...string) {
@@ -627,7 +631,7 @@ func iconMarker(ops *op.Ops, s float32, c color.NRGBA) {
 		"M4.5 13.5l4 4", "M21 15v4h-8l4 -4z")
 }
 
-// blurDots — растр из точек: радиус тает слева направо и сверху вниз.
+// blurDots is a halftone of dots: the radius fades from left to right and from top to bottom.
 var blurDots = [][3]float32{
 	{8, 8, 1.9}, {8, 12, 1.5}, {8, 16, 1.1},
 	{12.5, 8, 1.5}, {12.5, 12, 1.1}, {12.5, 16, 0.75},
@@ -658,12 +662,12 @@ func iconText(ops *op.Ops, s float32, c color.NRGBA) {
 	tabler(ops, s, c, "M4 20l3 0", "M14 20l7 0", "M6.8 15l7.4 0", "M5 20l5.5 -16", "M16 20l-5.5 -16")
 }
 
-// iconStamp: кружок с единицей (Tabler circle-number-1), штамп с номером.
+// iconStamp: a circle with a one (Tabler circle-number-1), the numbered stamp.
 func iconStamp(ops *op.Ops, s float32, c color.NRGBA) {
 	tabler(ops, s, c, "M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0", "M10 10l2 -2v8")
 }
 
-// iconMore: три точки (Tabler dots), меню «ещё».
+// iconMore: three dots (Tabler dots), the "more" menu.
 func iconMore(ops *op.Ops, s float32, c color.NRGBA) {
 	tabler(ops, s, c, "M5 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0", "M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0",
 		"M19 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0")
@@ -684,13 +688,13 @@ func iconSave(ops *op.Ops, s float32, c color.NRGBA) {
 		"M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0", "M14 4l0 4l-6 0l0 -4")
 }
 
-// iconAdd: квадрат с плюсом (Tabler square-plus), «добавить в подборку».
+// iconAdd: a square with a plus (Tabler square-plus), "add to the collection".
 func iconAdd(ops *op.Ops, s float32, c color.NRGBA) {
 	tabler(ops, s, c, "M3 3m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z",
 		"M9 12h6", "M12 9v6")
 }
 
-// iconSettings: шестерёнка (Tabler settings).
+// iconSettings: a gear (Tabler settings).
 func iconSettings(ops *op.Ops, s float32, c color.NRGBA) {
 	tabler(ops, s, c,
 		"M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z",

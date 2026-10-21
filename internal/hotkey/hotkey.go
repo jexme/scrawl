@@ -1,6 +1,6 @@
-// Package hotkey назначает горячую клавишу запуска через пользовательские
-// ярлыки GNOME (gsettings). Меняется только ярлык самой программы; чужие ярлыки
-// не трогаются, а занятая ими комбинация приводит к ошибке.
+// Package hotkey assigns the launch hotkey through GNOME custom shortcuts (gsettings).
+// Only the program's own shortcut is changed; other shortcuts are left alone, and a
+// combination they already use results in an error.
 package hotkey
 
 import (
@@ -18,11 +18,11 @@ import (
 const (
 	schema = "org.gnome.settings-daemon.plugins.media-keys"
 	base   = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/"
-	// ShortcutName — имя ярлыка в настройках клавиатуры GNOME.
+	// ShortcutName is the name of the shortcut in the GNOME keyboard settings.
 	ShortcutName = "scrawl"
 )
 
-// Встроенные ярлыки GNOME, с которыми комбинация может пересекаться.
+// Built-in GNOME shortcuts the combination may clash with.
 var builtin = [][2]string{
 	{"org.gnome.shell.keybindings", "show-screenshot-ui"},
 	{"org.gnome.shell.keybindings", "screenshot"},
@@ -30,7 +30,7 @@ var builtin = [][2]string{
 	{"org.gnome.shell.keybindings", "show-screen-recording-ui"},
 }
 
-// gsettings выполняет команду gsettings и возвращает её вывод. В тестах подменяется.
+// gsettings runs the gsettings command and returns its output. It is replaced in tests.
 var gsettings = func(args ...string) (string, error) {
 	out, err := exec.Command("gsettings", args...).CombinedOutput()
 	text := strings.TrimSpace(string(out))
@@ -45,7 +45,7 @@ var gsettings = func(args ...string) (string, error) {
 
 var accelRe = regexp.MustCompile(`(?i)^(<(Super|Control|Primary|Shift|Alt|Mod1|Ctrl)>)*[A-Za-z0-9_]+$`)
 
-// ValidateAccel проверяет запись комбинации в формате GTK: Print, <Super>s,
+// ValidateAccel checks a combination written in GTK format: Print, <Super>s,
 // <Control><Alt>p.
 func ValidateAccel(accel string) error {
 	if !accelRe.MatchString(accel) {
@@ -54,13 +54,13 @@ func ValidateAccel(accel string) error {
 	return nil
 }
 
-// Result описывает итог назначения.
+// Result describes the outcome of an assignment.
 type Result struct {
-	Updated bool   // обновлён существующий ярлык программы, а не создан новый
-	Warning string // комбинация совпала со встроенным ярлыком GNOME
+	Updated bool   // an existing shortcut of the program was updated, not a new one created
+	Warning string // the combination coincides with a built-in GNOME shortcut
 }
 
-// Conflict — комбинация занята чужим пользовательским ярлыком.
+// Conflict is a combination taken by someone else's custom shortcut.
 type Conflict struct{ Name, Accel string }
 
 func (c *Conflict) Error() string {
@@ -69,7 +69,7 @@ func (c *Conflict) Error() string {
 
 type shortcut struct{ path, name, command, binding string }
 
-// parseStrings разбирает список строк в записи GVariant: ['a', 'b'] или @as [].
+// parseStrings parses a list of strings in GVariant notation: ['a', 'b'] or @as [].
 func parseStrings(v string) []string {
 	var out []string
 	for i := 0; i < len(v); i++ {
@@ -88,7 +88,7 @@ func parseStrings(v string) []string {
 	return out
 }
 
-// quote записывает строку в виде GVariant.
+// quote writes a string as a GVariant.
 func quote(s string) string {
 	return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(s) + "'"
 }
@@ -128,7 +128,8 @@ func listShortcuts() ([]shortcut, error) {
 	return list, nil
 }
 
-// ours сообщает, что ярлык принадлежит этой программе (в том числе под прежним названием).
+// ours reports that the shortcut belongs to this program (including under its former
+// name).
 func (s shortcut) ours() bool {
 	exe := filepath.Base(strings.Fields(s.command + " ")[0])
 	return s.name == ShortcutName || exe == "scrawl" || exe == "screen-editor"
@@ -136,7 +137,7 @@ func (s shortcut) ours() bool {
 
 func sameAccel(a, b string) bool { return strings.EqualFold(a, b) }
 
-// Current возвращает комбинацию ярлыка программы или "", если ярлыка нет.
+// Current returns the combination of the program's shortcut, or "" if there is none.
 func Current() string {
 	if onWindows {
 		return winCurrent()
@@ -153,8 +154,9 @@ func Current() string {
 	return ""
 }
 
-// Assign назначает комбинацию accel на запуск bin. Есть ярлык программы:
-// он обновляется. Нет: создаётся новый. Чужой ярлык с той же комбинацией даёт *Conflict.
+// Assign assigns the combination accel to launch bin. If the program's shortcut exists, it
+// is updated. If not, a new one is created. Someone else's shortcut with the same
+// combination yields *Conflict.
 func Assign(accel, bin string) (Result, error) {
 	if onWindows {
 		return winAssign(accel)
@@ -187,7 +189,7 @@ func Assign(accel, bin string) (Result, error) {
 		}
 	}
 
-	var newList []string // список ярлыков с новым ярлыком; пусто, если обновляем свой
+	var newList []string // the list of shortcuts with the new one; empty if we update our own
 	if mine != nil {
 		res.Updated = true
 	} else {
@@ -208,7 +210,8 @@ func Assign(accel, bin string) (Result, error) {
 			return res, fmt.Errorf("gsettings: %w", err)
 		}
 	}
-	// Ярлык попадает в список последним: пока поля не заполнены, GNOME его не видит.
+	// The shortcut goes into the list last: until its fields are filled in, GNOME does not see
+	// it.
 	if newList != nil {
 		if _, err := gsettings("set", schema, "custom-keybindings", quoteList(newList)); err != nil {
 			return res, fmt.Errorf("gsettings: %w", err)
@@ -217,8 +220,8 @@ func Assign(accel, bin string) (Result, error) {
 	return res, nil
 }
 
-// PreferredBinary возвращает путь, который стоит прописать в ярлыке: постоянный
-// ~/.local/bin/scrawl, если он ведёт на запущенный бинарник, иначе сам бинарник.
+// PreferredBinary returns the path worth writing into the shortcut: the permanent
+// ~/.local/bin/scrawl if it leads to the running binary, otherwise the binary itself.
 func PreferredBinary() (string, error) {
 	exe, err := os.Executable()
 	if err != nil {

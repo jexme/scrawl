@@ -1,7 +1,7 @@
-// Package tray показывает значок в области уведомлений через StatusNotifierItem
-// (протокол KDE и AppIndicator): левый клик делает снимок, меню даёт «Снимок»,
-// «Настройки» и «Выход». На GNOME значок виден только с расширением AppIndicator
-// (в Ubuntu оно включено по умолчанию).
+// Package tray shows an icon in the notification area through StatusNotifierItem (the KDE
+// and AppIndicator protocol): a left click takes a screenshot, the menu offers "Take
+// screenshot", "Settings" and "Quit". On GNOME the icon is visible only with the
+// AppIndicator extension (enabled by default in Ubuntu).
 package tray
 
 import (
@@ -23,10 +23,10 @@ const (
 	watcherPath = "/StatusNotifierWatcher"
 )
 
-// item реализует методы org.kde.StatusNotifierItem.
+// item implements the methods of org.kde.StatusNotifierItem.
 type itemObj struct{ h Handlers }
 
-// Activate вызывается левым кликом по значку.
+// Activate is called by a left click on the icon.
 func (i *itemObj) Activate(x, y int32) *dbus.Error {
 	if i.h.Shot != nil {
 		go i.h.Shot()
@@ -47,18 +47,18 @@ type toolTip struct {
 	Text     string
 }
 
-// Item — значок, выставленный на шине.
+// Item is an icon exported on the bus.
 type Item struct {
 	conn *dbus.Conn
 	name string
 }
 
-// Name возвращает имя службы значка на шине.
+// Name returns the service name of the icon on the bus.
 func (it *Item) Name() string { return it.name }
 
-// Start выставляет значок и меню на соединении и регистрирует их у наблюдателя
-// StatusNotifierWatcher. Если наблюдателя нет (нет расширения AppIndicator),
-// значок остаётся выставленным, а ошибка говорит о том, что его пока не видно.
+// Start exports the icon and the menu on the connection and registers them with the
+// StatusNotifierWatcher. If there is no watcher (no AppIndicator extension), the icon
+// stays exported, and the error says that it is not visible yet.
 func Start(conn *dbus.Conn, h Handlers) (*Item, error) {
 	name := fmt.Sprintf("org.kde.StatusNotifierItem-%d-1", os.Getpid())
 	reply, err := conn.RequestName(name, dbus.NameFlagDoNotQueue)
@@ -110,7 +110,7 @@ func Start(conn *dbus.Conn, h Handlers) (*Item, error) {
 	return it, it.register()
 }
 
-// register сообщает наблюдателю о значке. Повторный вызов безопасен.
+// register tells the watcher about the icon. A repeated call is safe.
 func (it *Item) register() error {
 	call := it.conn.Object(watcherName, watcherPath).Call(watcherName+".RegisterStatusNotifierItem", 0, it.name)
 	if call.Err != nil {

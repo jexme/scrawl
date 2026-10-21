@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-// Проверяет реестровую ветку на временном ключе, а не на настоящем Run.
+// Tests the registry branch on a temporary key, not on the real Run.
 func TestRegistryEnableDisable(t *testing.T) {
 	oldKey, oldName := regKeyPath, regValueName
 	regKeyPath, regValueName = `Software\ScrawlTest\Run`, "Scrawl"

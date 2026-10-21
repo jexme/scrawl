@@ -9,8 +9,9 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
-// Run показывает значок, пока не вызван h.Quit или не закрыт канал stop (nil: без него). Если наблюдатель появится позже
-// (расширение включили после запуска) или перезапустится, значок регистрируется заново.
+// Run shows the icon until h.Quit is called or the stop channel is closed (nil: without
+// it). If the watcher appears later (the extension was enabled after launch) or restarts,
+// the icon is registered again.
 func Run(h Handlers, stop <-chan struct{}) error {
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
@@ -51,7 +52,7 @@ func Run(h Handlers, stop <-chan struct{}) error {
 				return nil
 			case s := <-sig:
 				if s == nil {
-					return nil // соединение закрыто
+					return nil // connection closed
 				}
 				if s.Name == "org.freedesktop.DBus.NameOwnerChanged" && len(s.Body) == 3 {
 					if owner, _ := s.Body[2].(string); owner != "" {

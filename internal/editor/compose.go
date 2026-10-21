@@ -24,7 +24,7 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// Цвета склейки для светлого и тёмного фона.
+// Collage colours for light and dark backgrounds.
 var (
 	composeLight = composeColors{
 		bg:     color.NRGBA{R: 255, G: 255, B: 255, A: 255},
@@ -47,13 +47,13 @@ func composePalette(g settings.Glue) composeColors {
 	return composeLight
 }
 
-// composeMetrics возвращает отступ (он же промежуток между картинками) и высоту
-// строки подписи в пикселях результата.
+// composeMetrics returns the padding (also the gap between images) and the height of the
+// caption row in pixels of the result.
 func composeMetrics(g settings.Glue) (pad, labelH int) {
 	return g.Pad, g.LabelSize + 24
 }
 
-// loadPNGs читает картинки подборки с диска.
+// loadPNGs reads the images of the collection from disk.
 func loadPNGs(paths []string) ([]*image.RGBA, error) {
 	out := make([]*image.RGBA, 0, len(paths))
 	for _, p := range paths {
@@ -73,15 +73,15 @@ func loadPNGs(paths []string) ([]*image.RGBA, error) {
 	return out, nil
 }
 
-// composeSlot — место одной картинки в склейке: подпись и сама картинка.
+// composeSlot is the place of one image in the collage: the caption and the image itself.
 type composeSlot struct {
-	label image.Rectangle // область подписи
-	dst   image.Rectangle // область картинки
+	label image.Rectangle // caption area
+	dst   image.Rectangle // image area
 }
 
-// composeSlots раскладывает картинки: рядом (одной высоты, по самой низкой) или
-// друг под другом (одной ширины, по самой узкой), без увеличения. Возвращает
-// места картинок и размер результата.
+// composeSlots lays out the images: side by side (same height, matching the shortest) or
+// one under another (same width, matching the narrowest), without enlarging. It returns
+// the places of the images and the size of the result.
 func composeSlots(imgs []*image.RGBA, g settings.Glue) (slots []composeSlot, size image.Point) {
 	composePad, composeLabelH := composeMetrics(g)
 	composeGap := composePad
@@ -117,7 +117,7 @@ func composeSlots(imgs []*image.RGBA, g settings.Glue) (slots []composeSlot, siz
 	return slots, image.Pt(x-composeGap+composePad, composePad*2+composeLabelH+hc)
 }
 
-// compose склеивает картинки в одну: с подписью сверху у каждой и тонкой рамкой.
+// compose glues the images into one: each with a caption on top and a thin border.
 func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper, glue settings.Glue) (*image.RGBA, error) {
 	if len(imgs) < 2 {
 		return nil, fmt.Errorf(i18n.T("gluing needs at least two images, got %d"), len(imgs))
@@ -172,7 +172,7 @@ func compose(imgs []*image.RGBA, labels []string, shaper *text.Shaper, glue sett
 	return out, nil
 }
 
-// drawLabelCentered рисует подпись по центру области r.
+// drawLabelCentered draws the caption in the centre of the area r.
 func drawLabelCentered(gtx layout.Context, shaper *text.Shaper, txt string, r image.Rectangle, size int, col color.NRGBA) {
 	rec := op.Record(gtx.Ops)
 	paint.ColorOp{Color: col}.Add(gtx.Ops)

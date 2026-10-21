@@ -16,8 +16,8 @@ import (
 
 const screenshotMethod = "org.freedesktop.portal.Screenshot.Screenshot"
 
-// screenshot снимает весь рабочий стол через xdg-desktop-portal Screenshot.
-// Медленнее PipeWire (около полусекунды), зато не зависит от перерисовки экрана.
+// screenshot captures the whole desktop through the xdg-desktop-portal Screenshot.
+// Slower than PipeWire (about half a second), but independent of screen redraws.
 func (p *Portal) screenshot() (*image.RGBA, error) {
 	res, err := p.request(screenshotMethod, 30*time.Second, []any{""}, map[string]dbus.Variant{
 		"interactive": dbus.MakeVariant(false),
@@ -30,7 +30,7 @@ func (p *Portal) screenshot() (*image.RGBA, error) {
 	if err != nil || u.Scheme != "file" {
 		return nil, fmt.Errorf(i18n.T("unexpected screenshot uri: %q"), uri)
 	}
-	// Файл создан порталом ради этого запроса, после чтения он не нужен.
+	// The file was created by the portal for this request; after reading it is not needed.
 	defer os.Remove(u.Path)
 
 	f, err := os.Open(u.Path)
@@ -47,8 +47,8 @@ func (p *Portal) screenshot() (*image.RGBA, error) {
 	return rgba, nil
 }
 
-// grabViaScreenshot режет снимок рабочего стола по мониторам сессий.
-// Позиции мониторов считаются совпадающими с пикселями снимка (масштаб 1).
+// grabViaScreenshot cuts the desktop screenshot up by the sessions' monitors.
+// Monitor positions are assumed to match the screenshot pixels (scale 1).
 func (p *Portal) grabViaScreenshot(sessions []*Session) ([]Frame, error) {
 	shot, err := p.screenshot()
 	if err != nil {

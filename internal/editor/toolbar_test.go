@@ -20,9 +20,10 @@ import (
 	"github.com/jexme/scrawl/internal/settings"
 )
 
-// TestToolbarKeyCaptions рисует панель и проверяет, что клавиши написаны под кнопками с быстрым
-// вызовом: под инструментами и действиями в основном ряду, под «−» и «+» во втором, а под цветами
-// подписей нет. С SCRAWL_TEST_OUT=путь.png результат сохраняется.
+// TestToolbarKeyCaptions draws the toolbar and checks that the keys are written under the
+// buttons with a quick call: under the tools and actions in the main row, under "−" and
+// "+" in the second one, and there are no captions under the colours. With
+// SCRAWL_TEST_OUT=path.png the result is saved.
 func TestToolbarKeyCaptions(t *testing.T) {
 	testenv.Config(t, t.TempDir())
 	const W, H = 1100, 300
@@ -65,7 +66,7 @@ func TestToolbarKeyCaptions(t *testing.T) {
 		}
 		return n
 	}
-	// Основной ряд: подписи под инструментами и под отменой, копированием, сохранением и закрытием.
+	// Main row: captions under the tools and under undo, copy, save and close.
 	caps := func(row image.Rectangle) image.Rectangle {
 		return image.Rect(row.Min.X, row.Max.Y-13, row.Max.X, row.Max.Y)
 	}
@@ -77,7 +78,7 @@ func TestToolbarKeyCaptions(t *testing.T) {
 		t.Errorf("под кнопками действий нет подписей клавиш: найдено %d светлых пикселей", n)
 	}
 
-	// Второй ряд лежит под основным, он ниже: подписей у него нет.
+	// The second row lies below the main one, it is lower: it has no captions.
 	if m.barRect.Dy() <= main.Dy() {
 		t.Fatalf("при рисующем инструменте ожидали второй ряд под основным: панель %v, основной ряд %v", m.barRect, main)
 	}
@@ -85,7 +86,8 @@ func TestToolbarKeyCaptions(t *testing.T) {
 	if style.Dy() != 34+2*6 {
 		t.Errorf("высота второго ряда %d, ожидали %d (кнопка и поля, без строки подписей)", style.Dy(), 34+2*6)
 	}
-	// Под кнопками «−» и «+» подсказок нет: нет вообще ничего светлее фона ряда ниже кнопок.
+	// There are no hints under the "−" and "+" buttons: below the buttons there is nothing at
+	// all lighter than the row background.
 	if n := light(image.Rect(style.Min.X, style.Max.Y, style.Max.X, style.Max.Y+13)); n != 0 {
 		t.Errorf("под вторым рядом что-то нарисовано: %d светлых пикселей", n)
 	}
@@ -100,7 +102,7 @@ func TestToolbarKeyCaptions(t *testing.T) {
 		}
 	}
 
-	// У «выделения» второго ряда нет.
+	// "Select" has no second row.
 	m.tool = annotate.ToolSelect
 	ops.Reset()
 	m.layoutToolbar(gtx, image.Pt(W, H), m.sel)
@@ -112,7 +114,7 @@ func TestToolbarKeyCaptions(t *testing.T) {
 	}
 }
 
-// TestToolKeys: клавиша инструмента включает его, но только когда область выбрана.
+// TestToolKeys: a tool key enables the tool, but only when a region is selected.
 func TestToolKeys(t *testing.T) {
 	testenv.Config(t, t.TempDir())
 	src := image.NewRGBA(image.Rect(0, 0, 100, 100))
@@ -142,7 +144,8 @@ func TestToolKeys(t *testing.T) {
 	}
 }
 
-// TestWidthKeys: плюс и минус меняют толщину текущего инструмента, у «выделения» ничего не делают.
+// TestWidthKeys: plus and minus change the thickness of the current tool, and do nothing
+// for "Select".
 func TestWidthKeys(t *testing.T) {
 	testenv.Config(t, t.TempDir())
 	src := image.NewRGBA(image.Rect(0, 0, 100, 100))
@@ -177,16 +180,17 @@ func TestWidthKeys(t *testing.T) {
 	}
 }
 
-// TestToolbarClickRedrawsImmediately: клик по инструменту правее активного. Кнопки левее нажатой
-// не должны остаться подсвеченными (раньше клик обрабатывался посреди рисования, и подсвечены были
-// оба инструмента до следующего движения мыши), и должен запрашиваться ещё один кадр.
+// TestToolbarClickRedrawsImmediately: a click on a tool to the right of the active one.
+// The buttons to the left of the pressed one must not stay highlighted (previously the
+// click was handled in the middle of drawing, and both tools were highlighted until the
+// next mouse move), and one more frame must be requested.
 func TestToolbarClickRedrawsImmediately(t *testing.T) {
 	testenv.Config(t, t.TempDir())
 	const W, H = 1200, 300
 	src := image.NewRGBA(image.Rect(0, 0, W, H))
 	m := newMonitor(Config{}, &screencast.Frame{Img: src}, func() {})
 	m.sel, m.hasSel = image.Rect(100, 20, 1100, 120), true
-	m.tool = annotate.ToolPen // активно перо, нажмём стрелку, она правее
+	m.tool = annotate.ToolPen // the pen is active, we press the arrow, which is to the right of it
 
 	win, err := headless.NewWindow(W, H)
 	if err != nil {
@@ -205,7 +209,7 @@ func TestToolbarClickRedrawsImmediately(t *testing.T) {
 	frame()
 	frame()
 
-	center := func(i int) f32.Point { // середина кнопки i-го инструмента
+	center := func(i int) f32.Point { // centre of the button of the i-th tool
 		return f32.Pt(float32(m.mainRow.Min.X+6+i*38+17), float32(m.mainRow.Min.Y+6+17))
 	}
 	arrow := int(annotate.ToolArrow)
@@ -213,13 +217,13 @@ func TestToolbarClickRedrawsImmediately(t *testing.T) {
 	r.Queue(pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Position: center(arrow), Buttons: pointer.ButtonPrimary})
 	frame()
 	r.Queue(pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: center(arrow)})
-	r.WakeupTime() // сбросить прежние запросы кадра
-	frame()        // в этом кадре клик обработан
+	r.WakeupTime() // discard earlier frame requests
+	frame()        // the click is handled in this frame
 	if m.tool != annotate.ToolArrow {
 		t.Fatalf("после клика инструмент %v, ожидали стрелку", m.tool)
 	}
 
-	// Кадр после клика: подсвечена только стрелка.
+	// The frame after the click: only the arrow is highlighted.
 	if err := win.Frame(&ops); err != nil {
 		t.Skipf("headless рендер недоступен: %v", err)
 	}
@@ -227,7 +231,7 @@ func TestToolbarClickRedrawsImmediately(t *testing.T) {
 	if err := win.Screenshot(out); err != nil {
 		t.Fatal(err)
 	}
-	highlighted := func(i int) bool { // угол кнопки закрашен акцентным цветом
+	highlighted := func(i int) bool { // the corner of the button is filled with the accent colour
 		c := out.RGBAAt(m.mainRow.Min.X+6+i*38+4, m.mainRow.Min.Y+6+17)
 		return c.B > 200 && c.R < 100
 	}
@@ -242,7 +246,8 @@ func TestToolbarClickRedrawsImmediately(t *testing.T) {
 	}
 }
 
-// TestToolbarHover: кнопка под мышью слегка подсвечена, остальные нет.
+// TestToolbarHover: the button under the mouse is slightly highlighted, the others are
+// not.
 func TestToolbarHover(t *testing.T) {
 	testenv.Config(t, t.TempDir())
 	const W, H = 1200, 300
@@ -290,8 +295,9 @@ func TestToolbarHover(t *testing.T) {
 	}
 }
 
-// TestToolbarOverflowMenu: «⋯» открывает меню, повторный клик, клик по другой кнопке и клик по холсту
-// закрывают его; меню рисуется поверх и не выходит за окно.
+// TestToolbarOverflowMenu: "⋯" opens the menu; a second click, a click on another button
+// and a click on the canvas close it; the menu is drawn on top and does not go outside the
+// window.
 func TestToolbarOverflowMenu(t *testing.T) {
 	testenv.Config(t, t.TempDir())
 	const W, H = 1100, 400
@@ -331,19 +337,19 @@ func TestToolbarOverflowMenu(t *testing.T) {
 		t.Error("повторный клик по «⋯» не закрыл меню")
 	}
 	click(more)
-	// Клик по инструменту закрывает меню и включает инструмент.
+	// A click on a tool closes the menu and enables the tool.
 	click(f32.Pt(float32(m.mainRow.Min.X+6+int(annotate.ToolArrow)*38+17), float32(m.mainRow.Min.Y+6+17)))
 	if m.menuOpen || m.tool != annotate.ToolArrow {
 		t.Errorf("клик по инструменту: меню открыто=%v, инструмент %v", m.menuOpen, m.tool)
 	}
-	// Клик по холсту закрывает меню и не рисует.
+	// A click on the canvas closes the menu and draws nothing.
 	click(more)
 	m.press(f32.Pt(10, 10))
 	if m.menuOpen {
 		t.Error("клик по холсту не закрыл меню")
 	}
 
-	// Меню целиком в окне и ниже панели.
+	// The menu is entirely inside the window and below the toolbar.
 	m.menuOpen = true
 	var hw *headless.Window
 	hw, err := headless.NewWindow(W, H)
@@ -361,7 +367,8 @@ func TestToolbarOverflowMenu(t *testing.T) {
 	if err := hw.Screenshot(out); err != nil {
 		t.Fatal(err)
 	}
-	// Под панелью (на 12 px ниже её края) в колонке «⋯» должен быть фон меню, а не пустой кадр.
+	// Below the toolbar (12 px below its edge) in the "⋯" column there must be the menu
+	// background, not an empty frame.
 	probe := out.RGBAAt(m.menuAnchor-5, m.barRect.Max.Y+14)
 	if probe.R > 80 || probe.G > 80 {
 		t.Errorf("под панелью не нарисовано меню: %v", probe)
@@ -372,8 +379,8 @@ func TestToolbarOverflowMenu(t *testing.T) {
 	}
 }
 
-// TestWidthValueCentered: число толщины стоит по центру кнопки и по горизонтали, и по вертикали,
-// при любом числе знаков.
+// TestWidthValueCentered: the thickness number sits in the centre of the button both
+// horizontally and vertically, for any number of digits.
 func TestWidthValueCentered(t *testing.T) {
 	testenv.Config(t, t.TempDir())
 	src := image.NewRGBA(image.Rect(0, 0, 100, 100))
@@ -402,7 +409,7 @@ func TestWidthValueCentered(t *testing.T) {
 		minX, minY, maxX, maxY := 1<<20, 1<<20, -1, -1
 		for y := 0; y < 120; y++ {
 			for x := 0; x < 120; x++ {
-				if c := out.RGBAAt(x, y); c.R > 150 && c.G > 150 && c.B > 150 { // светлые цифры на тёмной кнопке
+				if c := out.RGBAAt(x, y); c.R > 150 && c.G > 150 && c.B > 150 { // light digits on a dark button
 					minX, minY, maxX, maxY = min(minX, x), min(minY, y), max(maxX, x), max(maxY, y)
 				}
 			}

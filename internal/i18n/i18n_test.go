@@ -98,7 +98,7 @@ func TestAutoDetect(t *testing.T) {
 		t.Errorf("auto при русской локали: %q", Language())
 	}
 	t.Setenv("LC_ALL", "sv_SE.UTF-8")
-	SetLanguage("что-то странное") // неизвестное значение считается auto
+	SetLanguage("что-то странное") // an unknown value is treated as auto
 	if Language() != EN {
 		t.Errorf("неизвестный код при шведской локали: %q", Language())
 	}
@@ -111,8 +111,8 @@ func TestAutoDetect(t *testing.T) {
 
 var verbRe = regexp.MustCompile(`%[-+#0-9.]*[a-zA-Z%]`)
 
-// Формат и перевод должны содержать одни и те же подстановки в том же порядке,
-// иначе Sprintf напечатает мусор.
+// The format and the translation must contain the same substitutions in the same order,
+// otherwise Sprintf will print garbage.
 func TestVerbsMatch(t *testing.T) {
 	for lang, cat := range catalogs {
 		for ru, tr := range cat {
@@ -149,7 +149,8 @@ func TestNormalize(t *testing.T) {
 	}
 }
 
-// Каждый язык из списка имеет каталог (кроме английского: он исходный), и коды не повторяются.
+// Every language in the list has a catalog (except English: it is the source), and the
+// codes are unique.
 func TestLanguagesList(t *testing.T) {
 	seen := map[string]bool{}
 	for _, l := range Languages {
@@ -166,7 +167,7 @@ func TestLanguagesList(t *testing.T) {
 	}
 }
 
-// Нет перевода на язык: показывается английский текст из кода.
+// No translation for the language: the English text from the code is shown.
 func TestFallbackToEnglish(t *testing.T) {
 	defer SetLanguage(EN)
 	const key = "Close"
@@ -184,8 +185,8 @@ func TestFallbackToEnglish(t *testing.T) {
 
 var cyr = regexp.MustCompile(`[А-Яа-яЁё]`)
 
-// Тексты, которые переводятся не в месте объявления, а при показе. Они обязаны
-// быть в каталоге (проверяется ниже), а в коде могут стоять без T.
+// Texts that are translated not at the declaration but at display time. They must
+// be in the catalog (checked below), and in the code they may appear without T.
 var translatedAtUse = []string{
 	"Before", "After", "Step",
 	"Select", "Pen", "Line", "Arrow", "Box", "Marker", "Blur", "Text", "Number",
@@ -194,7 +195,7 @@ var translatedAtUse = []string{
 	"Thicker (text size, blur strength)", "Thinner (text size, blur strength)",
 }
 
-// Русские литералы, которые остаются как есть: название языка пишется на нём самом.
+// Russian literals that stay as they are: a language's name is written in the language itself.
 var leftRussian = map[string]bool{
 	"Русский": true,
 }
@@ -269,7 +270,7 @@ func TestCatalogCompleteness(t *testing.T) {
 			t.Errorf("лишняя запись в каталоге (текста нет в коде): %q", key)
 		}
 	}
-	// Остальные языки переведены так же полно, как русский.
+	// The other languages are translated as fully as Russian.
 	for lang, cat := range catalogs {
 		for key := range ru {
 			if _, ok := cat[key]; !ok {
@@ -282,7 +283,7 @@ func TestCatalogCompleteness(t *testing.T) {
 			}
 		}
 	}
-	// Исходный язык кода английский: русских литералов быть не должно.
+	// The source language of the code is English: there must be no Russian literals.
 	for _, u := range unwrapped {
 		t.Errorf("русский текст в коде (источник английский, русский живёт в lang_ru.go): %s", u)
 	}

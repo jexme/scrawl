@@ -90,10 +90,10 @@ func TestChordFromEvent(t *testing.T) {
 		{press(key.NameDeleteForward, key.ModAlt), "Alt+Delete", true},
 		{press("F5", 0), "F5", true},
 		{press("F12", key.ModCtrl), "Ctrl+F12", true},
-		{press(key.NameCtrl, key.ModCtrl), "", false}, // нажали только модификатор
-		{press("+", key.ModShift), "Plus", true},      // «+» набирают с Shift: это просто плюс
+		{press(key.NameCtrl, key.ModCtrl), "", false}, // only a modifier was pressed
+		{press("+", key.ModShift), "Plus", true},      // "+" is typed with Shift: it is just a plus
 		{press("=", 0), "Plus", true},
-		{press("+", 0), "Plus", true}, // цифровая клавиатура
+		{press("+", 0), "Plus", true}, // numpad
 		{press("-", 0), "Minus", true},
 		{press("_", key.ModShift), "Minus", true},
 		{press("+", key.ModCtrl|key.ModShift), "Ctrl+Plus", true},
@@ -108,8 +108,8 @@ func TestChordFromEvent(t *testing.T) {
 	}
 }
 
-// Всё, что принимают настройки, должно разбираться здесь, и наоборот: запись
-// из события Gio должна проходить проверку настроек.
+// Everything the settings accept must parse here, and vice versa: an entry
+// from a Gio event must pass the settings validation.
 func TestAgreesWithSettings(t *testing.T) {
 	for action, chord := range settings.DefaultKeys {
 		b, ok := Parse(chord)

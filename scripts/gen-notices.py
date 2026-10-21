@@ -13,7 +13,7 @@ import sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 MODULE = "github.com/jexme/scrawl"
 
-# SPDX-идентификаторы известных модулей (для таблицы в начале файла).
+# SPDX identifiers of known modules (for the table at the top of the file).
 SPDX = {
     "gioui.org": "Unlicense OR MIT",
     "gioui.org/shader": "Unlicense OR MIT",

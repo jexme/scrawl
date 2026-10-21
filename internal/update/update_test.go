@@ -88,7 +88,7 @@ func TestCheckErrors(t *testing.T) {
 			t.Errorf("%d %q: ошибка %v, ожидали «%s»", c.status, c.body, err, c.want)
 		}
 	}
-	// Сервер недоступен.
+	// The server is unavailable.
 	apiURL = "http://127.0.0.1:1/"
 	if _, err := Check(context.Background(), "v0.1.0"); err == nil || !strings.Contains(err.Error(), "cannot reach GitHub") {
 		t.Errorf("нет связи: %v", err)

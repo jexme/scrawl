@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// fakeGSettings имитирует хранилище gsettings: ключ «схема ключ» -> значение GVariant.
+// fakeGSettings imitates the gsettings storage: the key "schema key" -> a GVariant value.
 type fakeGSettings struct {
 	values map[string]string
 	sets   []string
@@ -104,7 +104,7 @@ func TestAssignCreatesNewShortcut(t *testing.T) {
 	if got := parseStrings(v[schema+" custom-keybindings"]); len(got) != 3 || got[2] != newPath {
 		t.Errorf("список ярлыков: %v", got)
 	}
-	// Список обновляется после заполнения полей.
+	// The list is updated after the fields are filled in.
 	if last := f.sets[len(f.sets)-1]; last != schema+" custom-keybindings" {
 		t.Errorf("список должен записываться последним: %v", f.sets)
 	}

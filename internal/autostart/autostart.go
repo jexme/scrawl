@@ -1,5 +1,5 @@
-// Package autostart включает и выключает запуск значка в трее при входе в
-// систему: файл .desktop в ~/.config/autostart/ (стандарт XDG Autostart).
+// Package autostart enables and disables launching the tray icon at login:
+// a .desktop file in ~/.config/autostart/ (the XDG Autostart standard).
 package autostart
 
 import (
@@ -13,10 +13,10 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// FileName — имя файла автозапуска; совпадает с AppID.
+// FileName is the name of the autostart file; it matches AppID.
 const FileName = "io.github.jexme.Scrawl.desktop"
 
-// Path возвращает путь к файлу автозапуска.
+// Path returns the path to the autostart file.
 func Path() string {
 	dir, err := os.UserConfigDir()
 	if err != nil {
@@ -25,7 +25,7 @@ func Path() string {
 	return filepath.Join(dir, "autostart", FileName)
 }
 
-// Enabled сообщает, есть ли файл автозапуска.
+// Enabled reports whether the autostart file exists.
 func Enabled() bool {
 	if useRegistry {
 		return regEnabled()
@@ -34,19 +34,19 @@ func Enabled() bool {
 	return err == nil
 }
 
-// quoteExec записывает путь для поля Exec: пути с пробелами и служебными
-// знаками берутся в двойные кавычки по правилам Desktop Entry Specification.
+// quoteExec writes a path for the Exec field: paths with spaces and special
+// characters are put in double quotes per the Desktop Entry Specification.
 func quoteExec(path string) string {
 	if !strings.ContainsAny(path, " \t\n\"'\\><~|&;$*?#()`") {
 		return path
 	}
-	// Сначала кавычечное экранирование (\" \$ \` \\), затем обычное для строк
-	// .desktop, где обратная косая удваивается: отсюда \\" и четыре косые для одной.
+	// First the quote escaping (\" \$ \` \\), then the usual one for .desktop strings,
+	// where the backslash is doubled: hence \\" and four backslashes for one.
 	r := strings.NewReplacer(`\`, `\\\\`, `"`, `\\"`, "`", "\\\\`", `$`, `\\$`)
 	return `"` + r.Replace(path) + `"`
 }
 
-// Content возвращает содержимое файла автозапуска для бинарника bin.
+// Content returns the contents of the autostart file for the binary bin.
 func Content(bin string) string {
 	return "[Desktop Entry]\n" +
 		"Type=Application\n" +
@@ -59,7 +59,7 @@ func Content(bin string) string {
 		"X-GNOME-Autostart-enabled=true\n"
 }
 
-// Enable создаёт файл автозапуска для бинарника bin.
+// Enable creates the autostart file for the binary bin.
 func Enable(bin string) error {
 	if !filepath.IsAbs(bin) {
 		return fmt.Errorf(i18n.T("the path to the program must be absolute: %q"), bin)
@@ -74,7 +74,7 @@ func Enable(bin string) error {
 	return os.WriteFile(path, []byte(Content(bin)), 0o644)
 }
 
-// Disable удаляет файл автозапуска; если его нет, это не ошибка.
+// Disable removes the autostart file; if it does not exist, that is not an error.
 func Disable() error {
 	if useRegistry {
 		return regDisable()

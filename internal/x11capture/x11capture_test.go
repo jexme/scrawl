@@ -14,8 +14,8 @@ import (
 	"github.com/jezek/xgb/xproto"
 )
 
-// startXvfb запускает виртуальный X-сервер (номер дисплея выбирает сам сервер
-// через -displayfd) и возвращает его имя вида ":97". Без Xvfb тест пропускается.
+// startXvfb starts a virtual X server (the server itself picks the display number through
+// -displayfd) and returns its name like ":97". Without Xvfb the test is skipped.
 func startXvfb(t *testing.T) string {
 	t.Helper()
 	if _, err := exec.LookPath("Xvfb"); err != nil {
@@ -45,7 +45,8 @@ func startXvfb(t *testing.T) string {
 			t.Skip("Xvfb не назвал номер дисплея")
 		}
 		display := ":" + num
-		// Номер сервер называет раньше, чем начинает принимать клиентов: ждём первое подключение.
+		// The server announces the number before it starts accepting clients: we wait for the
+		// first connection.
 		for i := 0; i < 50; i++ {
 			if c, err := xgb.NewConnDisplay(display); err == nil {
 				c.Close()
@@ -60,7 +61,7 @@ func startXvfb(t *testing.T) string {
 	return ""
 }
 
-// fill закрашивает прямоугольник корневого окна.
+// fill paints a rectangle of the root window.
 func fill(t *testing.T, display string, x, y, w, h int, c color.RGBA) {
 	t.Helper()
 	conn, err := xgb.NewConnDisplay(display)
@@ -87,7 +88,7 @@ func TestGrabAllOnXvfb(t *testing.T) {
 		t.Fatal("с DISPLAY и без WAYLAND_DISPLAY это сеанс X11")
 	}
 
-	// Один «монитор» на весь экран.
+	// One "monitor" for the whole screen.
 	red, blue := color.RGBA{R: 220, G: 30, B: 40, A: 255}, color.RGBA{R: 20, G: 60, B: 230, A: 255}
 	fill(t, display, 0, 0, 800, 600, red)
 	fill(t, display, 800, 0, 800, 600, blue)
@@ -105,7 +106,7 @@ func TestGrabAllOnXvfb(t *testing.T) {
 		t.Errorf("справа синий: %v", got)
 	}
 
-	// Два монитора: левый и правый, по 800 пикселей.
+	// Two monitors: left and right, 800 pixels each.
 	addMonitor(t, display, "left", 0, 0, 800, 600)
 	addMonitor(t, display, "right", 800, 0, 800, 600)
 	frames, err = GrabAll()
@@ -140,7 +141,7 @@ func TestIsSession(t *testing.T) {
 }
 
 func TestToRGBA(t *testing.T) {
-	// Байты X11: B, G, R, пустой.
+	// X11 bytes: B, G, R, empty.
 	img := toRGBA([]byte{10, 20, 30, 0, 40, 50, 60, 99}, 2, 1)
 	if got := img.RGBAAt(0, 0); got != (color.RGBA{R: 30, G: 20, B: 10, A: 255}) {
 		t.Errorf("первый пиксель: %v", got)
@@ -150,7 +151,7 @@ func TestToRGBA(t *testing.T) {
 	}
 }
 
-// addMonitor добавляет монитор RandR 1.5 без выходов (как xrandr --setmonitor ... none).
+// addMonitor adds a RandR 1.5 monitor without outputs (like xrandr --setmonitor ... none).
 func addMonitor(t *testing.T, display, name string, x, y, w, h int) {
 	t.Helper()
 	conn, err := xgb.NewConnDisplay(display)
@@ -175,16 +176,16 @@ func addMonitor(t *testing.T, display, name string, x, y, w, h int) {
 
 func TestDropOverlaps(t *testing.T) {
 	r := func(x0, y0, x1, y1 int) Monitor { return Monitor{Rect: image.Rect(x0, y0, x1, y1)} }
-	// Общий экран накрывает два монитора: остаются два.
+	// A common screen covers two monitors: the two remain.
 	got := dropOverlaps([]Monitor{r(0, 0, 1600, 600), r(0, 0, 800, 600), r(800, 0, 1600, 600)})
 	if len(got) != 2 || got[0].Rect.Max.X != 800 {
 		t.Errorf("накрывающий монитор должен исчезнуть: %v", got)
 	}
-	// Клон: два одинаковых прямоугольника дают один.
+	// Clone: two identical rectangles give one.
 	if got := dropOverlaps([]Monitor{r(0, 0, 100, 100), r(0, 0, 100, 100)}); len(got) != 1 {
 		t.Errorf("клоны: %v", got)
 	}
-	// Соседние мониторы не трогаем.
+	// Adjacent monitors are left alone.
 	if got := dropOverlaps([]Monitor{r(0, 0, 100, 100), r(100, 0, 200, 100)}); len(got) != 2 {
 		t.Errorf("соседние: %v", got)
 	}

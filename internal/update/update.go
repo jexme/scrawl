@@ -1,7 +1,7 @@
-// Package update проверяет, вышла ли новая версия, запросом к GitHub Releases.
-// Это единственное место, где программа выходит в интернет: проверка выключена
-// по умолчанию, запускается кнопкой или (если включена) при старте значка и окна
-// настроек, и ничего не отправляет, кроме заголовка User-Agent с версией.
+// Package update checks whether a new version has been released, by querying GitHub Releases.
+// This is the only place where the program goes online: the check is off
+// by default, is run by a button or (if enabled) at tray icon and settings window startup,
+// and sends nothing except a User-Agent header with the version.
 package update
 
 import (
@@ -16,18 +16,18 @@ import (
 	"github.com/jexme/scrawl/internal/i18n"
 )
 
-// Repo — репозиторий с релизами.
+// Repo is the repository with releases.
 const Repo = "jexme/scrawl"
 
-// apiURL — адрес последнего релиза; в тестах подменяется.
+// apiURL is the address of the latest release; replaced in tests.
 var apiURL = "https://api.github.com/repos/" + Repo + "/releases/latest"
 
-// Result — итог проверки.
+// Result is the outcome of a check.
 type Result struct {
-	Latest     string // тег последнего релиза, например "v0.2.0"
-	URL        string // страница релиза
-	Newer      bool   // Latest новее текущей версии
-	Comparable bool   // текущую версию удалось сравнить (у сборок разработчика нет)
+	Latest     string // tag of the latest release, for example "v0.2.0"
+	URL        string // release page
+	Newer      bool   // Latest is newer than the current version
+	Comparable bool   // the current version could be compared (developer builds have none)
 }
 
 type release struct {
@@ -37,7 +37,7 @@ type release struct {
 	Draft      bool   `json:"draft"`
 }
 
-// Check запрашивает последний релиз и сравнивает его с текущей версией current.
+// Check requests the latest release and compares it with the current version current.
 func Check(ctx context.Context, current string) (Result, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -72,7 +72,7 @@ func Check(ctx context.Context, current string) (Result, error) {
 	return res, nil
 }
 
-// version — разобранная версия vX.Y.Z[-предварительная].
+// version is a parsed version vX.Y.Z[-prerelease].
 type version struct {
 	nums [3]int
 	pre  string
@@ -80,7 +80,7 @@ type version struct {
 
 func parse(v string) (version, bool) {
 	v = strings.TrimPrefix(strings.TrimSpace(v), "v")
-	v, _, _ = strings.Cut(v, "+") // метаданные сборки не важны
+	v, _, _ = strings.Cut(v, "+") // build metadata is not important
 	core, pre, _ := strings.Cut(v, "-")
 	parts := strings.Split(core, ".")
 	if len(parts) < 1 || len(parts) > 3 {
@@ -98,9 +98,9 @@ func parse(v string) (version, bool) {
 	return out, true
 }
 
-// Newer сообщает, что версия latest новее current. Второе значение false, если
-// одну из версий нельзя разобрать (например, сборка разработчика «dev-1bff227»).
-// Предварительная версия (v1.0.0-rc1) старше выпуска (v1.0.0) с теми же числами.
+// Newer reports that version latest is newer than current. The second value is false if
+// one of the versions cannot be parsed (for example, a developer build "dev-1bff227").
+// A prerelease (v1.0.0-rc1) is older than the release (v1.0.0) with the same numbers.
 func Newer(latest, current string) (newer, ok bool) {
 	a, okA := parse(latest)
 	b, okB := parse(current)
@@ -116,14 +116,14 @@ func Newer(latest, current string) (newer, ok bool) {
 	case a.pre == b.pre:
 		return false, true
 	case a.pre == "":
-		return true, true // выпуск новее своей предварительной версии
+		return true, true // a release is newer than its own prerelease
 	case b.pre == "":
 		return false, true
 	}
 	return a.pre > b.pre, true
 }
 
-// Message описывает итог проверки словами для окна и уведомления.
+// Message describes the result of a check in words for the window and notification.
 func (r Result) Message() string {
 	switch {
 	case r.Newer:

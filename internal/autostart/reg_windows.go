@@ -8,11 +8,11 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-// useRegistry: в Windows автозапуск живёт в реестре, а не в файле .desktop. Тесты выключают
-// его, чтобы не трогать настоящий реестр.
+// useRegistry: on Windows autostart lives in the registry, not in a .desktop file. Tests turn
+// it off so as not to touch the real registry.
 var useRegistry = true
 
-// Ключ и имя значения автозапуска. Тесты подменяют их на временные.
+// The autostart key and value name. Tests replace them with temporary ones.
 var (
 	regKeyPath   = `Software\Microsoft\Windows\CurrentVersion\Run`
 	regValueName = "Scrawl"

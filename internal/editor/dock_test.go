@@ -13,25 +13,25 @@ import (
 	"gioui.org/unit"
 )
 
-// TestDock проверяет содержимое и положение док-панели в разных состояниях.
+// TestDock checks the contents and position of the dock panel in different states.
 func TestDock(t *testing.T) {
 	sandbox(t)
 	m, _ := newTestMonitor(t)
 	m.last, m.hasLast = image.Rect(10, 10, 100, 100), true
 
-	// Без подборки и выделения: только возврат прошлой области.
+	// No collection and no selection: only restoring the previous area.
 	if got := m.collectItems(); len(got) != 0 {
 		t.Errorf("без выделения и подборки действий быть не должно: %d", len(got))
 	}
 
-	// Выделение без подборки: кнопка «В подборку», склейки пока нет.
+	// A selection without a collection: the "Add to collection" button, no glue yet.
 	m.sel, m.hasSel = image.Rect(20, 20, 80, 80), true
 	items := m.collectItems()
 	if len(items) != 1 || !items[0].primary {
 		t.Errorf("с выделением должна быть одна основная кнопка «В подборку»: %+v", items)
 	}
 
-	// Подборка из одной картинки и выделение: добавить ещё, склеить, отдельно, очистить.
+	// A collection of one image and a selection: add another, glue, send separately, clear.
 	m.queued = 1
 	items = m.collectItems()
 	want := []string{"Add another  ·  A", "Glue with this area  ·  G", "As files  ·  D", "Clear"}
@@ -44,7 +44,7 @@ func TestDock(t *testing.T) {
 		}
 	}
 
-	// Подборка без выделения и без прошлой области: склеить одну нельзя.
+	// A collection with no selection and no previous area: a single image cannot be glued.
 	m.hasSel = false
 	items = m.collectItems()
 	for _, it := range items {
@@ -54,7 +54,7 @@ func TestDock(t *testing.T) {
 	}
 }
 
-// TestDockPlacement проверяет, что док уходит наверх, когда внизу выделение.
+// TestDockPlacement checks that the dock moves to the top when the selection is at the bottom.
 func TestDockPlacement(t *testing.T) {
 	sandbox(t)
 	const W, H = 1000, 600
@@ -62,24 +62,24 @@ func TestDockPlacement(t *testing.T) {
 	gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Exact(image.Pt(W, H)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
 	win := image.Pt(W, H)
 
-	// Выделение сверху: док внизу.
+	// Selection at the top: dock at the bottom.
 	m.hasSel, m.selWin = true, image.Rect(100, 50, 500, 200)
 	if p := m.placeDock(gtx, win, 400, 40); p.Y < H/2 {
 		t.Errorf("док должен быть внизу, получили y=%d", p.Y)
 	}
-	// Выделение внизу: док наверху.
+	// Selection at the bottom: dock at the top.
 	m.selWin = image.Rect(100, 400, 500, 580)
 	if p := m.placeDock(gtx, win, 400, 40); p.Y > H/2 {
 		t.Errorf("док должен уйти наверх, получили y=%d", p.Y)
 	}
-	// Выделения нет: всегда внизу.
+	// No selection: always at the bottom.
 	m.hasSel = false
 	if p := m.placeDock(gtx, win, 400, 40); p.Y < H/2 {
 		t.Errorf("без выделения док внизу, получили y=%d", p.Y)
 	}
 }
 
-// TestDockRender рисует док для просмотра глазами (с SCRAWL_TEST_OUT).
+// TestDockRender draws the dock for viewing by eye (with SCRAWL_TEST_OUT).
 func TestDockRender(t *testing.T) {
 	sandbox(t)
 	const W, H = 900, 300

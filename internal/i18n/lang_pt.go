@@ -1,6 +1,6 @@
 package i18n
 
-// pt — перевод интерфейса: португальский. Ключ это английский текст из кода.
+// pt is the interface translation: Portuguese (Brazil). The key is the English text from the code.
 var pt = map[string]string{
 	"pick the monitors again (shows GNOME dialogs)": "escolher os monitores de novo (mostra caixas de diálogo do GNOME)",
 	"print timings": "mostrar os tempos",

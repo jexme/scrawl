@@ -12,11 +12,13 @@ import (
 	"syscall"
 )
 
-// scopeEnv помечает процесс, уже перезапущенный в своём scope: повторно этого не делаем.
+// scopeEnv marks a process that has already been restarted in its own scope: we do not do
+// this again.
 const scopeEnv = "SCRAWL_APP_SCOPE"
 
-// inAppScope сообщает, что cgroup процесса — systemd-scope приложения AppID
-// вида app-[<лаунчер>-]AppID-<номер>.scope. Так portal старше 1.21 узнаёт приложение.
+// inAppScope reports whether the process cgroup is the application's systemd scope for
+// AppID of the form app-[<launcher>-]AppID-<number>.scope. This is how a portal older than
+// 1.21 identifies the application.
 func inAppScope(cgroup string) bool {
 	for _, line := range strings.Split(cgroup, "\n") {
 		base := path.Base(line[strings.LastIndex(line, ":")+1:])
@@ -27,13 +29,13 @@ func inAppScope(cgroup string) bool {
 	return false
 }
 
-// EnterAppScope перезапускает процесс в своём systemd-scope app-AppID-PID.scope.
+// EnterAppScope restarts the process in its own systemd scope app-AppID-PID.scope.
 //
-// Нужна portal старше 1.21: метода Registry в нём нет, и app_id он берёт из scope
-// вызывающего процесса. Окно, запущенное хоткеем GNOME, сидит в службе gnome-shell и
-// остаётся для portal безымянным: токен сохранения не выдаётся и диалог выбора экрана
-// показывается при каждом снимке. При успехе функция не возвращается (процесс
-// заменяется), ошибка значит «остались как были».
+// It is needed for a portal older than 1.21: it has no Registry method and takes app_id
+// from the scope of the calling process. A window launched by a GNOME hotkey sits in the
+// gnome-shell service and stays anonymous to the portal: no persistence token is issued
+// and the screen selection dialog is shown on every capture. On success the function does
+// not return (the process is replaced), an error means "left as we were".
 func (p *Portal) EnterAppScope() error {
 	if !p.OldPortal || os.Getenv(scopeEnv) != "" {
 		return nil

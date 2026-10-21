@@ -1,5 +1,6 @@
-# Раз в неделю предлагает обновить версии actions в .github/workflows. Модули Go не трогаем:
-# gioui.org подменён патченной копией (third_party/gio), его версию меняют вручную вместе с gio.patch.
+# Once a week proposes updating the versions of actions in .github/workflows. Go modules
+# are left alone: gioui.org is replaced with a patched copy (third_party/gio), and its
+# version is changed by hand together with gio.patch.
 version: 2
 updates:
   - package-ecosystem: github-actions

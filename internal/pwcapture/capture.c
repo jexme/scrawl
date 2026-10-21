@@ -22,7 +22,7 @@ struct capture {
 	struct spa_video_info_raw info;
 	int have_format;
 
-	int result; // PENDING, пока кадр не получен и ошибок не было
+	int result; // PENDING until a frame is received and no errors occurred
 	uint8_t *pixels;
 	int width, height;
 	char *err;
@@ -48,8 +48,8 @@ static void on_state_changed(void *data, enum pw_stream_state old,
 		finish(c, SEC_STREAM, error ? error : "ошибка потока PipeWire");
 }
 
-// После согласования формата просим обычную память (memfd/memptr): dma-buf без
-// драйвера GPU не прочитать.
+// After the format is negotiated we ask for plain memory (memfd/memptr): a dma-buf
+// cannot be read without a GPU driver.
 static void on_param_changed(void *data, uint32_t id, const struct spa_pod *param)
 {
 	struct capture *c = data;
@@ -81,7 +81,7 @@ static void on_param_changed(void *data, uint32_t id, const struct spa_pod *para
 	pw_stream_update_params(c->stream, params, 1);
 }
 
-// Копирует кадр в RGBA (BGRx/BGRA -> RGBA, альфа непрозрачная).
+// Copies the frame to RGBA (BGRx/BGRA -> RGBA, alpha opaque).
 static void on_process(void *data)
 {
 	struct capture *c = data;
@@ -106,7 +106,7 @@ static void on_process(void *data)
 		stride = d->chunk->stride > 0 ? d->chunk->stride : (int)w * 4;
 		src = (const uint8_t *)d->data + d->chunk->offset;
 
-		// Буфер должен вместить все строки, иначе чтение выйдет за его край.
+		// The buffer must hold all the rows, otherwise reading goes past its end.
 		if ((size_t)stride * (h - 1) + (size_t)w * 4 <= d->maxsize - d->chunk->offset) {
 			c->pixels = malloc((size_t)w * h * 4);
 			if (c->pixels) {
@@ -180,7 +180,7 @@ int sec_capture(int fd, uint32_t node, int timeout_ms, uint8_t **pixels,
 		snprintf(err, errlen, "не удалось создать контекст PipeWire");
 		return SEC_SETUP;
 	}
-	core = pw_context_connect_fd(context, fd, NULL, 0); // забирает fd себе
+	core = pw_context_connect_fd(context, fd, NULL, 0); // takes ownership of the fd
 	if (!core) {
 		pw_context_destroy(context);
 		pw_main_loop_destroy(c.loop);

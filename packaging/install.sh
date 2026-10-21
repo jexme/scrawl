@@ -1,6 +1,6 @@
 #!/bin/sh
-# Ставит Scrawl из распакованного архива релиза: бинарник и .desktop-файл.
-# Переменные: PREFIX (по умолчанию ~/.local), BINDIR, APPDIR.
+# Installs Scrawl from an unpacked release archive: the binary and the .desktop file.
+# Variables: PREFIX (default ~/.local), BINDIR, APPDIR.
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
@@ -11,30 +11,33 @@ desktop=io.github.jexme.Scrawl.desktop
 
 install -Dm755 "$here/scrawl" "$BINDIR/scrawl"
 install -d "$APPDIR"
-# В Exec подставляется абсолютный путь: portal сопоставляет приложение с
-# .desktop-файлом, только если Exec существует.
+# An absolute path is put into Exec: the portal matches the application with the .desktop
+# file only if the Exec target exists.
 sed "s|^Exec=scrawl|Exec=$BINDIR/scrawl|" "$here/$desktop" > "$APPDIR/$desktop"
 chmod 644 "$APPDIR/$desktop"
 
-# Клавиша Print: на GNOME назначается сама, если не занята чужим ярлыком.
-# Код выхода скрипта (см. scripts/gnome-hotkey.sh) выбирает сообщение ниже.
+# The Print key: on GNOME it is assigned automatically unless it is taken by someone
+# else's shortcut. The exit code of the script (see scripts/gnome-hotkey.sh) selects the
+# message below.
 hk=11
 if [ -f "$here/gnome-hotkey.sh" ]; then
 	hk=0
 	sh "$here/gnome-hotkey.sh" Print "$BINDIR/scrawl" --auto || hk=$?
 fi
-# Встроенный снимок GNOME тоже сидит на Print и перехватывает его.
+# The built-in GNOME screenshot also sits on Print and intercepts it.
 gnome_print=0
 if [ "$hk" = 0 ] && gsettings get org.gnome.shell.keybindings show-screenshot-ui 2>/dev/null | grep -q "Print"; then
 	gnome_print=1
 fi
 
-# Сообщение по языку системы и типу сеанса: в X11 портала нет, мониторы выбирать не нужно.
+# The message depends on the system language and the session type: X11 has no portal, so
+# there is no need to choose monitors.
 x11=0
 [ -z "${WAYLAND_DISPLAY:-}" ] && [ -n "${DISPLAY:-}" ] && x11=1
 
-# Программы, без которых не работают буфер обмена и уведомления: в Wayland wl-copy (пакет
-# wl-clipboard), в X11 xclip, везде notify-send (libnotify-bin). Имена пакетов для Debian и Ubuntu.
+# Programs without which the clipboard and notifications do not work: wl-copy on Wayland
+# (package wl-clipboard), xclip on X11, notify-send everywhere (libnotify-bin). Package
+# names for Debian and Ubuntu.
 missing=""
 need() { command -v "$1" >/dev/null 2>&1 || missing="$missing $2"; }
 if [ "$x11" = 1 ]; then need xclip xclip; else need wl-copy wl-clipboard; fi

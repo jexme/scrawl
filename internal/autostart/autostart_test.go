@@ -12,10 +12,10 @@ import (
 func sandbox(t *testing.T) {
 	t.Helper()
 	testenv.Config(t, t.TempDir())
-	setRegistry(t, false) // файловая ветка: настоящий реестр тесты не трогают
+	setRegistry(t, false) // file branch: the tests do not touch the real registry
 }
 
-// bin: абсолютный путь к программе на любой платформе (на Windows нужна буква диска).
+// bin: an absolute path to the program on any platform (on Windows a drive letter is needed).
 var bin = func() string {
 	if runtime.GOOS == "windows" {
 		return `C:/home/me/.local/bin/scrawl`
