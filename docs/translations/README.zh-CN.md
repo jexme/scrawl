@@ -2,7 +2,7 @@
 
 **面向 Wayland 下 GNOME 的快速截图与标注工具。** 按下快捷键，在任意显示器上框选区域，画箭头、方框和文字，把隐私内容打码，结果立刻进入剪贴板并保存为文件。
 
-[English](../../README.md) · [Русский](../../README.ru.md) · **简体中文** · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [한국어](README.ko.md)
+[English](../../README.md) · [Русский](README.ru.md) · **简体中文** · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [한국어](README.ko.md)
 
 ![Scrawl 浮层：选中的区域上有方框、箭头、文字说明、荧光笔和模糊处理，下方是工具栏](../images/overlay.png)
 
@@ -143,7 +143,7 @@ Scrawl 是 screen-editor 的新名称。在 `~/.config/scrawl/config.json` 出�
 
 ![设置窗口](../images/settings-en.png)
 
-可通过工具栏齿轮、`scrawl -settings` 或应用菜单打开。更改会立即保存到 `~/.config/scrawl/config.json`，这是一个普通的 JSON 文件，也可以手动编辑。缺失或无效的值会回退到默认值。每个键的说明见[设置参考](../SETTINGS.md)（英文或[俄文](../SETTINGS.ru.md)）。
+可通过工具栏齿轮、`scrawl -settings` 或应用菜单打开。更改会立即保存到 `~/.config/scrawl/config.json`，这是一个普通的 JSON 文件，也可以手动编辑。缺失或无效的值会回退到默认值。每个键的说明见[设置参考](../SETTINGS.md)（英文或[俄文](../SETTINGS.md)）。
 
 ## 文件与隐私
 

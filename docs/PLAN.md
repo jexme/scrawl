@@ -1,94 +1,96 @@
-# План проекта
+# Project plan
 
-Живой документ: отмечайте сделанное, дописывайте новое. Объём: S — быстро (час-два),
-M — средний (полдня), L — отдельная большая задача. Статусы: `[x]` сделано,
-`[~]` в работе, `[ ]` не начато.
+A living document: mark what is done, add what is new. Size: S is quick (an hour or two), M is medium (half a day),
+L is a separate big task. Statuses: `[x]` done, `[~]` in progress, `[ ]` not started.
 
-Этапы 1-3 конфигуратора сделаны.
+Stages 1-3 of the settings window are done.
 
-## Сделано
+## Done
 
-- [x] Захват экрана через ScreenCast portal и собственный клиент PipeWire, запасной путь через Screenshot portal
-- [x] Оверлей на каждом мониторе, выделение с пунктирной рамкой, ручки, перемещение
-- [x] Инструменты: перо, линия, стрелка, рамка, маркер, размытие, текст; цвета; толщина колесом и кнопками
-- [x] Подборка «было/стало»: склейка рядом, отправка отдельными файлами
-- [x] Запоминание прошлой области, док-панель, защита от повторных запусков
-- [x] Иконки Tabler, окно настроек (двойной клик, папка сохранения)
-- [x] Сборка (`make`), установка, лицензия MIT, README на двух языках, сторонние лицензии
+- [x] Screen capture through the ScreenCast portal and an own PipeWire client, a fallback through the Screenshot portal
+- [x] An overlay on every monitor, a selection with a dashed frame, handles, moving
+- [x] Tools: pen, line, arrow, box, marker, blur, text; colours; thickness with the wheel and buttons
+- [x] Before/after collections: glued side by side, sent as separate files
+- [x] Remembering the last area, the dock panel, protection against repeated launches
+- [x] Tabler icons, the settings window (double click, the save folder)
+- [x] Build (`make`), installation, the MIT license, the README in several languages, third-party licenses
 
-## Конфигуратор настроек
+## The settings window
 
-Все настройки лежат в `~/.config/scrawl/config.json`, меняются в окне настроек
-(`scrawl -settings`), применяются при следующем запуске оверлея.
+All settings live in `~/.config/scrawl/config.json`, are changed in the settings window
+(`scrawl -settings`) and are applied the next time the overlay starts.
 
-### Этап 1. Фундамент и быстрые настройки
+### Stage 1. Foundation and quick settings
 
-- [x] S Версия: флаг `-version`, раздел «О программе» в окне
-- [x] S Схема настроек: значения по умолчанию, проверка, неизвестные ключи не ломают файл
-- [x] S Прокручиваемое окно настроек с разделами
-- [x] S Что делает Enter: копировать и сохранить / только копировать / только сохранить
-- [x] S Уведомления после снимка: вкл/выкл (ошибки показываются всегда)
-- [x] S Запоминать прошлую область: вкл/выкл
-- [x] S Шаблон имени файла (дата и время или свой префикс)
-- [x] S Кнопка «Открыть папку со скриншотами»
-- [x] S Затемнение вне области: ползунок 0-100%
-- [x] S Рамка: толщина, штрих, пауза, цвет
-- [x] S Размер угловых ручек
-- [x] S Показывать подпись размера «W × H»
+- [x] S Version: the `-version` flag, an "About" section in the window
+- [x] S Settings schema: defaults, validation, unknown keys do not break the file
+- [x] S A scrollable settings window with sections
+- [x] S What Enter does: copy and save / only copy / only save
+- [x] S Notifications after a shot: on/off (errors are always shown)
+- [x] S Remember the last area: on/off
+- [x] S File name template (date and time or a custom prefix)
+- [x] S The "Open the screenshots folder" button
+- [x] S Dimming outside the area: a slider 0-100%
+- [x] S Frame: thickness, dash, gap, colour
+- [x] S Size of the corner handles
+- [x] S Show the size label "W × H"
 
-### Этап 2. Инструменты и подборка
+### Stage 2. Tools and collections
 
-- [x] M Инструмент, цвет и толщина по умолчанию (для каждого инструмента свои)
-- [x] M Свои цвета палитры (ввод #RRGGBB)
-- [x] S Прозрачность маркера
-- [x] S Подписи склейки: свои слова вместо «Было/Стало/Шаг N»
-- [x] M Расположение склейки: рядом или друг под другом
-- [x] S Вид склейки: фон белый или тёмный, отступы, размер подписи
-- [x] M Формат файла: PNG или JPEG с качеством (буфер обмена остаётся PNG)
-- [x] M После копирования не закрывать оверлей, а продолжать редактировать
-- [x] M Включать курсор мыши в снимок (cursor_mode сессии захвата)
+- [x] M Default tool, colour and thickness (separate for each tool)
+- [x] M Custom palette colours (entering #RRGGBB)
+- [x] S Marker opacity
+- [x] S Glue labels: own words instead of "Before/After/Step N"
+- [x] M Glue layout: side by side or one under another
+- [x] S Glue look: a white or dark background, padding, label size
+- [x] M File format: PNG or JPEG with quality (the clipboard stays PNG)
+- [x] M Do not close the overlay after copying, keep editing
+- [x] M Include the mouse cursor in the shot (cursor_mode of the capture session)
 
-### Этап 3. Кнопки, клавиши, язык
+### Stage 3. Buttons, keys, language
 
-- [x] S Кнопка «Выдать разрешение на запасной снимок» (вместо `-grant-screenshot`)
-- [x] S Кнопка «Выбрать мониторы заново» (вместо `-setup`)
-- [x] M Кнопка «Назначить горячую клавишу запуска» (GNOME, через gsettings, по нажатию пользователя)
-- [x] L Переназначение клавиш внутри оверлея (R, A, G, D и другие)
-- [x] L Язык интерфейса: русский или английский (вынести все тексты)
+- [x] S The "Grant the fallback permission" button (instead of `-grant-screenshot`)
+- [x] S The "Pick the monitors again" button (instead of `-setup`)
+- [x] M The "Assign the launch hotkey" button (GNOME, through gsettings, on the user's click)
+- [x] L Remapping the keys inside the overlay (R, A, G, D and others)
+- [x] L Interface language: Russian or English (move all texts out)
 
 ## X11
 
-- [x] M Сеанс X11: захват напрямую (RandR + GetImage), буфер обмена через xclip, оверлей на каждом мониторе (патч Gio), скрыты кнопки портала
-- [ ] M Проверить на настоящей машине с X11 (Ubuntu на Xorg, KDE): проверено только на Xvfb с двумя мониторами RandR и заглушкой EWMH-менеджера, настоящий менеджер (mutter, kwin) не проверялся
-- [ ] S Курсор мыши в снимке на X11 (XFixes GetCursorImage)
-- [ ] M X11 вне GNOME: хоткей и уведомления без gsettings
+- [x] M An X11 session: direct capture (RandR + GetImage), the clipboard through xclip, an overlay on every monitor (a Gio patch), the portal buttons hidden
+- [ ] M Test on a real X11 machine (Ubuntu on Xorg, KDE): tested only on Xvfb with two RandR monitors and a stub EWMH manager, a real manager (mutter, kwin) was not tested
+- [ ] S The mouse cursor in the shot on X11 (XFixes GetCursorImage)
+- [ ] M X11 outside GNOME: the hotkey and notifications without gsettings
 
-## Запуск, трей и обновления
+## Launch, tray and updates
 
-- [x] M Автозапуск при входе в систему: переключатель в настройках (файл в `~/.config/autostart/`)
-- [x] L Значок в трее (StatusNotifierItem): меню «Снимок», «Настройки», «Выход». Нужен резидентный процесс;
-      на GNOME значок виден только с расширением AppIndicator (в Ubuntu включено по умолчанию).
-      Резидентный процесс заодно можно использовать для будущего демона (быстрый старт)
-- [x] M Проверка обновлений: опциональная (по умолчанию выключена), запрос к GitHub Releases,
-      кнопка «Проверить сейчас», показ новой версии. Нужен публичный репозиторий и релизы
-- [x] S Показ версии: флаг `-version` и раздел «О программе»
+- [x] M Autostart at login: a switch in the settings (a file in `~/.config/autostart/`)
+- [x] L A tray icon (StatusNotifierItem): the menu "Take screenshot", "Settings", "Quit". It needs a resident process;
+      on GNOME the icon is visible only with the AppIndicator extension (on by default in Ubuntu).
+      The resident process can also be used for a future daemon (fast start)
+- [x] M Update check: optional (off by default), a request to GitHub Releases,
+      the "Check now" button, showing the new version. It needs a public repository and releases
+- [x] S Showing the version: the `-version` flag and the "About" section
 
-## Документация и переводы
+## Documentation and translations
 
-- [x] README на английском и русском переписан, справочник настроек вынесен в `docs/SETTINGS.md` и `docs/SETTINGS.ru.md`
-- [x] Переводы README: китайский (упрощённый), испанский, португальский (Бразилия), японский, немецкий, французский, корейский (`docs/translations/`)
-- [x] L Интерфейс программы на этих языках: каталоги `internal/i18n/lang_*.go`, выбор в настройках, системный шрифт с иероглифами для китайского, японского и корейского (`internal/fonts`)
-- [ ] S Носители языка проверяют переводы README и интерфейса (они сделаны без проверки носителем)
+- [x] The README in English and Russian rewritten, the settings reference moved to `docs/SETTINGS.md` and `docs/translations/SETTINGS.ru.md`
+- [x] README translations: Chinese (Simplified), Spanish, Portuguese (Brazil), Japanese, German, French, Korean (`docs/translations/`)
+- [x] L The program interface in these languages: catalogs `internal/i18n/lang_*.go` (English is the source text in the code, Russian is a catalog like the others), a choice in the settings, a system font with ideographs for Chinese, Japanese and Korean (`internal/fonts`)
+- [ ] S Native speakers check the README and interface translations (they were made without a native speaker)
 
-## Публикация
+## Publishing
 
-- [x] S Имя проекта: выбрано Scrawl (на GitHub, в Debian и на Flathub скриншотера с таким именем нет)
-- [x] M Подготовить историю до первого пуша (убрать копию Gio из старых коммитов, заменить email): `scripts/clean-history.sh` собирает локальную ветку `clean/main`; в приватный репозиторий jexme/screen-editor старая история уже запушена, поэтому публиковать чистую лучше в новый репозиторий scrawl; коммиты от `4d4304f` до `3449870` без копии Gio не собираются (go.mod ссылался на неё)
-- [~] L Windows: захват, оверлей на нужном мониторе, буфер обмена, хоткей: код собирается под Windows (CI), остальное расписано в docs/WINDOWS.md и ждёт машины с Windows
-- [x] M Пакеты и релизы (CI на GitHub Actions, сборки, контрольные суммы): CI зелёный на main (тесты, vet, Windows-сборка); release.yml ещё не запускался: проверить первым тегом v0.1.0-rc1
+- [x] S The project name: Scrawl is chosen (there is no screenshot tool with that name on GitHub, in Debian or on Flathub)
+- [x] M Prepare the history before the first push (remove the Gio copy from the old commits, replace the email); the repository was re-created clean and contains only noreply addresses, CI checks the addresses on every push
+- [x] L Windows: capture, an overlay on the right monitor, the clipboard, the hotkey, the icon and a release archive, see docs/WINDOWS.md; what is left (scale above 100%, code signing) is listed there
+- [x] M Packages and releases (CI on GitHub Actions, builds, checksums): releases are made by a `v*` tag (an archive, a `.deb`, Windows files)
+- [x] M A signed apt repository on GitHub Pages (`scripts/build-apt-repo.sh`, `.github/workflows/apt-repo.yml`), updated after every release
+- [ ] L Flathub: a manifest and a rework for the sandbox (the hotkey, the clipboard, notifications)
+- [ ] M Code signing for Windows (see docs/WINDOWS.md)
 
-## Решения и вопросы
+## Decisions and questions
 
-- Применение настроек: при следующем запуске оверлея (окно настроек отдельный процесс)
-- Сеть: проверка обновлений единственное место, где программа выходит в интернет; по умолчанию выключена
-- Трей требует резидентного процесса: решение откладывается до работы над демоном
+- Applying settings: the next time the overlay starts (the settings window is a separate process)
+- Network: the update check is the only place where the program goes online; it is off by default
+- The tray needs a resident process: the decision is postponed until the daemon work

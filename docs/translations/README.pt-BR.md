@@ -2,7 +2,7 @@
 
 **Capturas de tela rápidas com anotações para o GNOME no Wayland.** Aperte uma tecla, selecione uma área em qualquer monitor, desenhe setas, caixas e texto, desfoque dados privados, e o resultado já está na área de transferência e salvo em arquivo.
 
-[English](../../README.md) · [Русский](../../README.ru.md) · [简体中文](README.zh-CN.md) · [Español](README.es.md) · **Português (Brasil)** · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [한국어](README.ko.md)
+[English](../../README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md) · [Español](README.es.md) · **Português (Brasil)** · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [한국어](README.ko.md)
 
 ![Sobreposição do Scrawl: uma área selecionada com uma caixa, uma seta, um texto, um traço de marca-texto e um trecho desfocado, com a barra de ferramentas abaixo](../images/overlay.png)
 
@@ -143,7 +143,7 @@ Faça a primeira captura e pressione `A`. Faça a seguinte: a área anterior já
 
 ![A janela de configurações](../images/settings-en.png)
 
-Abra pela barra de ferramentas (engrenagem), com `scrawl -settings` ou pelo menu de aplicativos. As alterações são salvas na hora em `~/.config/scrawl/config.json`, um arquivo JSON simples que você também pode editar à mão. Valores ausentes ou inválidos voltam ao padrão. Cada chave está descrita na [referência de configurações](../SETTINGS.md) (em inglês ou [russo](../SETTINGS.ru.md)).
+Abra pela barra de ferramentas (engrenagem), com `scrawl -settings` ou pelo menu de aplicativos. As alterações são salvas na hora em `~/.config/scrawl/config.json`, um arquivo JSON simples que você também pode editar à mão. Valores ausentes ou inválidos voltam ao padrão. Cada chave está descrita na [referência de configurações](../SETTINGS.md) (em inglês ou [russo](../SETTINGS.md)).
 
 ## Arquivos e privacidade
 

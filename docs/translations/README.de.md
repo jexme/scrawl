@@ -2,7 +2,7 @@
 
 **Schnelle Screenshots mit Anmerkungen für GNOME unter Wayland.** Taste drücken, auf einem beliebigen Monitor einen Bereich auswählen, Pfeile, Rahmen und Text zeichnen, Privates unkenntlich machen – und das Ergebnis liegt schon in der Zwischenablage und als Datei auf der Platte.
 
-[English](../../README.md) · [Русский](../../README.ru.md) · [简体中文](README.zh-CN.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [日本語](README.ja.md) · **Deutsch** · [Français](README.fr.md) · [한국어](README.ko.md)
+[English](../../README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [日本語](README.ja.md) · **Deutsch** · [Français](README.fr.md) · [한국어](README.ko.md)
 
 ![Scrawl-Overlay: ein ausgewählter Bereich mit Rahmen, Pfeil, Beschriftung, Textmarkerstrich und unscharfer Stelle, darunter die Werkzeugleiste](../images/overlay.png)
 
@@ -143,7 +143,7 @@ Machen Sie die erste Aufnahme und drücken Sie `A`. Machen Sie die nächste: Der
 
 ![Das Einstellungsfenster](../images/settings-en.png)
 
-Öffnen Sie sie über die Werkzeugleiste (Zahnrad), mit `scrawl -settings` oder über das Anwendungsmenü. Änderungen werden sofort in `~/.config/scrawl/config.json` gespeichert, einer gewöhnlichen JSON-Datei, die Sie auch von Hand bearbeiten können. Fehlende oder ungültige Werte fallen auf die Standardwerte zurück. Jeder Schlüssel ist in der [Einstellungsreferenz](../SETTINGS.md) beschrieben (auf Englisch oder [Russisch](../SETTINGS.ru.md)).
+Öffnen Sie sie über die Werkzeugleiste (Zahnrad), mit `scrawl -settings` oder über das Anwendungsmenü. Änderungen werden sofort in `~/.config/scrawl/config.json` gespeichert, einer gewöhnlichen JSON-Datei, die Sie auch von Hand bearbeiten können. Fehlende oder ungültige Werte fallen auf die Standardwerte zurück. Jeder Schlüssel ist in der [Einstellungsreferenz](../SETTINGS.md) beschrieben (auf Englisch oder [Russisch](../SETTINGS.md)).
 
 ## Dateien und Datenschutz
 

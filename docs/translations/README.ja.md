@@ -2,7 +2,7 @@
 
 **Wayland 上の GNOME 向けの、注釈つきスクリーンショットツール。** キーを押して、好きなモニターで範囲を選び、矢印・枠・テキストを描き、見せたくない部分をぼかせば、結果はすぐクリップボードに入り、ファイルにも保存されます。
 
-[English](../../README.md) · [Русский](../../README.ru.md) · [简体中文](README.zh-CN.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · **日本語** · [Deutsch](README.de.md) · [Français](README.fr.md) · [한국어](README.ko.md)
+[English](../../README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · **日本語** · [Deutsch](README.de.md) · [Français](README.fr.md) · [한국어](README.ko.md)
 
 ![Scrawl のオーバーレイ：選択範囲に枠・矢印・文字・マーカー・ぼかしがあり、その下にツールバーがある](../images/overlay.png)
 
@@ -143,7 +143,7 @@ Scrawl は screen-editor の新しい名前です。`~/.config/scrawl/config.jso
 
 ![設定ウィンドウ](../images/settings-en.png)
 
-ツールバーの歯車、`scrawl -settings`、またはアプリケーションメニューから開きます。変更はすぐ `~/.config/scrawl/config.json`（通常の JSON ファイルで、手で編集することもできます）に保存されます。欠けている値や無効な値は既定値に戻ります。各キーの説明は[設定リファレンス](../SETTINGS.md)（英語、または[ロシア語](../SETTINGS.ru.md)）にあります。
+ツールバーの歯車、`scrawl -settings`、またはアプリケーションメニューから開きます。変更はすぐ `~/.config/scrawl/config.json`（通常の JSON ファイルで、手で編集することもできます）に保存されます。欠けている値や無効な値は既定値に戻ります。各キーの説明は[設定リファレンス](../SETTINGS.md)（英語、または[ロシア語](../SETTINGS.md)）にあります。
 
 ## ファイルとプライバシー
 

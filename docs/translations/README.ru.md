@@ -4,9 +4,9 @@
 выделили область на любом мониторе, нарисовали стрелки, рамки и текст, замазали
 личное, и результат уже в буфере обмена и сохранён в файл.
 
-[English](README.md) · [Русский](README.ru.md) · [简体中文](docs/translations/README.zh-CN.md) · [Español](docs/translations/README.es.md) · [Português (Brasil)](docs/translations/README.pt-BR.md) · [日本語](docs/translations/README.ja.md) · [Deutsch](docs/translations/README.de.md) · [Français](docs/translations/README.fr.md) · [한국어](docs/translations/README.ko.md)
+[English](../../README.md) · **Русский** · [简体中文](README.zh-CN.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [한국어](README.ko.md)
 
-![Оверлей Scrawl: выделенная область с рамкой, стрелкой, подписью, маркером и размытым местом, под ней панель инструментов](docs/images/overlay.png)
+![Оверлей Scrawl: выделенная область с рамкой, стрелкой, подписью, маркером и размытым местом, под ней панель инструментов](../images/overlay.png)
 
 *Картинка это настоящая отрисовка оверлея поверх вымышленного рабочего стола.*
 
@@ -16,6 +16,28 @@
 портал рабочего стола, а портал **при каждом снимке спрашивает «какой экран
 показать?»**. Scrawl спрашивает один раз на монитор и запоминает ответ, дальше
 скриншот это одна клавиша: замороженный экран появляется примерно за 150 мс.
+
+## Быстрый старт
+
+На Ubuntu и Debian (Wayland или X11) это три шага.
+
+**1. Установите** из подписанного apt-репозитория (обновления потом приходят с `apt upgrade`):
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
+
+**2. Настройте один раз:** выполните `scrawl -settings`, вкладка «Система». В Wayland нажмите «Выбрать мониторы заново»
+(GNOME спросит по разу на каждый монитор, оставьте галочку «Запомнить этот выбор») и «Выдать разрешение». Затем введите
+клавишу запуска (по умолчанию `Print`) и нажмите «Назначить». В X11 нужна только клавиша.
+
+**3. Сделайте снимок:** нажмите клавишу, выделите область, нажмите `Enter`. Картинка в буфере обмена и в
+`~/Pictures/Screenshots`.
+
+Другие системы: [Windows](#windows-10-и-11), остальные дистрибутивы Linux (архив релиза или сборка из исходников),
+см. раздел [«Установка»](#установка) ниже.
 
 ## Возможности
 
@@ -53,9 +75,11 @@
 тоже работают, но эта поддержка новая и пока проверена только на виртуальном X-сервере, так что
 отчёты с настоящих машин нужны. **Windows 10 и 11** тоже работают (захват, аннотации,
 буфер обмена, значок в трее и глобальная клавиша); порт новый и пока проверен только при масштабе 100%,
-сборка и чего не хватает: [docs/WINDOWS.md](docs/WINDOWS.md).
+сборка и чего не хватает: [docs/WINDOWS.md](../WINDOWS.md).
 
 ## Требования
+
+При установке через apt или `.deb` всё это подтянется само; список нужен для архива релиза и сборки из исходников.
 
 - GNOME на Wayland с PipeWire, `xdg-desktop-portal` (1.21 или новее, нужна регистрация
   приложений) и `xdg-desktop-portal-gnome`. Разрабатывалось и проверялось на Ubuntu с GNOME 50.
@@ -135,7 +159,7 @@ make install            # собирает и ставит в ~/.local (PREFIX=/
   без подписи; о таком случае напишите в issue.
 - **Автозапуск** это галочка в `scrawl.exe -settings`, вкладка *Система* (значение в `HKCU\...\Run`). Не переносите папку или включите галочку заново.
 
-Сборка из исходников и чего не хватает: [docs/WINDOWS.md](docs/WINDOWS.md).
+Сборка из исходников и чего не хватает: [docs/WINDOWS.md](../WINDOWS.md).
 
 ### 2. Первый запуск: три шага один раз
 
@@ -218,12 +242,12 @@ Scrawl это новое название screen-editor. Пока нет фай�
 
 ## Настройки
 
-![Окно настроек](docs/images/settings-ru.png)
+![Окно настроек](../images/settings-ru.png)
 
 Открываются шестерёнкой на панели, командой `scrawl -settings` или из меню приложений.
 Изменения сохраняются сразу в `~/.config/scrawl/config.json`, это обычный JSON-файл,
 его можно править и руками. Пропущенные и неверные значения заменяются значениями
-по умолчанию. Каждый ключ описан в [справочнике по настройкам](docs/SETTINGS.ru.md).
+по умолчанию. Каждый ключ описан в [справочнике по настройкам](SETTINGS.ru.md).
 
 ## Файлы и приватность
 
@@ -280,10 +304,10 @@ make deb      # пакет .deb для Debian и Ubuntu в dist/
 make notices  # пересобрать THIRD_PARTY_NOTICES.md
 ```
 
-Тексты интерфейса лежат в `internal/i18n/` (по файлу на язык; исходные тексты в коде русские);
-`go test ./...` проверяет, что каждый текст переведён на каждый язык. Как сообщить об ошибке и предложить правку: [CONTRIBUTING.md](CONTRIBUTING.md) (по-английски). План и идеи: [docs/PLAN.md](docs/PLAN.md).
+Тексты интерфейса лежат в `internal/i18n/` (по файлу на язык, `lang_ru.go`, `lang_de.go` и так далее; исходные тексты в коде английские);
+`go test ./...` проверяет, что каждый текст переведён на каждый язык. Как сообщить об ошибке и предложить правку: [CONTRIBUTING.md](../../CONTRIBUTING.md) (по-английски). План и идеи: [docs/PLAN.md](../PLAN.md) (по-английски).
 
 ## Лицензия
 
-MIT, см. [LICENSE](LICENSE). Сторонние компоненты: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+MIT, см. [LICENSE](../../LICENSE). Сторонние компоненты: [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)
 (формы значков из [Tabler Icons](https://tabler.io/icons), MIT).

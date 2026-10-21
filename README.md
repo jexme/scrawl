@@ -4,7 +4,7 @@
 an area on any monitor, draw arrows, boxes and text, blur out private data, and
 the result is already in your clipboard and saved as a file.
 
-[English](README.md) · [Русский](README.ru.md) · [简体中文](docs/translations/README.zh-CN.md) · [Español](docs/translations/README.es.md) · [Português (Brasil)](docs/translations/README.pt-BR.md) · [日本語](docs/translations/README.ja.md) · [Deutsch](docs/translations/README.de.md) · [Français](docs/translations/README.fr.md) · [한국어](docs/translations/README.ko.md)
+[English](README.md) · [Русский](docs/translations/README.ru.md) · [简体中文](docs/translations/README.zh-CN.md) · [Español](docs/translations/README.es.md) · [Português (Brasil)](docs/translations/README.pt-BR.md) · [日本語](docs/translations/README.ja.md) · [Deutsch](docs/translations/README.de.md) · [Français](docs/translations/README.fr.md) · [한국어](docs/translations/README.ko.md)
 
 ![Scrawl overlay: a selected area with a box, an arrow, a caption, a marker stroke and a blurred spot, and the toolbar below it](docs/images/overlay.png)
 
@@ -16,6 +16,28 @@ On GNOME with Wayland, apps cannot grab the screen directly. They ask the deskto
 portal, and the portal asks **"which screen do you want to share?" on every shot**.
 Scrawl asks once per monitor, remembers the answer, and after that a screenshot
 is one key press: the frozen screen appears in about 150 ms.
+
+## Quick start
+
+On Ubuntu or Debian (Wayland or X11) it takes three steps.
+
+**1. Install** from the signed apt repository (updates then come with `apt upgrade`):
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
+
+**2. Set up once:** run `scrawl -settings`, open the tab "System". On Wayland press "Pick monitors again"
+(GNOME asks once per monitor; tick "Remember this choice") and "Grant permission". Then type a hotkey
+(`Print` by default) and press "Assign". On X11 only the hotkey is needed.
+
+**3. Take a screenshot:** press the hotkey, drag an area, press `Enter`. The picture is in your clipboard and in
+`~/Pictures/Screenshots`.
+
+Other systems: [Windows](#windows-10-and-11), other Linux distributions (a release archive or a source build), see
+[Install](#install) below.
 
 ## Features
 
@@ -57,6 +79,8 @@ clipboard, tray icon and a global hotkey); this port is new and has been tried o
 [docs/WINDOWS.md](docs/WINDOWS.md) for building and what is missing.
 
 ## Requirements
+
+Installing with apt or the `.deb` pulls these in for you; the list is for the release archive and a source build.
 
 - GNOME on Wayland with PipeWire, `xdg-desktop-portal` (1.21 or newer, it must
   support host app registration) and `xdg-desktop-portal-gnome`. Developed and tested on Ubuntu with GNOME 50.
@@ -283,7 +307,7 @@ make notices  # regenerate THIRD_PARTY_NOTICES.md
 ```
 
 The interface texts live in `internal/i18n/` (one file per language, `lang_ru.go`, `lang_de.go` and so on; the source texts in the code are English);
-`go test ./...` checks that every text is translated into every language. How to report a bug and send a change: [CONTRIBUTING.md](CONTRIBUTING.md). Plan and ideas: [docs/PLAN.md](docs/PLAN.md) (in Russian).
+`go test ./...` checks that every text is translated into every language. How to report a bug and send a change: [CONTRIBUTING.md](CONTRIBUTING.md). Plan and ideas: [docs/PLAN.md](docs/PLAN.md).
 
 ## License
 

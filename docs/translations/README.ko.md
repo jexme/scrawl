@@ -2,7 +2,7 @@
 
 **Wayland의 GNOME을 위한 빠른 주석 스크린샷 도구.** 키를 누르고, 아무 모니터에서나 영역을 선택하고, 화살표·상자·텍스트를 그리고, 민감한 정보는 흐리게 처리하면, 결과가 곧바로 클립보드에 들어가고 파일로도 저장됩니다.
 
-[English](../../README.md) · [Русский](../../README.ru.md) · [简体中文](README.zh-CN.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · **한국어**
+[English](../../README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · **한국어**
 
 ![Scrawl 오버레이: 상자, 화살표, 글자, 형광펜 선, 흐림 처리가 있는 선택 영역과 그 아래의 도구 모음](../images/overlay.png)
 
@@ -143,7 +143,7 @@ Scrawl은 screen-editor의 새 이름입니다. `~/.config/scrawl/config.json`�
 
 ![설정 창](../images/settings-en.png)
 
-도구 모음의 톱니바퀴, `scrawl -settings`, 또는 애플리케이션 메뉴에서 엽니다. 변경 사항은 즉시 `~/.config/scrawl/config.json`(일반 JSON 파일이며 직접 편집해도 됩니다)에 저장됩니다. 없거나 잘못된 값은 기본값으로 돌아갑니다. 각 키는 [설정 참조](../SETTINGS.md)(영어 또는 [러시아어](../SETTINGS.ru.md))에 설명되어 있습니다.
+도구 모음의 톱니바퀴, `scrawl -settings`, 또는 애플리케이션 메뉴에서 엽니다. 변경 사항은 즉시 `~/.config/scrawl/config.json`(일반 JSON 파일이며 직접 편집해도 됩니다)에 저장됩니다. 없거나 잘못된 값은 기본값으로 돌아갑니다. 각 키는 [설정 참조](../SETTINGS.md)(영어 또는 [러시아어](../SETTINGS.md))에 설명되어 있습니다.
 
 ## 파일과 개인정보
 

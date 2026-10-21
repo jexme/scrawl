@@ -63,7 +63,7 @@ PKG = scrawl-$(VERSION)-linux-$(shell $(GO) env GOARCH)
 dist: build
 	rm -rf $(DIST)/$(PKG) $(DIST)/$(PKG).tar.gz $(DIST)/$(PKG).tar.gz.sha256
 	mkdir -p $(DIST)/$(PKG)
-	cp bin/scrawl packaging/$(DESKTOP) packaging/install.sh scripts/gnome-hotkey.sh LICENSE THIRD_PARTY_NOTICES.md README.md README.ru.md $(DIST)/$(PKG)/
+	cp bin/scrawl packaging/$(DESKTOP) packaging/install.sh scripts/gnome-hotkey.sh LICENSE THIRD_PARTY_NOTICES.md README.md docs/translations/README.ru.md $(DIST)/$(PKG)/
 	tar -C $(DIST) --owner=0 --group=0 -czf $(DIST)/$(PKG).tar.gz $(PKG)
 	cd $(DIST) && sha256sum $(PKG).tar.gz > $(PKG).tar.gz.sha256
 	@echo "Готово: $(DIST)/$(PKG).tar.gz"

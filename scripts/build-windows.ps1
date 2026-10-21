@@ -55,7 +55,7 @@ if ($Package) {
     Remove-Item $dir, "dist\$name.zip", "dist\$name.zip.sha256" -Recurse -Force -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Force $dir | Out-Null
     Copy-Item $Out (Join-Path $dir "scrawl.exe")
-    Copy-Item LICENSE, THIRD_PARTY_NOTICES.md, README.md, README.ru.md, docs\WINDOWS.md $dir
+    Copy-Item LICENSE, THIRD_PARTY_NOTICES.md, README.md, docs\translations\README.ru.md, docs\WINDOWS.md $dir
     # Архив пишем сами: Compress-Archive и ZipFile.CreateFromDirectory в Windows PowerShell 5.1 кладут в имена
     # обратные косые, и такой архив неправильно распаковывается в других системах.
     Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem

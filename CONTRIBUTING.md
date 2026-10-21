@@ -60,5 +60,5 @@ so in the pull request. Native-speaker corrections to existing translations (als
 - One topic per pull request, with a test when the behaviour can be tested without a real screen.
 - Do not add dependencies lightly; every new module goes into `THIRD_PARTY_NOTICES.md` (`make notices`).
 - Settings: a new key needs a default, validation in `normalize`, a row in the settings window and a line in
-  `docs/SETTINGS.md` and `docs/SETTINGS.ru.md`.
+  `docs/SETTINGS.md` and `docs/translations/SETTINGS.ru.md`.
 - Commit messages in this repository are written in Russian; English is fine for pull requests from outside.

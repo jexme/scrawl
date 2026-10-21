@@ -1,6 +1,6 @@
 # Settings reference
 
-[Русский](SETTINGS.ru.md)
+[Русский](translations/SETTINGS.ru.md)
 
 Almost everything is set in the settings window (`scrawl -settings`, the gear
 button on the toolbar, or "Settings" in the application menu). Changes are saved

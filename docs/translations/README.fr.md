@@ -2,7 +2,7 @@
 
 **Captures d'écran rapides avec annotations pour GNOME sous Wayland.** Appuyez sur une touche, sélectionnez une zone sur n'importe quel écran, dessinez des flèches, des cadres et du texte, floutez les données privées, et le résultat est déjà dans le presse-papiers et enregistré dans un fichier.
 
-[English](../../README.md) · [Русский](../../README.ru.md) · [简体中文](README.zh-CN.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · **Français** · [한국어](README.ko.md)
+[English](../../README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md) · [Español](README.es.md) · [Português (Brasil)](README.pt-BR.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · **Français** · [한국어](README.ko.md)
 
 ![Surcouche Scrawl : une zone sélectionnée avec un cadre, une flèche, un texte, un trait de surligneur et une partie floutée, la barre d'outils en dessous](../images/overlay.png)
 
@@ -143,7 +143,7 @@ Faites la première capture et appuyez sur `A`. Faites la suivante : la zone pr�
 
 ![La fenêtre de réglages](../images/settings-en.png)
 
-Ouvrez-les depuis la barre d'outils (engrenage), avec `scrawl -settings` ou depuis le menu des applications. Les modifications sont enregistrées aussitôt dans `~/.config/scrawl/config.json`, un simple fichier JSON que vous pouvez aussi modifier à la main. Les valeurs absentes ou invalides reviennent aux valeurs par défaut. Chaque clé est décrite dans la [référence des réglages](../SETTINGS.md) (en anglais ou en [russe](../SETTINGS.ru.md)).
+Ouvrez-les depuis la barre d'outils (engrenage), avec `scrawl -settings` ou depuis le menu des applications. Les modifications sont enregistrées aussitôt dans `~/.config/scrawl/config.json`, un simple fichier JSON que vous pouvez aussi modifier à la main. Les valeurs absentes ou invalides reviennent aux valeurs par défaut. Chaque clé est décrite dans la [référence des réglages](../SETTINGS.md) (en anglais ou en [russe](../SETTINGS.md)).
 
 ## Fichiers et vie privée
 
