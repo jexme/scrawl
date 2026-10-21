@@ -26,15 +26,15 @@ const (
 func widthLabel(t annotate.Tool) string {
 	switch t {
 	case annotate.ToolText:
-		return i18n.T("Размер текста")
+		return i18n.T("Text size")
 	case annotate.ToolBlur:
-		return i18n.T("Сила размытия")
+		return i18n.T("Blur strength")
 	case annotate.ToolStamp:
-		return i18n.T("Размер штампа")
+		return i18n.T("Stamp size")
 	case annotate.ToolMarker:
-		return i18n.T("Толщина маркера")
+		return i18n.T("Marker thickness")
 	default:
-		return i18n.T("Толщина")
+		return i18n.T("Thickness")
 	}
 }
 

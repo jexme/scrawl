@@ -98,7 +98,7 @@ func (m *monitor) layoutRestoreDock(gtx layout.Context, win image.Point) {
 		gtx.Execute(op.InvalidateCmd{}) // панель уже не нужна: следующий кадр без неё не ждёт движения мыши
 		return
 	}
-	txt, size := m.label(gtx, m.withKey(i18n.T("Восстановить прошлую область"), settings.ActionRestore), 15, iconColor)
+	txt, size := m.label(gtx, m.withKey(i18n.T("Restore the previous area"), settings.ActionRestore), 15, iconColor)
 	icon := gtx.Dp(20)
 	padX, padY, gap := gtx.Dp(14), gtx.Dp(9), gtx.Dp(8)
 	w := padX + icon + gap + size.X + padX
@@ -141,23 +141,23 @@ func (m *monitor) collectItems() []dockItem {
 	var items []dockItem
 	total := m.queued + boolInt(m.hasSel)
 	if m.hasSel {
-		txt := m.withKey(i18n.T("В подборку"), settings.ActionAdd)
+		txt := m.withKey(i18n.T("To collection"), settings.ActionAdd)
 		if m.queued > 0 {
-			txt = m.withKey(i18n.T("Добавить ещё"), settings.ActionAdd)
+			txt = m.withKey(i18n.T("Add another"), settings.ActionAdd)
 		}
 		items = append(items, dockItem{&m.dock.add, txt, m.queued == 0, m.addToCollection})
 	}
 	if total >= 2 {
-		txt := m.withKey(i18n.T("Склеить"), settings.ActionGlue)
+		txt := m.withKey(i18n.T("Glue"), settings.ActionGlue)
 		if m.hasSel {
-			txt = m.withKey(i18n.T("Склеить с этой областью"), settings.ActionGlue)
+			txt = m.withKey(i18n.T("Glue with this area"), settings.ActionGlue)
 		}
 		items = append(items, dockItem{&m.dock.glue, txt, m.queued > 0, m.glueCollection})
 	}
 	if m.queued > 0 {
 		items = append(items,
-			dockItem{&m.dock.separate, m.withKey(i18n.T("Отдельно"), settings.ActionSend), false, m.sendSeparately},
-			dockItem{&m.dock.clear, i18n.T("Очистить"), false, m.clearCollection})
+			dockItem{&m.dock.separate, m.withKey(i18n.T("As files"), settings.ActionSend), false, m.sendSeparately},
+			dockItem{&m.dock.clear, i18n.T("Clear"), false, m.clearCollection})
 	}
 	return items
 }
@@ -176,9 +176,9 @@ func (m *monitor) layoutCollectDock(gtx layout.Context, win image.Point) {
 	title := ""
 	switch {
 	case m.queued > 0 && !m.hasSel:
-		title = fmt.Sprintf(i18n.T("Подборка: %d  ·  выделите область"), m.queued)
+		title = fmt.Sprintf(i18n.T("Collection: %d  ·  select an area"), m.queued)
 	case m.queued > 0:
-		title = fmt.Sprintf(i18n.T("Подборка: %d"), m.queued)
+		title = fmt.Sprintf(i18n.T("Collection: %d"), m.queued)
 	}
 
 	type chip struct {

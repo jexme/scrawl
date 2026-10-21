@@ -55,9 +55,9 @@ func ModeOf(width float32) BlurMode {
 // Label возвращает название режима для плашки со значением силы.
 func (m BlurMode) Label() string {
 	if m == BlurMosaic {
-		return i18n.T("Мозаика")
+		return i18n.T("Mosaic")
 	}
-	return i18n.T("Размытие")
+	return i18n.T("Blur")
 }
 
 // blurLevel округляет силу до уровня 1..MaxBlurLevel.

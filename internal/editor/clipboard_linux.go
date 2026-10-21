@@ -27,10 +27,10 @@ func clipboardTool(mime string) (name string, args []string, err error) {
 		if _, err := exec.LookPath("xclip"); err == nil && os.Getenv("DISPLAY") != "" {
 			return "xclip", xclip, nil
 		}
-		return "", nil, errors.New(i18n.T("для буфера обмена в Wayland нужен wl-copy: sudo apt install wl-clipboard"))
+		return "", nil, errors.New(i18n.T("the clipboard in Wayland needs wl-copy: sudo apt install wl-clipboard"))
 	}
 	if _, err := exec.LookPath("xclip"); err != nil {
-		return "", nil, errors.New(i18n.T("для буфера обмена в X11 нужен xclip: sudo apt install xclip"))
+		return "", nil, errors.New(i18n.T("the X11 clipboard needs xclip: sudo apt install xclip"))
 	}
 	return "xclip", xclip, nil
 }

@@ -1,7 +1,7 @@
-// Package i18n переводит тексты интерфейса. Исходный язык русский: в коде тексты
-// записаны по-русски и обёрнуты в T, а остальные языки берутся из каталогов
-// (en.go, lang_zh.go и так далее). Текст, которого нет в каталоге языка, показывается
-// по-английски, а если нет и английского, то как есть, поэтому забытая строка
+// Package i18n переводит тексты интерфейса. Исходный язык английский: в коде тексты
+// записаны по-английски и обёрнуты в T, а остальные языки берутся из каталогов
+// (lang_ru.go, lang_de.go и так далее; ключ это английский текст). Текст, которого нет
+// в каталоге языка, показывается как есть, то есть по-английски, поэтому забытая строка
 // не ломает программу, а тест полноты (i18n_test.go) такие строки находит.
 package i18n
 
@@ -39,14 +39,14 @@ var Languages = []LanguageInfo{
 	{PT, "Português (Brasil)", ""}, {JA, "日本語", "Japanese"}, {DE, "Deutsch", ""}, {FR, "Français", ""}, {KO, "한국어", "Korean"},
 }
 
-// catalogs — переводы с русского: русский язык исходный и каталога не имеет.
+// catalogs — переводы с английского: английский язык исходный и каталога не имеет.
 var catalogs = map[string]map[string]string{
-	EN: en, ZH: zh, ES: es, PT: pt, JA: ja, DE: de, FR: fr, KO: ko,
+	RU: ru, ZH: zh, ES: es, PT: pt, JA: ja, DE: de, FR: fr, KO: ko,
 }
 
 var current atomic.Value // string: код языка из Languages
 
-func init() { current.Store(RU) }
+func init() { current.Store(EN) }
 
 // Normalize приводит запись языка к коду из настройки: "auto", "ru", "en", "zh",
 // "es", "pt", "ja", "de", "fr", "ko". Понимает региональные записи ("zh-CN",
@@ -99,20 +99,13 @@ func detect(getenv func(string) string) string {
 	return EN
 }
 
-// T возвращает перевод русского текста на действующий язык. Нет перевода на этот
-// язык: английский, а нет и его: сам русский текст.
-func T(ru string) string {
-	lang := Language()
-	if lang == RU {
-		return ru
-	}
-	if v, ok := catalogs[lang][ru]; ok {
+// T возвращает перевод английского текста на действующий язык. Нет перевода на этот
+// язык (или язык английский): сам текст.
+func T(text string) string {
+	if v, ok := catalogs[Language()][text]; ok {
 		return v
 	}
-	if v, ok := en[ru]; ok {
-		return v
-	}
-	return ru
+	return text
 }
 
 // Tf переводит формат и подставляет аргументы.

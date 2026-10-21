@@ -22,7 +22,7 @@ import (
 
 // ErrTimeout означает, что кадр не пришёл за отведённое время. На статичном
 // мониторе так бывает постоянно: Mutter отдаёт кадры только при перерисовке.
-var ErrTimeout = errors.New("кадр PipeWire не пришёл вовремя")
+var ErrTimeout = errors.New("the PipeWire frame did not arrive in time")
 
 var initOnce sync.Once
 

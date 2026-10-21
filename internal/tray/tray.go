@@ -66,7 +66,7 @@ func Start(conn *dbus.Conn, h Handlers) (*Item, error) {
 		return nil, err
 	}
 	if reply != dbus.RequestNameReplyPrimaryOwner {
-		return nil, fmt.Errorf(i18n.T("имя %s уже занято"), name)
+		return nil, fmt.Errorf(i18n.T("the name %s is already taken"), name)
 	}
 
 	icons := []pixmap{toPixmap(drawIcon(22)), toPixmap(drawIcon(32)), toPixmap(drawIcon(48))}
@@ -83,7 +83,7 @@ func Start(conn *dbus.Conn, h Handlers) (*Item, error) {
 		"AttentionIconName":   {Value: ""},
 		"AttentionIconPixmap": {Value: []pixmap{}},
 		"AttentionMovieName":  {Value: ""},
-		"ToolTip":             {Value: toolTip{Icons: []pixmap{}, Title: "Scrawl", Text: i18n.T("Левый клик: снимок экрана")}},
+		"ToolTip":             {Value: toolTip{Icons: []pixmap{}, Title: "Scrawl", Text: i18n.T("Left click: take a screenshot")}},
 		"ItemIsMenu":          {Value: false},
 		"Menu":                {Value: dbus.ObjectPath(menuPath)},
 	}})
@@ -114,7 +114,7 @@ func Start(conn *dbus.Conn, h Handlers) (*Item, error) {
 func (it *Item) register() error {
 	call := it.conn.Object(watcherName, watcherPath).Call(watcherName+".RegisterStatusNotifierItem", 0, it.name)
 	if call.Err != nil {
-		return fmt.Errorf(i18n.T("значок не зарегистрирован (нет расширения AppIndicator?): %w"), call.Err)
+		return fmt.Errorf(i18n.T("the icon is not registered (is the AppIndicator extension missing?): %w"), call.Err)
 	}
 	return nil
 }

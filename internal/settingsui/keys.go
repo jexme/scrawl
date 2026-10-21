@@ -16,18 +16,18 @@ import (
 
 // keyLabels — названия действий оверлея в окне настроек.
 var keyLabels = map[string]string{
-	settings.ActionConfirm: "Копировать и/или сохранить",
-	settings.ActionCancel:  "Закрыть оверлей",
-	settings.ActionRestore: "Вернуть область прошлого снимка",
-	settings.ActionAdd:     "Добавить в подборку",
-	settings.ActionGlue:    "Склеить подборку",
-	settings.ActionSend:    "Отправить подборку файлами",
-	settings.ActionUndo:    "Отменить последнюю аннотацию",
-	settings.ActionCopy:    "Только копировать",
-	settings.ActionSave:    "Только сохранить",
+	settings.ActionConfirm: "Copy and/or save",
+	settings.ActionCancel:  "Close the overlay",
+	settings.ActionRestore: "Restore the previous shot's area",
+	settings.ActionAdd:     "Add to the collection",
+	settings.ActionGlue:    "Glue the collection",
+	settings.ActionSend:    "Send the collection as files",
+	settings.ActionUndo:    "Undo the last annotation",
+	settings.ActionCopy:    "Copy only",
+	settings.ActionSave:    "Save only",
 
-	settings.ActionWidthUp:   "Толще (размер текста, сила размытия)",
-	settings.ActionWidthDown: "Тоньше (размер текста, сила размытия)",
+	settings.ActionWidthUp:   "Thicker (text size, blur strength)",
+	settings.ActionWidthDown: "Thinner (text size, blur strength)",
 }
 
 // keyLabel возвращает название действия для окна настроек. Для инструментов оно
@@ -35,7 +35,7 @@ var keyLabels = map[string]string{
 func keyLabel(action string) string {
 	for i, name := range settings.ToolNames {
 		if settings.ToolAction(name) == action {
-			return fmt.Sprintf(i18n.T("Инструмент «%s»"), i18n.T(toolLabels[i]))
+			return fmt.Sprintf(i18n.T("Tool “%s”"), i18n.T(toolLabels[i]))
 		}
 	}
 	return i18n.T(keyLabels[action])
@@ -73,12 +73,12 @@ func (s *state) assignKey(row *keyRow, chord string) {
 		if a == row.action {
 			other = b
 		}
-		row.err = fmt.Sprintf(i18n.T("%s уже занята действием «%s»"), keys.Of(row.action), keyLabel(other))
+		row.err = fmt.Sprintf(i18n.T("%s is already used by \"%s\""), keys.Of(row.action), keyLabel(other))
 		return
 	}
 	row.err = ""
 	if err := s.store.Update(func(c *settings.Settings) { c.Keys = keys }); err != nil {
-		row.err = i18n.T("Не удалось сохранить: ") + err.Error()
+		row.err = i18n.T("Could not save: ") + err.Error()
 	}
 }
 
@@ -127,7 +127,7 @@ func (s *state) keyControls() layout.Widget {
 			row := row
 			label := keys.Of(row.action)
 			if s.capturing == row {
-				label = i18n.T("Нажмите клавишу…")
+				label = i18n.T("Press a key…")
 			}
 			children = append(children, layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -143,7 +143,7 @@ func (s *state) keyControls() layout.Widget {
 					}),
 					layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						b := material.Button(s.th, &row.reset, i18n.T("Сброс"))
+						b := material.Button(s.th, &row.reset, i18n.T("Reset"))
 						b.Background = borderColor
 						return b.Layout(gtx)
 					}),

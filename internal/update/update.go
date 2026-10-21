@@ -49,21 +49,21 @@ func Check(ctx context.Context, current string) (Result, error) {
 	req.Header.Set("Accept", "application/vnd.github+json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return Result{}, fmt.Errorf(i18n.T("нет связи с GitHub: %w"), err)
+		return Result{}, fmt.Errorf(i18n.T("cannot reach GitHub: %w"), err)
 	}
 	defer resp.Body.Close()
 	switch {
 	case resp.StatusCode == http.StatusNotFound:
-		return Result{}, fmt.Errorf("%s", i18n.T("релизов пока нет"))
+		return Result{}, fmt.Errorf("%s", i18n.T("there are no releases yet"))
 	case resp.StatusCode != http.StatusOK:
-		return Result{}, fmt.Errorf(i18n.T("GitHub ответил кодом %d"), resp.StatusCode)
+		return Result{}, fmt.Errorf(i18n.T("GitHub replied with code %d"), resp.StatusCode)
 	}
 	var rel release
 	if err := json.NewDecoder(http.MaxBytesReader(nil, resp.Body, 1<<20)).Decode(&rel); err != nil {
-		return Result{}, fmt.Errorf(i18n.T("непонятный ответ GitHub: %w"), err)
+		return Result{}, fmt.Errorf(i18n.T("unexpected reply from GitHub: %w"), err)
 	}
 	if rel.TagName == "" {
-		return Result{}, fmt.Errorf("%s", i18n.T("в ответе GitHub нет версии"))
+		return Result{}, fmt.Errorf("%s", i18n.T("the GitHub reply has no version"))
 	}
 	res := Result{Latest: rel.TagName, URL: rel.HTMLURL}
 	if newer, ok := Newer(rel.TagName, current); ok {
@@ -127,10 +127,10 @@ func Newer(latest, current string) (newer, ok bool) {
 func (r Result) Message() string {
 	switch {
 	case r.Newer:
-		return fmt.Sprintf(i18n.T("Доступна новая версия %s: %s"), r.Latest, r.URL)
+		return fmt.Sprintf(i18n.T("A new version %s is available: %s"), r.Latest, r.URL)
 	case r.Comparable:
-		return fmt.Sprintf(i18n.T("У вас последняя версия (%s)"), r.Latest)
+		return fmt.Sprintf(i18n.T("You have the latest version (%s)"), r.Latest)
 	default:
-		return fmt.Sprintf(i18n.T("Последняя версия на GitHub: %s (у вас сборка разработчика, сравнить нельзя)"), r.Latest)
+		return fmt.Sprintf(i18n.T("Latest version on GitHub: %s (you run a developer build, cannot compare)"), r.Latest)
 	}
 }

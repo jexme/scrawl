@@ -53,20 +53,20 @@ const maxGlueLabel = 30
 
 // Слова подписей склейки по умолчанию.
 const (
-	DefaultGlueBefore = "Было"
-	DefaultGlueAfter  = "Стало"
-	DefaultGlueStep   = "Шаг"
+	DefaultGlueBefore = "Before"
+	DefaultGlueAfter  = "After"
+	DefaultGlueStep   = "Step"
 )
 
 // ValidateGlueLabel проверяет подпись: пусто (по умолчанию) или короткий текст
 // без управляющих символов.
 func ValidateGlueLabel(s string) error {
 	if utf8.RuneCountInString(s) > maxGlueLabel {
-		return fmt.Errorf(i18n.T("не длиннее %d знаков"), maxGlueLabel)
+		return fmt.Errorf(i18n.T("at most %d characters"), maxGlueLabel)
 	}
 	for _, r := range s {
 		if unicode.IsControl(r) {
-			return errors.New(i18n.T("нельзя использовать управляющие символы"))
+			return errors.New(i18n.T("control characters are not allowed"))
 		}
 	}
 	return nil

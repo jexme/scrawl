@@ -28,7 +28,7 @@ func (p *Portal) screenshot() (*image.RGBA, error) {
 	uri, _ := res["uri"].Value().(string)
 	u, err := url.Parse(uri)
 	if err != nil || u.Scheme != "file" {
-		return nil, fmt.Errorf(i18n.T("неожиданный uri скриншота: %q"), uri)
+		return nil, fmt.Errorf(i18n.T("unexpected screenshot uri: %q"), uri)
 	}
 	// Файл создан порталом ради этого запроса, после чтения он не нужен.
 	defer os.Remove(u.Path)
@@ -60,11 +60,11 @@ func (p *Portal) grabViaScreenshot(sessions []*Session) ([]Frame, error) {
 			x, y, _ := pair(st.Props, "position")
 			w, h, ok := pair(st.Props, "size")
 			if !ok {
-				return nil, fmt.Errorf(i18n.T("портал не сообщил размер потока %d"), st.ID)
+				return nil, fmt.Errorf(i18n.T("the portal did not report the size of stream %d"), st.ID)
 			}
 			r := image.Rect(x, y, x+w, y+h)
 			if !r.In(shot.Bounds()) {
-				return nil, fmt.Errorf(i18n.T("монитор %v вне снимка %v (масштаб экрана не 1?)"), r, shot.Bounds())
+				return nil, fmt.Errorf(i18n.T("monitor %v is outside the screenshot %v (screen scale not 1?)"), r, shot.Bounds())
 			}
 			img := image.NewRGBA(image.Rect(0, 0, w, h))
 			draw.Draw(img, img.Bounds(), shot, r.Min, draw.Src)

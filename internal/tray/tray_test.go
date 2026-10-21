@@ -31,7 +31,7 @@ func TestMenuLayout(t *testing.T) {
 		}
 		labels = append(labels, child.Props["label"].Value().(string))
 	}
-	if labels[0] != "Снимок" || labels[1] != "Настройки" || labels[2] != "-" || labels[3] != "Выход" {
+	if labels[0] != "Take screenshot" || labels[1] != "Settings" || labels[2] != "-" || labels[3] != "Quit" {
 		t.Errorf("пункты меню: %v", labels)
 	}
 	if _, _, err := m.GetLayout(99, 0, nil); err == nil {
@@ -41,7 +41,7 @@ func TestMenuLayout(t *testing.T) {
 	if err != nil || len(props) != 2 {
 		t.Errorf("GetGroupProperties: %v %v", props, err)
 	}
-	if v, err := m.GetProperty(idShot, "label"); err != nil || v.Value() != "Снимок" {
+	if v, err := m.GetProperty(idShot, "label"); err != nil || v.Value() != "Take screenshot" {
 		t.Errorf("GetProperty: %v %v", v, err)
 	}
 }

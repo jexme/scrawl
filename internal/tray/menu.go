@@ -35,10 +35,10 @@ type item struct {
 
 func items() []item {
 	return []item{
-		{idShot, i18n.T("Снимок")},
-		{idSettings, i18n.T("Настройки")},
+		{idShot, i18n.T("Take screenshot")},
+		{idSettings, i18n.T("Settings")},
 		{idSep, ""},
-		{idQuit, i18n.T("Выход")},
+		{idQuit, i18n.T("Quit")},
 	}
 }
 
@@ -151,4 +151,4 @@ func (m *menu) activate(id int32) {
 
 type errNoItem int32
 
-func (e errNoItem) Error() string { return i18n.T("нет пункта меню") }
+func (e errNoItem) Error() string { return i18n.T("no such menu item") }

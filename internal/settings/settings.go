@@ -365,11 +365,11 @@ const (
 func ParseColor(s string) (color.NRGBA, error) {
 	hex := strings.TrimPrefix(strings.TrimSpace(s), "#")
 	if len(hex) != 6 {
-		return color.NRGBA{}, errors.New(i18n.T("нужен цвет вида #RRGGBB"))
+		return color.NRGBA{}, errors.New(i18n.T("a colour like #RRGGBB is needed"))
 	}
 	v, err := strconv.ParseUint(hex, 16, 32)
 	if err != nil {
-		return color.NRGBA{}, errors.New(i18n.T("нужен цвет вида #RRGGBB"))
+		return color.NRGBA{}, errors.New(i18n.T("a colour like #RRGGBB is needed"))
 	}
 	return color.NRGBA{R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v), A: 255}, nil
 }
@@ -406,11 +406,11 @@ const maxFilePrefix = 60
 // текст без разделителей пути и управляющих символов, не длиннее 60 знаков.
 func ValidateFilePrefix(p string) error {
 	if utf8.RuneCountInString(p) > maxFilePrefix {
-		return fmt.Errorf(i18n.T("не длиннее %d знаков"), maxFilePrefix)
+		return fmt.Errorf(i18n.T("at most %d characters"), maxFilePrefix)
 	}
 	for _, r := range p {
 		if r == '/' || r == '\\' || unicode.IsControl(r) {
-			return errors.New(i18n.T("нельзя использовать / \\ и управляющие символы"))
+			return errors.New(i18n.T("/ \\ and control characters are not allowed"))
 		}
 	}
 	return nil
@@ -471,7 +471,7 @@ func ValidateSaveDir(dir string) error {
 	if dir == "" || dir == "~" || strings.HasPrefix(dir, "~/") || filepath.IsAbs(dir) {
 		return nil
 	}
-	return errors.New(i18n.T("путь должен быть абсолютным или начинаться с ~/"))
+	return errors.New(i18n.T("the path must be absolute or start with ~/"))
 }
 
 // ExpandDir раскрывает ~ в начале пути до домашнего каталога. Пустая строка

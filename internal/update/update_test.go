@@ -78,10 +78,10 @@ func TestCheckErrors(t *testing.T) {
 		body   string
 		want   string
 	}{
-		{404, "", "релизов пока нет"},
+		{404, "", "there are no releases yet"},
 		{500, "", "500"},
-		{200, "не json", "непонятный"},
-		{200, `{}`, "нет версии"},
+		{200, "не json", "unexpected reply"},
+		{200, `{}`, "has no version"},
 	} {
 		serve(t, c.status, c.body, nil)
 		if _, err := Check(context.Background(), "v0.1.0"); err == nil || !strings.Contains(err.Error(), c.want) {
@@ -90,7 +90,7 @@ func TestCheckErrors(t *testing.T) {
 	}
 	// Сервер недоступен.
 	apiURL = "http://127.0.0.1:1/"
-	if _, err := Check(context.Background(), "v0.1.0"); err == nil || !strings.Contains(err.Error(), "нет связи") {
+	if _, err := Check(context.Background(), "v0.1.0"); err == nil || !strings.Contains(err.Error(), "cannot reach GitHub") {
 		t.Errorf("нет связи: %v", err)
 	}
 }
@@ -100,9 +100,9 @@ func TestMessage(t *testing.T) {
 		r    Result
 		want string
 	}{
-		{Result{Latest: "v0.3.0", URL: "https://x/y", Newer: true, Comparable: true}, "Доступна новая версия v0.3.0: https://x/y"},
-		{Result{Latest: "v0.3.0", Comparable: true}, "У вас последняя версия (v0.3.0)"},
-		{Result{Latest: "v0.3.0"}, "сборка разработчика"},
+		{Result{Latest: "v0.3.0", URL: "https://x/y", Newer: true, Comparable: true}, "A new version v0.3.0 is available: https://x/y"},
+		{Result{Latest: "v0.3.0", Comparable: true}, "You have the latest version (v0.3.0)"},
+		{Result{Latest: "v0.3.0"}, "developer build"},
 	} {
 		if got := c.r.Message(); !strings.Contains(got, c.want) {
 			t.Errorf("%+v: %q, ожидали «%s»", c.r, got, c.want)

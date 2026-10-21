@@ -72,7 +72,7 @@ func ParseWin(accel string) (mods, vk uint32, err error) {
 	for strings.HasPrefix(rest, "<") {
 		end := strings.Index(rest, ">")
 		if end < 0 {
-			return 0, 0, errors.New(i18n.T("комбинация в формате GNOME: Print, <Super>s, <Control><Alt>p"))
+			return 0, 0, errors.New(i18n.T("use the GNOME format: Print, <Super>s, <Control><Alt>p"))
 		}
 		switch strings.ToLower(rest[1:end]) {
 		case "control", "ctrl", "primary":
@@ -84,7 +84,7 @@ func ParseWin(accel string) (mods, vk uint32, err error) {
 		case "super":
 			mods |= ModWin
 		default:
-			return 0, 0, fmt.Errorf(i18n.T("неизвестный модификатор %s"), rest[:end+1])
+			return 0, 0, fmt.Errorf(i18n.T("unknown modifier %s"), rest[:end+1])
 		}
 		rest = rest[end+1:]
 	}
@@ -103,7 +103,7 @@ func ParseWin(accel string) (mods, vk uint32, err error) {
 		vk = winKeys[name]
 	}
 	if vk == 0 {
-		return 0, 0, fmt.Errorf(i18n.T("клавиша %q не поддерживается"), rest)
+		return 0, 0, fmt.Errorf(i18n.T("key %q is not supported"), rest)
 	}
 	return mods, vk, nil
 }

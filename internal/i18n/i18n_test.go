@@ -13,34 +13,34 @@ import (
 )
 
 func TestTranslate(t *testing.T) {
-	defer SetLanguage(RU)
+	defer SetLanguage(EN)
 
-	SetLanguage(RU)
-	if got := T("Закрыть"); got != "Закрыть" {
-		t.Errorf("по-русски текст не меняется: %q", got)
-	}
 	SetLanguage(EN)
-	if got := T("Закрыть"); got != "Close" {
-		t.Errorf("по-английски: %q", got)
+	if got := T("Close"); got != "Close" {
+		t.Errorf("по-английски текст не меняется: %q", got)
 	}
-	if got := T("текст, которого нет в каталоге"); got != "текст, которого нет в каталоге" {
+	SetLanguage(RU)
+	if got := T("Close"); got != "Закрыть" {
+		t.Errorf("по-русски: %q", got)
+	}
+	if got := T("text that is not in the catalog"); got != "text that is not in the catalog" {
 		t.Errorf("непереведённый текст показывается как есть: %q", got)
 	}
-	if got := Tf("Подборка: %d", 3); got != "Collection: 3" {
+	if got := Tf("Collection: %d", 3); got != "Подборка: 3" {
 		t.Errorf("Tf: %q", got)
 	}
-	err := Errorf("рендер: %w", errTest)
-	if err.Error() != "render: boom" {
+	err := Errorf("render: %w", errTest)
+	if err.Error() != "рендер: boom" {
 		t.Errorf("Errorf: %q", err)
 	}
 	if !errorsIs(err, errTest) {
 		t.Error("Errorf должен оборачивать ошибку (%w)")
 	}
-	SetLanguage(RU)
-	if got := Tf("Подборка: %d", 3); got != "Подборка: 3" {
-		t.Errorf("Tf по-русски: %q", got)
+	SetLanguage(EN)
+	if got := Tf("Collection: %d", 3); got != "Collection: 3" {
+		t.Errorf("Tf по-английски: %q", got)
 	}
-	if Language() != RU {
+	if Language() != EN {
 		t.Errorf("Language: %q", Language())
 	}
 }
@@ -91,7 +91,7 @@ func TestAutoDetect(t *testing.T) {
 		}
 	}
 
-	defer SetLanguage(RU)
+	defer SetLanguage(EN)
 	t.Setenv("LC_ALL", "ru_RU.UTF-8")
 	SetLanguage("auto")
 	if Language() != RU {
@@ -149,7 +149,7 @@ func TestNormalize(t *testing.T) {
 	}
 }
 
-// Каждый язык из списка имеет каталог (кроме русского: он исходный), и коды не повторяются.
+// Каждый язык из списка имеет каталог (кроме английского: он исходный), и коды не повторяются.
 func TestLanguagesList(t *testing.T) {
 	seen := map[string]bool{}
 	for _, l := range Languages {
@@ -157,19 +157,19 @@ func TestLanguagesList(t *testing.T) {
 			t.Errorf("язык %+v повторён или без названия", l)
 		}
 		seen[l.Code] = true
-		if _, ok := catalogs[l.Code]; !ok && l.Code != RU {
+		if _, ok := catalogs[l.Code]; !ok && l.Code != EN {
 			t.Errorf("у языка %s нет каталога", l.Code)
 		}
 	}
 	if len(catalogs) != len(Languages)-1 {
-		t.Errorf("каталогов %d, языков без русского %d", len(catalogs), len(Languages)-1)
+		t.Errorf("каталогов %d, языков без английского %d", len(catalogs), len(Languages)-1)
 	}
 }
 
-// Нет перевода на язык: показывается английский.
+// Нет перевода на язык: показывается английский текст из кода.
 func TestFallbackToEnglish(t *testing.T) {
-	defer SetLanguage(RU)
-	const key = "Закрыть"
+	defer SetLanguage(EN)
+	const key = "Close"
 	saved, ok := catalogs[DE][key]
 	if !ok {
 		t.Skip("в немецком каталоге пока нет этой строки")
@@ -187,17 +187,16 @@ var cyr = regexp.MustCompile(`[А-Яа-яЁё]`)
 // Тексты, которые переводятся не в месте объявления, а при показе. Они обязаны
 // быть в каталоге (проверяется ниже), а в коде могут стоять без T.
 var translatedAtUse = []string{
-	"Было", "Стало", "Шаг",
-	"Выделение", "Перо", "Линия", "Стрелка", "Рамка", "Маркер", "Размытие", "Текст", "Номер",
-	"Копировать и/или сохранить", "Закрыть оверлей", "Вернуть область прошлого снимка", "Добавить в подборку",
-	"Склеить подборку", "Отправить подборку файлами", "Отменить последнюю аннотацию", "Только копировать", "Только сохранить",
-	"Толще (размер текста, сила размытия)", "Тоньше (размер текста, сила размытия)",
+	"Before", "After", "Step",
+	"Select", "Pen", "Line", "Arrow", "Box", "Marker", "Blur", "Text", "Number",
+	"Copy and/or save", "Close the overlay", "Restore the previous shot's area", "Add to the collection",
+	"Glue the collection", "Send the collection as files", "Undo the last annotation", "Copy only", "Save only",
+	"Thicker (text size, blur strength)", "Thinner (text size, blur strength)",
 }
 
-// Русские литералы, которые остаются как есть: технические сообщения для разработчика.
+// Русские литералы, которые остаются как есть: название языка пишется на нём самом.
 var leftRussian = map[string]bool{
-	"кадр PipeWire не пришёл вовремя": true,
-	"Русский": true, // название языка пишется на нём самом
+	"Русский": true,
 }
 
 func TestCatalogCompleteness(t *testing.T) {
@@ -244,14 +243,13 @@ func TestCatalogCompleteness(t *testing.T) {
 		})
 		ast.Inspect(f, func(n ast.Node) bool {
 			lit, ok := n.(*ast.BasicLit)
-			if !ok || lit.Kind != token.STRING || wrapped[lit] || !cyr.MatchString(lit.Value) {
+			if !ok || lit.Kind != token.STRING || !cyr.MatchString(lit.Value) {
 				return true
 			}
 			key, _ := strconv.Unquote(lit.Value)
-			if _, inCatalog := en[key]; inCatalog || leftRussian[key] {
+			if leftRussian[key] {
 				return true
 			}
-			// Внутри i18n.T(...) других вызовов (например, T(x+"...")) и подписи диагностики.
 			unwrapped = append(unwrapped, fset.Position(lit.Pos()).String()+" "+lit.Value)
 			return true
 		})
@@ -262,33 +260,30 @@ func TestCatalogCompleteness(t *testing.T) {
 	}
 
 	for key := range used {
-		if _, ok := en[key]; !ok {
-			t.Errorf("нет английского перевода: %q", key)
+		if _, ok := ru[key]; !ok {
+			t.Errorf("нет русского перевода: %q", key)
 		}
 	}
-	for key := range en {
+	for key := range ru {
 		if !used[key] {
 			t.Errorf("лишняя запись в каталоге (текста нет в коде): %q", key)
 		}
 	}
-	// Остальные языки переведены так же полно, как английский.
+	// Остальные языки переведены так же полно, как русский.
 	for lang, cat := range catalogs {
-		for key := range en {
+		for key := range ru {
 			if _, ok := cat[key]; !ok {
 				t.Errorf("%s: нет перевода: %q", lang, key)
 			}
 		}
 		for key := range cat {
-			if _, ok := en[key]; !ok {
+			if _, ok := ru[key]; !ok {
 				t.Errorf("%s: лишняя запись: %q", lang, key)
 			}
 		}
 	}
-	// Диагностика разработчика (-v, [debug]) намеренно не переводится.
+	// Исходный язык кода английский: русских литералов быть не должно.
 	for _, u := range unwrapped {
-		if strings.Contains(u, "[debug]") || strings.Contains(u, "готовы за") || strings.Contains(u, "получены за") || strings.Contains(u, "картинка на экране через") {
-			continue
-		}
-		t.Errorf("русский текст без T: %s", u)
+		t.Errorf("русский текст в коде (источник английский, русский живёт в lang_ru.go): %s", u)
 	}
 }

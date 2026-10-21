@@ -311,7 +311,7 @@ func TestKeepOpenAfterExport(t *testing.T) {
 	if *finished {
 		t.Fatal("с включённой настройкой оверлей остаётся открытым")
 	}
-	if m.toastMsg != "Скопировано в буфер обмена" || time.Until(m.toastUntil) <= 0 {
+	if m.toastMsg != "Copied to the clipboard" || time.Until(m.toastUntil) <= 0 {
 		t.Errorf("должна быть плашка о копировании: %q", m.toastMsg)
 	}
 	if !m.hasSel {
@@ -324,7 +324,7 @@ func TestKeepOpenAfterExport(t *testing.T) {
 	if *finished || shots() != before+2 {
 		t.Errorf("повторные сохранения должны работать: файлов было %d, стало %d", before, shots())
 	}
-	if !strings.HasPrefix(m.toastMsg, "Сохранено: ") || !strings.HasSuffix(m.toastMsg, ", скопировано") {
+	if !strings.HasPrefix(m.toastMsg, "Saved: ") || !strings.HasSuffix(m.toastMsg, ", copied") {
 		t.Errorf("плашка после сохранения и копирования: %q", m.toastMsg)
 	}
 	// Ширина обычной плашки возвращается после смены толщины.

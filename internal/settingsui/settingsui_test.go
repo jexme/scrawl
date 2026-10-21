@@ -268,7 +268,7 @@ func TestHandleSliderIsSavedToDisk(t *testing.T) {
 	if got := settings.Load().HandleRadius; got != 0 {
 		t.Errorf("0 (ручки спрятаны) должен сохраниться как 0, а не вернуться к умолчанию: %v", got)
 	}
-	if got := s.handle.format(0); got != "нет" {
+	if got := s.handle.format(0); got != "none" {
 		t.Errorf("подпись нуля: %q", got)
 	}
 }
@@ -531,14 +531,14 @@ func TestHotkeyButton(t *testing.T) {
 	var gotAccel, gotBin string
 	assignHotkey = func(accel, bin string) (hotkey.Result, error) {
 		gotAccel, gotBin = accel, bin
-		return hotkey.Result{Warning: "совпало со встроенным"}, nil
+		return hotkey.Result{Warning: "matches a built-in one"}, nil
 	}
 	s.hotkeyEd.SetText("  <Super>s ")
 	s.hotkey.btn.Click()
 	s.layout(frameContext(700, 650))
 	waitDone(t, &s.hotkey)
 	msg, failed, _ := s.hotkey.status()
-	if gotAccel != "<Super>s" || gotBin != "/test/bin/scrawl" || failed || !strings.Contains(msg, "Внимание: совпало") {
+	if gotAccel != "<Super>s" || gotBin != "/test/bin/scrawl" || failed || !strings.Contains(msg, "Warning: matches") {
 		t.Errorf("комбинация %q, бинарник %q, сообщение %q (ошибка %v)", gotAccel, gotBin, msg, failed)
 	}
 
@@ -590,7 +590,7 @@ func TestKeyAssignment(t *testing.T) {
 
 	// Клавиша, занятая другим действием (A у «добавить в подборку»), отклоняется.
 	s.assignKey(restore, "A")
-	if restore.err == "" || !strings.Contains(restore.err, "Добавить в подборку") {
+	if restore.err == "" || !strings.Contains(restore.err, "Add to the collection") {
 		t.Errorf("ожидали сообщение о занятой клавише: %q", restore.err)
 	}
 	if got := settings.Load().Keys.Of(settings.ActionRestore); got != "F5" {
@@ -630,7 +630,7 @@ func TestKeyAssignment(t *testing.T) {
 }
 
 func TestLanguageSwitchesImmediately(t *testing.T) {
-	defer i18n.SetLanguage(i18n.RU)
+	defer i18n.SetLanguage(i18n.EN)
 	s := testState(t)
 	if s.lang.Value != i18n.Auto {
 		t.Fatalf("по умолчанию язык как в системе: %q", s.lang.Value)
@@ -644,25 +644,27 @@ func TestLanguageSwitchesImmediately(t *testing.T) {
 		t.Fatalf("язык интерфейса не переключился: %q", i18n.Language())
 	}
 	// Окно строится заново на каждом кадре, поэтому тексты уже английские.
-	if got := i18n.T("Закрыть"); got != "Close" {
+	if got := i18n.T("Close"); got != "Close" {
 		t.Errorf("перевод: %q", got)
 	}
 	s.lang.Value = i18n.RU
 	s.layout(frameContext(700, 650))
-	if i18n.Language() != i18n.RU || i18n.T("Закрыть") != "Закрыть" {
+	if i18n.Language() != i18n.RU || i18n.T("Close") != "Закрыть" {
 		t.Errorf("возврат на русский: %q", i18n.Language())
 	}
 }
 
-// Ни один экран окна настроек не должен падать и обязан рисоваться на английском.
+// Ни один экран окна настроек не должен падать на исходном английском и на русском, а ключевые тексты переведены.
 func TestRenderEnglishWindow(t *testing.T) {
-	defer i18n.SetLanguage(i18n.RU)
+	defer i18n.SetLanguage(i18n.EN)
 	i18n.SetLanguage(i18n.EN)
 	s := testState(t)
 	s.layout(frameContext(700, 3300))
-	for _, ru := range []string{"Общие", "Язык интерфейса", "Захват экрана"} {
-		if i18n.T(ru) == ru {
-			t.Errorf("нет перевода: %q", ru)
+	i18n.SetLanguage(i18n.RU)
+	s.layout(frameContext(700, 3300))
+	for _, key := range []string{"General", "Interface language", "Screen capture"} {
+		if i18n.T(key) == key {
+			t.Errorf("нет русского перевода: %q", key)
 		}
 	}
 }
@@ -673,7 +675,7 @@ func TestRenderEnglishPicture(t *testing.T) {
 	if path == "" {
 		t.Skip("нужна переменная SCRAWL_TEST_OUT")
 	}
-	defer i18n.SetLanguage(i18n.RU)
+	defer i18n.SetLanguage(i18n.EN)
 	i18n.SetLanguage(i18n.EN)
 	const W, H = 700, 1100
 	s := testState(t)
@@ -771,7 +773,7 @@ func TestDocSettingsImages(t *testing.T) {
 	if dir == "" {
 		t.Skip("нужна переменная SCRAWL_DOC_IMAGES")
 	}
-	defer i18n.SetLanguage(i18n.RU)
+	defer i18n.SetLanguage(i18n.EN)
 	const W, H = 820, 640
 	for lang, name := range map[string]string{i18n.RU: "settings-ru.png", i18n.EN: "settings-en.png"} {
 		i18n.SetLanguage(lang)
@@ -840,7 +842,7 @@ func TestTabs(t *testing.T) {
 	}
 
 	// Каждая вкладка рисуется без ошибок, при любой ширине окна и на обоих языках.
-	defer i18n.SetLanguage(i18n.RU)
+	defer i18n.SetLanguage(i18n.EN)
 	for _, l := range i18n.Languages {
 		lang := l.Code
 		i18n.SetLanguage(lang)
@@ -882,7 +884,7 @@ func TestTabs(t *testing.T) {
 
 // Ряд вкладок помещается в окно минимальной ширины на обоих языках.
 func TestTabBarFitsMinimumWidth(t *testing.T) {
-	defer i18n.SetLanguage(i18n.RU)
+	defer i18n.SetLanguage(i18n.EN)
 	const minWindowDp, padding = 700, 44 // MinSize окна и отступы по 22 с каждой стороны
 	for _, l := range i18n.Languages {
 		lang := l.Code
@@ -901,7 +903,7 @@ func TestTabBarFitsMinimumWidth(t *testing.T) {
 }
 
 func TestEveryLanguageCanBeChosen(t *testing.T) {
-	defer i18n.SetLanguage(i18n.RU)
+	defer i18n.SetLanguage(i18n.EN)
 	s := testState(t)
 	for _, l := range i18n.Languages {
 		s.lang.Value = l.Code
@@ -940,7 +942,7 @@ func TestLastTabIsRemembered(t *testing.T) {
 }
 
 func TestFontHintShownOnlyWhenFontIsMissing(t *testing.T) {
-	defer i18n.SetLanguage(i18n.RU)
+	defer i18n.SetLanguage(i18n.EN)
 	old := fontAvailable
 	defer func() { fontAvailable = old }()
 	s := testState(t)

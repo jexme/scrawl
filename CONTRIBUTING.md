@@ -48,8 +48,8 @@ address that is not a `...@users.noreply.github.com` one. CI repeats the check o
 
 ## Texts and translations
 
-Texts in the code are written in Russian and wrapped in `i18n.T(...)`. The other eight languages live in
-`internal/i18n/` (one file per language, the key is the Russian text). When you add or change a text, add the
+Texts in the code are written in English and wrapped in `i18n.T(...)`. The other eight languages, Russian
+included, live in `internal/i18n/` (one file per language, `lang_ru.go`, `lang_de.go` and so on; the key is the English text). When you add or change a text, add the
 translation to **every** catalog: `go test ./internal/i18n` fails if a language misses a text, has a leftover
 entry, or changes the `%d`/`%s` placeholders. If you do not speak a language, put an English text there and say
 so in the pull request. Native-speaker corrections to existing translations (also the README translations in

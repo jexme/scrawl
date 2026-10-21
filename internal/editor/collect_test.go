@@ -176,8 +176,8 @@ func TestNotificationsSetting(t *testing.T) {
 	shown := func() string { data, _ := os.ReadFile(log); return string(data) }
 
 	m, _ := newTestMonitor(t)
-	m.inform("Скриншот готов", "x")
-	if !strings.Contains(shown(), "Скриншот готов") {
+	m.inform("Screenshot ready", "x")
+	if !strings.Contains(shown(), "Screenshot ready") {
 		t.Fatalf("по умолчанию уведомление должно показываться, лог: %q", shown())
 	}
 
@@ -185,13 +185,13 @@ func TestNotificationsSetting(t *testing.T) {
 	if err := m.store.Update(func(s *settings.Settings) { s.Notifications = false }); err != nil {
 		t.Fatal(err)
 	}
-	m.inform("Скриншот готов", "x")
-	fail("рендер", errors.New("сбой"))
+	m.inform("Screenshot ready", "x")
+	fail("render", errors.New("failure"))
 	got := shown()
-	if strings.Contains(got, "Скриншот готов") {
+	if strings.Contains(got, "Screenshot ready") {
 		t.Errorf("при выключенных уведомлениях успех не должен показываться: %q", got)
 	}
-	if !strings.Contains(got, "Ошибка: рендер") {
+	if !strings.Contains(got, "Error: render") {
 		t.Errorf("ошибка должна показываться всегда: %q", got)
 	}
 }

@@ -67,7 +67,7 @@ func (m *monitor) openSettingsWindow() {
 		err = exec.Command(exe, "-settings").Start()
 	}
 	if err != nil {
-		fail(i18n.T("настройки"), fmt.Errorf(i18n.T("не удалось открыть окно настроек: %w"), err))
+		fail(i18n.T("settings"), fmt.Errorf(i18n.T("could not open the settings window: %w"), err))
 		return
 	}
 	m.quit()

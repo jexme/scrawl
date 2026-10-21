@@ -115,7 +115,7 @@ func (p *Portal) OpenAll(restore []string, prompt func(i, n int, again bool, lef
 		if dup {
 			s.Close()
 			if retries++; retries > 2 {
-				return fail(errors.New(i18n.T("выбран один и тот же монитор несколько раз подряд")))
+				return fail(errors.New(i18n.T("the same monitor was chosen several times in a row")))
 			}
 			i--
 			continue
@@ -195,7 +195,7 @@ func (p *Portal) GrabAll(sessions []*Session, deadline time.Duration) ([]Frame, 
 
 	frames, err := p.grabViaScreenshot(sessions)
 	if err != nil {
-		return nil, true, fmt.Errorf(i18n.T("PipeWire: %v; Screenshot: %w. Если portal отказал, выдайте разрешение командой: scrawl -grant-screenshot"), failed, err)
+		return nil, true, fmt.Errorf(i18n.T("PipeWire: %v; Screenshot: %w. If the portal refused, grant the permission with: scrawl -grant-screenshot"), failed, err)
 	}
 	return frames, true, nil
 }

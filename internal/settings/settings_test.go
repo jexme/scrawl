@@ -477,10 +477,10 @@ func TestMarkerOpacity(t *testing.T) {
 func TestGlueLabels(t *testing.T) {
 	sandbox(t)
 	g := Load().Glue
-	if got := g.Labels(2); got[0] != "Было" || got[1] != "Стало" {
+	if got := g.Labels(2); got[0] != "Before" || got[1] != "After" {
 		t.Errorf("для двух по умолчанию: %v", got)
 	}
-	if got := g.Labels(3); got[0] != "Шаг 1" || got[2] != "Шаг 3" {
+	if got := g.Labels(3); got[0] != "Step 1" || got[2] != "Step 3" {
 		t.Errorf("для трёх по умолчанию: %v", got)
 	}
 
@@ -496,10 +496,10 @@ func TestGlueLabels(t *testing.T) {
 	// Неверное значение одной подписи сбрасывает только её.
 	writeConfig(t, `{"glue":{"before":"a\nb","after":"После","step":5}}`)
 	g = Load().Glue
-	if got := g.Labels(2); got[0] != "Было" || got[1] != "После" {
+	if got := g.Labels(2); got[0] != "Before" || got[1] != "После" {
 		t.Errorf("неверная подпись сбрасывается, соседняя остаётся: %v", got)
 	}
-	if got := g.Labels(3); got[0] != "Шаг 1" {
+	if got := g.Labels(3); got[0] != "Step 1" {
 		t.Errorf("шаг неверного типа: %v", got)
 	}
 	if ValidateGlueLabel(strings.Repeat("я", 31)) == nil {

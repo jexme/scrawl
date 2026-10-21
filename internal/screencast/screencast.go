@@ -222,11 +222,11 @@ func (p *Portal) request(method string, timeout time.Duration, lead []any, extra
 		code, _ := sig.Body[0].(uint32)
 		res, _ := sig.Body[1].(map[string]dbus.Variant)
 		if code != 0 {
-			return nil, fmt.Errorf(i18n.T("%s: портал вернул код %d (отмена или отказ)"), method, code)
+			return nil, fmt.Errorf(i18n.T("%s: the portal returned code %d (cancelled or refused)"), method, code)
 		}
 		return res, nil
 	case <-time.After(timeout):
-		return nil, fmt.Errorf(i18n.T("%s: таймаут %v"), method, timeout)
+		return nil, fmt.Errorf(i18n.T("%s: timeout %v"), method, timeout)
 	}
 }
 
@@ -241,7 +241,7 @@ func (p *Portal) NewSession(restore string) (*Session, string, error) {
 	}
 	handle, _ := res["session_handle"].Value().(string)
 	if handle == "" {
-		return nil, "", errors.New(i18n.T("в ответе нет session_handle"))
+		return nil, "", errors.New(i18n.T("no session_handle in the response"))
 	}
 	sh := dbus.ObjectPath(handle)
 
@@ -270,15 +270,15 @@ func (p *Portal) NewSession(restore string) (*Session, string, error) {
 		return nil, "", err
 	}
 	if os.Getenv("SCREENCAST_DEBUG") != "" {
-		fmt.Fprintf(os.Stderr, "[debug] Start за %s, restore передан=%v, результат: %v\n",
+		fmt.Fprintf(os.Stderr, "[debug] Start took %s, restore passed=%v, result: %v\n",
 			time.Since(startedAt).Round(time.Millisecond), restore != "", res)
 	}
 	s := &Session{p: p, handle: handle}
 	if err := res["streams"].Store(&s.streams); err != nil {
-		return nil, "", fmt.Errorf(i18n.T("разбор streams: %w"), err)
+		return nil, "", fmt.Errorf(i18n.T("parsing streams: %w"), err)
 	}
 	if len(s.streams) == 0 {
-		return nil, "", errors.New(i18n.T("портал не вернул потоков"))
+		return nil, "", errors.New(i18n.T("the portal returned no streams"))
 	}
 	newToken, _ := res["restore_token"].Value().(string)
 	return s, newToken, nil
@@ -363,7 +363,7 @@ func grab(st stream, remote *os.File, timeout time.Duration) (Frame, error) {
 	}
 	img, err := pwcapture.Capture(fd, st.ID, timeout)
 	if err != nil {
-		return f, fmt.Errorf(i18n.T("узел %d: %w"), st.ID, err)
+		return f, fmt.Errorf(i18n.T("node %d: %w"), st.ID, err)
 	}
 	f.Img = img
 	return f, nil

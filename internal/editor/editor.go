@@ -245,7 +245,7 @@ func (m *monitor) loop() {
 				m.reported = true
 				if m.cfg.Verbose {
 					fs := m.frameSize()
-					fmt.Printf("монитор (%d,%d) окно %dx%d, кадр %dx%d: картинка на экране через %s от «хоткея»\n",
+					fmt.Printf("monitor (%d,%d) window %dx%d, frame %dx%d: picture on screen %s after the hotkey\n",
 						m.frame.X, m.frame.Y, e.Size.X, e.Size.Y, fs.X, fs.Y, time.Since(m.cfg.T0).Round(time.Millisecond))
 				}
 			}
@@ -887,7 +887,7 @@ func (m *monitor) export(toClipboard, toFile bool) {
 	}
 	img, err := render(m.frame.Img, m.sel, m.shapes, m.shaper)
 	if err != nil {
-		fail(i18n.T("рендер"), err)
+		fail(i18n.T("render"), err)
 		return
 	}
 	data, err := encodePNG(img)
@@ -900,22 +900,22 @@ func (m *monitor) export(toClipboard, toFile bool) {
 	if toFile {
 		path, err := saveFile(m.store.Get(), data)
 		if err != nil {
-			fail(i18n.T("сохранение"), err)
+			fail(i18n.T("saving"), err)
 			return
 		}
-		msg, done = path, i18n.T("Сохранено: ")+filepath.Base(path)
+		msg, done = path, i18n.T("Saved: ")+filepath.Base(path)
 	}
 	if toClipboard {
 		if err := copyPNG(data); err != nil {
-			fail(i18n.T("буфер обмена"), err)
+			fail(i18n.T("clipboard"), err)
 		} else if msg == "" {
-			msg, done = i18n.T("скопирован в буфер обмена"), i18n.T("Скопировано в буфер обмена")
+			msg, done = i18n.T("copied to the clipboard"), i18n.T("Copied to the clipboard")
 		} else {
-			msg += i18n.T(" (и в буфер обмена)")
-			done += i18n.T(", скопировано")
+			msg += i18n.T(" (and to the clipboard)")
+			done += i18n.T(", copied")
 		}
 	}
-	m.inform(i18n.T("Скриншот готов"), msg)
+	m.inform(i18n.T("Screenshot ready"), msg)
 	if m.store.Get().KeepOpen {
 		m.showMessage(done) // остаёмся в редакторе: подтверждаем действие на экране
 		return
@@ -951,7 +951,7 @@ func (m *monitor) closeWindows() {
 
 func fail(what string, err error) {
 	fmt.Fprintf(os.Stderr, "%s: %v\n", what, err)
-	notify(i18n.T("Ошибка: ")+what, err.Error())
+	notify(i18n.T("Error: ")+what, err.Error())
 }
 
 func rectOf(a, b f32.Point) image.Rectangle {

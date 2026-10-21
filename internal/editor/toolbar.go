@@ -156,8 +156,8 @@ func (m *monitor) menuItems() []struct {
 		label string
 		do    func()
 	}{
-		{&t.settings, i18n.T("Настройки"), m.openSettingsWindow},
-		{&t.add, m.withKey(i18n.T("В подборку"), settings.ActionAdd), m.addToCollection},
+		{&t.settings, i18n.T("Settings"), m.openSettingsWindow},
+		{&t.add, m.withKey(i18n.T("To collection"), settings.ActionAdd), m.addToCollection},
 	}
 }
 

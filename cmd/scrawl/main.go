@@ -31,14 +31,14 @@ import (
 func main() {
 	i18n.SetLanguage(settings.Load().Language) // до флагов: у них тоже есть описания
 	fonts.Preload(i18n.Language())             // шрифт для иероглифов грузится, пока идёт захват
-	setup := flag.Bool("setup", false, i18n.T("заново выбрать мониторы (покажет диалоги GNOME)"))
-	verbose := flag.Bool("v", false, i18n.T("печатать замеры времени"))
-	fresh := flag.Bool("fresh", false, i18n.T("не предлагать область предыдущего скриншота"))
-	openSettings := flag.Bool("settings", false, i18n.T("открыть окно настроек"))
-	grant := flag.Bool("grant-screenshot", false, i18n.T("разрешить приложению запасной снимок через Screenshot portal и выйти"))
-	exitAfter := flag.Duration("exit-after", 0, i18n.T("закрыться штатно через указанное время (для проверок)"))
-	trayMode := flag.Bool("tray", false, i18n.T("держать значок в области уведомлений (для запуска при входе в систему)"))
-	showVersion := flag.Bool("version", false, i18n.T("показать версию и выйти"))
+	setup := flag.Bool("setup", false, i18n.T("pick the monitors again (shows GNOME dialogs)"))
+	verbose := flag.Bool("v", false, i18n.T("print timings"))
+	fresh := flag.Bool("fresh", false, i18n.T("do not offer the area of the previous screenshot"))
+	openSettings := flag.Bool("settings", false, i18n.T("open the settings window"))
+	grant := flag.Bool("grant-screenshot", false, i18n.T("allow the app the fallback capture through the Screenshot portal and exit"))
+	exitAfter := flag.Duration("exit-after", 0, i18n.T("exit normally after the given time (for testing)"))
+	trayMode := flag.Bool("tray", false, i18n.T("keep an icon in the notification area (for starting at login)"))
+	showVersion := flag.Bool("version", false, i18n.T("show the version and exit"))
 	flag.Parse()
 
 	if *showVersion {
@@ -52,14 +52,14 @@ func main() {
 	}
 
 	if *grant && x11capture.IsSession() {
-		fmt.Println(i18n.T("в сеансе X11 разрешение не нужно: захват идёт напрямую"))
+		fmt.Println(i18n.T("in an X11 session no permission is needed: capture goes straight to X11"))
 		return
 	}
 	if *grant {
 		if err := screencast.GrantScreenshotPermission(); err != nil {
-			fatal(i18n.T("не удалось выдать разрешение: %v"), err)
+			fatal(i18n.T("could not grant the permission: %v"), err)
 		}
-		fmt.Println(i18n.T("Разрешение на скриншоты выдано приложению"), screencast.AppID)
+		fmt.Println(i18n.T("Screenshot permission granted to the app"), screencast.AppID)
 		return
 	}
 
@@ -81,7 +81,7 @@ func main() {
 
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
 		// Захват экрана, буфер обмена и горячая клавиша для этой системы ещё не написаны.
-		fatal("%s", i18n.T("захват экрана пока есть только в Linux (GNOME, Wayland) и Windows; окно настроек работает: scrawl -settings"))
+		fatal("%s", i18n.T("screen capture is only available on Linux (GNOME, Wayland) and Windows for now; the settings window works: scrawl -settings"))
 	}
 
 	var (
@@ -113,15 +113,15 @@ func main() {
 // grabX11 снимает экран напрямую из X11: без портала, диалогов и токенов.
 func grabX11(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	if setup {
-		fmt.Fprintln(os.Stderr, i18n.T("в сеансе X11 мониторы выбирать не нужно: захват идёт напрямую"))
+		fmt.Fprintln(os.Stderr, i18n.T("in an X11 session there is no need to pick monitors: capture goes straight to X11"))
 	}
 	t0 := time.Now() // момент «нажатия хоткея»
 	frames, err := x11capture.GrabAll()
 	if err != nil {
-		fatal(i18n.T("кадр: %v"), err)
+		fatal(i18n.T("frame: %v"), err)
 	}
 	if verbose {
-		fmt.Printf("кадры (%d) получены за %s: X11\n", len(frames), time.Since(t0).Round(time.Millisecond))
+		fmt.Printf("frames (%d) received in %s: X11\n", len(frames), time.Since(t0).Round(time.Millisecond))
 	}
 	return frames, t0
 }
@@ -136,10 +136,10 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	if p.OldPortal {
 		// Старый portal узнаёт приложение по systemd-scope: без него токены не работают.
 		if err := p.EnterAppScope(); err != nil {
-			fmt.Fprintln(os.Stderr, i18n.T("portal не принял app_id: restore_token работать не будет, диалоги покажутся при каждом запуске"))
+			fmt.Fprintln(os.Stderr, i18n.T("the portal did not accept the app_id: restore_token will not work, dialogs will appear on every run"))
 		}
 	} else if !p.Registered {
-		fmt.Fprintln(os.Stderr, i18n.T("portal не принял app_id: restore_token работать не будет, диалоги покажутся при каждом запуске"))
+		fmt.Fprintln(os.Stderr, i18n.T("the portal did not accept the app_id: restore_token will not work, dialogs will appear on every run"))
 	}
 
 	p.IncludeCursor = settings.Load().IncludeCursor
@@ -153,7 +153,7 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	// У portal старше 1.21 Registry нет вовсе: это не зависание, токены он принимает
 	// по app_id из systemd-scope, поэтому идём дальше.
 	if !p.Registered && !p.OldPortal && len(tokens) > 0 {
-		fatal("%s", i18n.T("xdg-desktop-portal не отвечает. Перезапустите его: systemctl --user restart xdg-desktop-portal"))
+		fatal("%s", i18n.T("xdg-desktop-portal is not responding. Restart it: systemctl --user restart xdg-desktop-portal"))
 	}
 
 	// Старт сессий в замер не входит: в будущем их будет держать демон.
@@ -164,28 +164,28 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 		screencast.SetupNotify(msg)
 	})
 	if err != nil {
-		fatal(i18n.T("сессии: %v"), err)
+		fatal(i18n.T("sessions: %v"), err)
 	}
 	if len(newTokens) > 0 {
 		if err := screencast.SaveTokens(newTokens); err != nil {
-			fmt.Fprintf(os.Stderr, i18n.T("restore_token не сохранены: %v\n"), err)
+			fmt.Fprintf(os.Stderr, i18n.T("restore_token not saved: %v\n"), err)
 		}
 	}
 	if setup && len(newTokens) < len(sessions) {
-		fmt.Fprintln(os.Stderr, i18n.T("portal не выдал restore_token: в диалоге нужна галочка «Запомнить этот выбор», иначе диалоги будут при каждом запуске"))
+		fmt.Fprintln(os.Stderr, i18n.T("the portal did not issue a restore_token: tick \"Remember this choice\" in the dialog, otherwise dialogs will appear on every run"))
 	}
 	if n, ok := p.MonitorCount(); ok && n > len(sessions) {
-		fmt.Fprintf(os.Stderr, i18n.T("подключено мониторов: %d, в сессиях: %d. Запустите с -setup, чтобы добавить остальные\n"), n, len(sessions))
+		fmt.Fprintf(os.Stderr, i18n.T("monitors connected: %d, in sessions: %d. Run with -setup to add the rest\n"), n, len(sessions))
 	}
 	if verbose {
-		fmt.Printf("сессии (%d) готовы за %s\n", len(sessions), time.Since(tSessions).Round(time.Millisecond))
+		fmt.Printf("sessions (%d) ready in %s\n", len(sessions), time.Since(tSessions).Round(time.Millisecond))
 	}
 
 	t0 := time.Now() // момент «нажатия хоткея»
 	// Обычно кадры приходят за ~100 мс; если нет, экран статичен и PipeWire молчит.
 	frames, fallback, err := p.GrabAll(sessions, 250*time.Millisecond)
 	if err != nil {
-		fatal(i18n.T("кадр: %v"), err)
+		fatal(i18n.T("frame: %v"), err)
 	}
 	// Кадры получены: сессии захвата больше не нужны. Пока они открыты, GNOME
 	// вынужден композитить экран вместо прямого вывода (это бьёт по FPS в играх).
@@ -195,9 +195,9 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 	if verbose {
 		how := "PipeWire"
 		if fallback {
-			how = i18n.T("запасной путь, Screenshot-portal")
+			how = i18n.T("fallback path, Screenshot portal")
 		}
-		fmt.Printf("кадры (%d) получены за %s: %s\n", len(frames), time.Since(t0).Round(time.Millisecond), how)
+		fmt.Printf("frames (%d) received in %s: %s\n", len(frames), time.Since(t0).Round(time.Millisecond), how)
 	}
 
 	return frames, t0
@@ -208,7 +208,7 @@ func grabPortal(setup, verbose bool) ([]screencast.Frame, time.Time) {
 func fatal(f string, a ...any) {
 	msg := fmt.Sprintf(f, a...)
 	fmt.Fprintln(os.Stderr, msg)
-	notify(i18n.T("Не удалось сделать скриншот"), msg)
+	notify(i18n.T("Could not take the screenshot"), msg)
 	os.Exit(1)
 }
 
@@ -243,7 +243,7 @@ func runTray(exitAfter time.Duration) {
 		Settings: func() { spawn("-settings") },
 	}, stop)
 	if err != nil {
-		fatal("%s: %v", i18n.T("значок"), err)
+		fatal("%s: %v", i18n.T("tray icon"), err)
 	}
 }
 
@@ -252,7 +252,7 @@ func runTray(exitAfter time.Duration) {
 func watchUpdates() {
 	for {
 		if res, err := update.Check(context.Background(), version.String()); err == nil && res.Newer && !update.AlreadyNotified(res.Latest) {
-			notify(i18n.T("Доступна новая версия"), res.Message())
+			notify(i18n.T("A new version is available"), res.Message())
 			update.MarkNotified(res.Latest)
 		}
 		time.Sleep(24 * time.Hour)

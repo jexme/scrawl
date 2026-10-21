@@ -282,7 +282,7 @@ make deb      # .deb package for Debian and Ubuntu in dist/
 make notices  # regenerate THIRD_PARTY_NOTICES.md
 ```
 
-The interface texts live in `internal/i18n/` (one file per language; the source texts in the code are Russian);
+The interface texts live in `internal/i18n/` (one file per language, `lang_ru.go`, `lang_de.go` and so on; the source texts in the code are English);
 `go test ./...` checks that every text is translated into every language. How to report a bug and send a change: [CONTRIBUTING.md](CONTRIBUTING.md). Plan and ideas: [docs/PLAN.md](docs/PLAN.md) (in Russian).
 
 ## License

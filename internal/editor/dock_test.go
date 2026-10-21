@@ -34,7 +34,7 @@ func TestDock(t *testing.T) {
 	// Подборка из одной картинки и выделение: добавить ещё, склеить, отдельно, очистить.
 	m.queued = 1
 	items = m.collectItems()
-	want := []string{"Добавить ещё  ·  A", "Склеить с этой областью  ·  G", "Отдельно  ·  D", "Очистить"}
+	want := []string{"Add another  ·  A", "Glue with this area  ·  G", "As files  ·  D", "Clear"}
 	if len(items) != len(want) {
 		t.Fatalf("ожидали %d действий, получили %d", len(want), len(items))
 	}

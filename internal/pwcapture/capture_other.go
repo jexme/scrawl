@@ -13,9 +13,9 @@ import (
 )
 
 // ErrTimeout означает, что кадр не пришёл за отведённое время.
-var ErrTimeout = errors.New("кадр PipeWire не пришёл вовремя")
+var ErrTimeout = errors.New("the PipeWire frame did not arrive in time")
 
 // Capture на этой системе недоступен.
 func Capture(fd int, node uint32, timeout time.Duration) (*image.RGBA, error) {
-	return nil, errors.New(i18n.T("PipeWire есть только в Linux"))
+	return nil, errors.New(i18n.T("PipeWire is only available on Linux"))
 }

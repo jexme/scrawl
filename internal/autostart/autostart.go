@@ -62,7 +62,7 @@ func Content(bin string) string {
 // Enable создаёт файл автозапуска для бинарника bin.
 func Enable(bin string) error {
 	if !filepath.IsAbs(bin) {
-		return fmt.Errorf(i18n.T("путь к программе должен быть абсолютным: %q"), bin)
+		return fmt.Errorf(i18n.T("the path to the program must be absolute: %q"), bin)
 	}
 	if useRegistry {
 		return regEnable(bin)

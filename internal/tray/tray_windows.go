@@ -301,7 +301,7 @@ func (s *state) syncHotkey() {
 	}
 	s.warned = true
 	s.notify(nimModify, nifMessage|nifIcon|nifTip, "Scrawl",
-		fmt.Sprintf(i18n.T("Комбинация %s недоступна (%v). Выберите другую в настройках: scrawl -settings"), accel, err))
+		fmt.Sprintf(i18n.T("Hotkey %s is unavailable (%v). Choose another in the settings: scrawl -settings"), accel, err))
 }
 
 func (s *state) showMenu() {

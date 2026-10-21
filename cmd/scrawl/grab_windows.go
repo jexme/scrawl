@@ -16,10 +16,10 @@ func grabWindows(verbose bool) ([]screencast.Frame, time.Time) {
 	t0 := time.Now() // момент «нажатия хоткея»
 	frames, err := wincapture.GrabAll()
 	if err != nil {
-		fatal(i18n.T("кадр: %v"), err)
+		fatal(i18n.T("frame: %v"), err)
 	}
 	if verbose {
-		fmt.Printf("кадры (%d) получены за %s: GDI\n", len(frames), time.Since(t0).Round(time.Millisecond))
+		fmt.Printf("frames (%d) received in %s: GDI\n", len(frames), time.Since(t0).Round(time.Millisecond))
 	}
 	return frames, t0
 }

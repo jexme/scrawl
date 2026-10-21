@@ -80,12 +80,12 @@ func pixelFormat(c *xgb.Conn) error {
 		}
 	}
 	if bpp != 32 || setup.ImageByteOrder != xproto.ImageOrderLSBFirst {
-		return fmt.Errorf(i18n.T("формат пикселей X11 не поддерживается (глубина %d, %d бит на пиксель)"), screen.RootDepth, bpp)
+		return fmt.Errorf(i18n.T("unsupported X11 pixel format (depth %d, %d bits per pixel)"), screen.RootDepth, bpp)
 	}
 	for _, d := range screen.AllowedDepths {
 		for _, v := range d.Visuals {
 			if v.VisualId == screen.RootVisual && (v.RedMask != 0xff0000 || v.GreenMask != 0x00ff00 || v.BlueMask != 0x0000ff) {
-				return errors.New(i18n.T("необычные маски цветов X11"))
+				return errors.New(i18n.T("unusual X11 colour masks"))
 			}
 		}
 	}
@@ -97,7 +97,7 @@ func pixelFormat(c *xgb.Conn) error {
 func GrabAll() ([]screencast.Frame, error) {
 	c, err := xgb.NewConn()
 	if err != nil {
-		return nil, fmt.Errorf(i18n.T("не удалось подключиться к X-серверу: %w"), err)
+		return nil, fmt.Errorf(i18n.T("could not connect to the X server: %w"), err)
 	}
 	defer c.Close()
 	if err := pixelFormat(c); err != nil {
@@ -119,7 +119,7 @@ func GrabAll() ([]screencast.Frame, error) {
 	for i, m := range mons {
 		reply, err := cookies[i].Reply()
 		if err != nil {
-			return nil, fmt.Errorf(i18n.T("снимок монитора %d: %w"), i+1, err)
+			return nil, fmt.Errorf(i18n.T("capturing monitor %d: %w"), i+1, err)
 		}
 		frames[i] = screencast.Frame{Img: toRGBA(reply.Data, m.Rect.Dx(), m.Rect.Dy()), X: m.Rect.Min.X, Y: m.Rect.Min.Y, NodeID: uint32(i + 1)}
 	}

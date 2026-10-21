@@ -36,8 +36,8 @@ type timing struct {
 }
 
 func main() {
-	runs := flag.Int("n", 5, "число замеров через portal")
-	keep := flag.Bool("keep", false, "не удалять файлы, созданные порталом")
+	runs := flag.Int("n", 5, "number of portal measurements")
+	keep := flag.Bool("keep", false, "do not delete the files created by the portal")
 	flag.Parse()
 
 	conn, err := dbus.ConnectSessionBus()
@@ -54,20 +54,20 @@ func main() {
 			fatal("portal: %v", err)
 		}
 		all = append(all, t)
-		tag := "холодный"
+		tag := "cold"
 		if i > 0 {
-			tag = "тёплый"
+			tag = "warm"
 		}
-		fmt.Printf("#%d (%s) %dx%d  portal=%v open=%v decode=%v  итого=%v\n",
+		fmt.Printf("#%d (%s) %dx%d  portal=%v open=%v decode=%v  total=%v\n",
 			i+1, tag, t.w, t.h, ms(t.portal), ms(t.read), ms(t.decode), ms(t.portal+t.read+t.decode))
 	}
 	summarize(all)
 
-	fmt.Println("\n== org.gnome.Shell.Screenshot (прямой) ==")
+	fmt.Println("\n== org.gnome.Shell.Screenshot (direct) ==")
 	if err := viaShell(conn); err != nil {
-		fmt.Printf("недоступен: %v\n", err)
+		fmt.Printf("unavailable: %v\n", err)
 	} else {
-		fmt.Println("доступен (редкий случай, можно использовать как быстрый путь)")
+		fmt.Println("available (a rare case, can be used as a fast path)")
 	}
 }
 
@@ -115,16 +115,16 @@ wait:
 			code, _ := sig.Body[0].(uint32)
 			res, _ := sig.Body[1].(map[string]dbus.Variant)
 			if code != 0 {
-				return t, fmt.Errorf("портал отклонил запрос (код %d): разрешите скриншоты в диалоге GNOME и повторите", code)
+				return t, fmt.Errorf("the portal refused the request (code %d): allow screenshots in the GNOME dialog and try again", code)
 			}
 			u, ok := res["uri"].Value().(string)
 			if !ok {
-				return t, fmt.Errorf("в ответе нет uri")
+				return t, fmt.Errorf("no uri in the response")
 			}
 			uri = u
 			break wait
 		case <-timeout:
-			return t, fmt.Errorf("таймаут ожидания Response")
+			return t, fmt.Errorf("timeout waiting for the Response")
 		}
 	}
 	t.portal = time.Since(start)
@@ -171,7 +171,7 @@ func viaShell(conn *dbus.Conn) error {
 		return err
 	}
 	if !ok {
-		return fmt.Errorf("Shell вернул false")
+		return fmt.Errorf("Shell returned false")
 	}
 	return nil
 }
@@ -182,7 +182,7 @@ func uriToPath(uri string) (string, error) {
 		return "", err
 	}
 	if u.Scheme != "file" {
-		return "", fmt.Errorf("неожиданная схема uri: %q", uri)
+		return "", fmt.Errorf("unexpected uri scheme: %q", uri)
 	}
 	return u.Path, nil
 }
@@ -196,7 +196,7 @@ func summarize(all []timing) {
 		tot[i] = t.portal + t.read + t.decode
 	}
 	sort.Slice(tot, func(i, j int) bool { return tot[i] < tot[j] })
-	fmt.Printf("итого: min=%v медиана=%v max=%v\n", ms(tot[0]), ms(tot[len(tot)/2]), ms(tot[len(tot)-1]))
+	fmt.Printf("total: min=%v median=%v max=%v\n", ms(tot[0]), ms(tot[len(tot)/2]), ms(tot[len(tot)-1]))
 }
 
 func ms(d time.Duration) string { return fmt.Sprintf("%.0fms", float64(d.Microseconds())/1000) }

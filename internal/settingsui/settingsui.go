@@ -139,7 +139,7 @@ func newState(store *settings.Store) *state {
 		func(c *settings.Settings, v float64) { c.MarkerOpacity = int(v) })
 	s.handle = s.addSlider(0, settings.MaxHandleRadius, 0.5, func(v float64) string {
 		if v == 0 {
-			return i18n.T("нет")
+			return i18n.T("none")
 		}
 		return fmt.Sprintf("%.1f px", v)
 	},
@@ -219,7 +219,7 @@ func Run(store *settings.Store) {
 func loop(s *state) {
 	w := new(app.Window)
 	s.invalidate = w.Invalidate
-	w.Option(app.Title(i18n.T("Scrawl: настройки")), app.Size(unit.Dp(820), unit.Dp(640)), app.MinSize(unit.Dp(700), unit.Dp(360)))
+	w.Option(app.Title(i18n.T("Scrawl: settings")), app.Size(unit.Dp(820), unit.Dp(640)), app.MinSize(unit.Dp(700), unit.Dp(360)))
 	var ops op.Ops
 	for {
 		switch e := w.Event().(type) {
@@ -264,7 +264,7 @@ func (s *state) apply(gtx layout.Context) {
 	s.checkUpd.Update(gtx)
 	if want := s.checkUpd.Value; want != s.store.Get().CheckUpdates {
 		if err := s.store.Update(func(c *settings.Settings) { c.CheckUpdates = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 	if s.update.btn.Clicked(gtx) {
@@ -283,14 +283,14 @@ func (s *state) apply(gtx layout.Context) {
 			err = autostartOff()
 		}
 		if err != nil {
-			s.autoErr = fmt.Sprintf(i18n.T("Не удалось изменить автозапуск: %v"), err)
+			s.autoErr = fmt.Sprintf(i18n.T("Could not change autostart: %v"), err)
 			s.autostart.Value = autostartOn() // вернуть галочку в состояние файла
 		}
 	}
 	s.lang.Update(gtx)
 	if want := s.lang.Value; want != s.store.Get().Language {
 		if err := s.store.Update(func(c *settings.Settings) { c.Language = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 		i18n.SetLanguage(s.store.Get().Language) // окно перерисуется на новом языке сразу
 		s.th.Shaper = newShaper()                // и получит шрифт для его письменности
@@ -304,55 +304,55 @@ func (s *state) apply(gtx layout.Context) {
 			}
 			bin, err := hotkeyBinary()
 			if err != nil {
-				return "", fmt.Errorf(i18n.T("не найден путь к программе: %w"), err)
+				return "", fmt.Errorf(i18n.T("could not find the path to the program: %w"), err)
 			}
 			res, err := assignHotkey(accel, bin)
 			if err != nil {
 				return "", err
 			}
-			msg := i18n.T("Горячая клавиша ") + accel + i18n.T(" назначена на ") + bin
+			msg := i18n.T("Hotkey ") + accel + i18n.T(" assigned to ") + bin
 			if res.Updated {
-				msg = i18n.T("Ярлык обновлён: ") + accel + i18n.T(" запускает ") + bin
+				msg = i18n.T("Shortcut updated: ") + accel + i18n.T(" launches ") + bin
 			}
 			if res.Warning != "" {
-				msg += i18n.T(". Внимание: ") + res.Warning
+				msg += i18n.T(". Warning: ") + res.Warning
 			}
 			return msg, nil
 		})
 	}
 	if s.monitors.btn.Clicked(gtx) {
 		s.start(&s.monitors, func(progress func(string)) (string, error) {
-			progress(i18n.T("Ждём диалоги GNOME…"))
+			progress(i18n.T("Waiting for the GNOME dialogs…"))
 			return setupMonitors(progress)
 		})
 	}
 	if s.grant.btn.Clicked(gtx) {
 		s.start(&s.grant, func(func(string)) (string, error) {
 			if err := grantPermission(); err != nil {
-				return "", fmt.Errorf(i18n.T("Не удалось выдать разрешение: %w"), err)
+				return "", fmt.Errorf(i18n.T("Could not grant the permission: %w"), err)
 			}
-			return i18n.T("Разрешение выдано приложению ") + screencast.AppID, nil
+			return i18n.T("Permission granted to the app ") + screencast.AppID, nil
 		})
 	}
 
 	s.choice.Update(gtx)
 	if want := settings.DoubleClick(s.choice.Value); want != s.store.Get().DoubleClick {
 		if err := s.store.Update(func(c *settings.Settings) { c.DoubleClick = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 
 	s.enter.Update(gtx)
 	if want := settings.Enter(s.enter.Value); want != s.store.Get().Enter {
 		if err := s.store.Update(func(c *settings.Settings) { c.Enter = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 
 	s.notify.Update(gtx)
 	if want := s.notify.Value; want != s.store.Get().Notifications {
 		if err := s.store.Update(func(c *settings.Settings) { c.Notifications = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 
@@ -360,7 +360,7 @@ func (s *state) apply(gtx layout.Context) {
 		sl.Update(gtx)
 		if want := sl.Value(); want != sl.get(s.store.Get()) {
 			if err := s.store.Update(func(c *settings.Settings) { sl.set(c, want) }); err != nil {
-				s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+				s.dirErr = i18n.T("Could not save: ") + err.Error()
 			}
 		}
 	}
@@ -382,19 +382,19 @@ func (s *state) apply(gtx layout.Context) {
 	s.glueLayout.Update(gtx)
 	if want := settings.GlueLayout(s.glueLayout.Value); want != s.store.Get().Glue.Layout {
 		if err := s.store.Update(func(c *settings.Settings) { c.Glue.Layout = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 	s.format.Update(gtx)
 	if want := settings.FileFormat(s.format.Value); want != s.store.Get().Format {
 		if err := s.store.Update(func(c *settings.Settings) { c.Format = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 	s.glueBg.Update(gtx)
 	if want := settings.GlueBackground(s.glueBg.Value); want != s.store.Get().Glue.Background {
 		if err := s.store.Update(func(c *settings.Settings) { c.Glue.Background = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 	for i := range s.glue {
@@ -406,7 +406,7 @@ func (s *state) apply(gtx layout.Context) {
 	s.toolChoice.Update(gtx)
 	if want := s.toolChoice.Value; want != s.store.Get().DefaultTool {
 		if err := s.store.Update(func(c *settings.Settings) { c.DefaultTool = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 	for _, row := range s.toolRows {
@@ -421,35 +421,35 @@ func (s *state) apply(gtx layout.Context) {
 	s.cursor.Update(gtx)
 	if want := s.cursor.Value; want != s.store.Get().IncludeCursor {
 		if err := s.store.Update(func(c *settings.Settings) { c.IncludeCursor = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 
 	s.keepOpen.Update(gtx)
 	if want := s.keepOpen.Value; want != s.store.Get().KeepOpen {
 		if err := s.store.Update(func(c *settings.Settings) { c.KeepOpen = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 
 	s.showSize.Update(gtx)
 	if want := s.showSize.Value; want != s.store.Get().ShowSize {
 		if err := s.store.Update(func(c *settings.Settings) { c.ShowSize = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 
 	s.showLoupe.Update(gtx)
 	if want := s.showLoupe.Value; want != s.store.Get().ShowLoupe {
 		if err := s.store.Update(func(c *settings.Settings) { c.ShowLoupe = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 
 	s.remember.Update(gtx)
 	if want := s.remember.Value; want != s.store.Get().RememberRegion {
 		if err := s.store.Update(func(c *settings.Settings) { c.RememberRegion = want }); err != nil {
-			s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
 		}
 	}
 
@@ -487,7 +487,7 @@ func (s *state) applyBorderColor(txt string) {
 	}
 	s.colorErr = ""
 	if err := s.store.Update(func(cfg *settings.Settings) { cfg.BorderColor = settings.FormatColor(c) }); err != nil {
-		s.colorErr = i18n.T("Не удалось сохранить: ") + err.Error()
+		s.colorErr = i18n.T("Could not save: ") + err.Error()
 	}
 }
 
@@ -499,7 +499,7 @@ func (s *state) openOutputDir() {
 		err = openFolder(dir)
 	}
 	if err != nil {
-		s.dirErr = i18n.T("Не удалось открыть папку: ") + err.Error()
+		s.dirErr = i18n.T("Could not open the folder: ") + err.Error()
 		return
 	}
 	s.dirErr = ""
@@ -532,7 +532,7 @@ func edited(gtx layout.Context, ed *widget.Editor) bool {
 // checkNow запрашивает у GitHub последнюю версию в фоне.
 func (s *state) checkNow() {
 	s.start(&s.update, func(progress func(string)) (string, error) {
-		progress(i18n.T("Проверяем…"))
+		progress(i18n.T("Checking…"))
 		res, err := checkUpdate()
 		if err != nil {
 			return "", err
@@ -549,7 +549,7 @@ func (s *state) applyPrefix(prefix string) {
 	}
 	s.prefixErr = ""
 	if err := s.store.Update(func(c *settings.Settings) { c.FilePrefix = prefix }); err != nil {
-		s.prefixErr = i18n.T("Не удалось сохранить: ") + err.Error()
+		s.prefixErr = i18n.T("Could not save: ") + err.Error()
 	}
 }
 
@@ -561,7 +561,7 @@ func (s *state) applyDir(dir string) {
 	}
 	s.dirErr = ""
 	if err := s.store.Update(func(c *settings.Settings) { c.SaveDir = dir }); err != nil {
-		s.dirErr = i18n.T("Не удалось сохранить: ") + err.Error()
+		s.dirErr = i18n.T("Could not save: ") + err.Error()
 	}
 }
 
@@ -648,7 +648,7 @@ type toolRow struct {
 }
 
 // toolLabels — названия инструментов в окне, в порядке settings.ToolNames.
-var toolLabels = []string{"Выделение", "Перо", "Линия", "Стрелка", "Рамка", "Маркер", "Размытие", "Текст", "Номер"}
+var toolLabels = []string{"Select", "Pen", "Line", "Arrow", "Box", "Marker", "Blur", "Text", "Number"}
 
 // initTools создаёт строки инструментов и выбор инструмента по умолчанию.
 func (s *state) initTools(cur settings.Settings) {
@@ -663,7 +663,7 @@ func (s *state) initTools(cur settings.Settings) {
 		row.ed.SetText(cur.Tools.Of(name).Color)
 		row.sl = s.addSlider(0, settings.MaxWidthOf(name), 1, func(v float64) string {
 			if v == 0 {
-				return i18n.T("станд.")
+				return i18n.T("default")
 			}
 			return fmt.Sprintf("%.0f", v)
 		},
@@ -687,7 +687,7 @@ func (s *state) applyToolColor(row *toolRow) {
 	}
 	row.err = ""
 	if err := s.store.Update(func(c *settings.Settings) { c.Tools.Of(row.name).Color = value }); err != nil {
-		row.err = i18n.T("Не удалось сохранить: ") + err.Error()
+		row.err = i18n.T("Could not save: ") + err.Error()
 	}
 }
 
@@ -757,15 +757,15 @@ func (s *state) borderControls() layout.Widget {
 			return swatchBox(gtx, c, 36)
 		}
 		children := []layout.FlexChild{
-			labeled(i18n.T("Толщина"), s.bWidth),
-			labeled(i18n.T("Штрих"), s.bDash),
-			labeled(i18n.T("Пауза"), s.bGap),
+			labeled(i18n.T("Thickness"), s.bWidth),
+			labeled(i18n.T("Dash"), s.bDash),
+			labeled(i18n.T("Gap"), s.bGap),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						gtx.Constraints.Min.X = gtx.Dp(80)
-						return s.label(material.Body2, i18n.T("Цвет"), mutedColor)(gtx)
+						return s.label(material.Body2, i18n.T("Colour"), mutedColor)(gtx)
 					}),
 					layout.Rigid(swatch),
 					layout.Rigid(layout.Spacer{Width: unit.Dp(10)}.Layout),
@@ -802,14 +802,14 @@ func (s *state) applyPalette() {
 		}
 		c, err := settings.ParseColor(txt)
 		if err != nil {
-			s.palErr = fmt.Sprintf(i18n.T("Цвет %d: %v"), i+1, err)
+			s.palErr = fmt.Sprintf(i18n.T("Colour %d: %v"), i+1, err)
 			return
 		}
 		pal[i] = settings.FormatColor(c)
 	}
 	s.palErr = ""
 	if err := s.store.Update(func(c *settings.Settings) { c.Palette = pal }); err != nil {
-		s.palErr = i18n.T("Не удалось сохранить: ") + err.Error()
+		s.palErr = i18n.T("Could not save: ") + err.Error()
 	}
 }
 
@@ -849,7 +849,7 @@ func (s *state) paletteControls() layout.Widget {
 			children = append(children, layout.Rigid(s.label(material.Caption, s.palErr, errorColor)), layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout))
 		}
 		children = append(children, layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			b := material.Button(s.th, &s.palReset, i18n.T("По умолчанию"))
+			b := material.Button(s.th, &s.palReset, i18n.T("Default"))
 			b.Background = borderColor
 			return b.Layout(gtx)
 		}))
@@ -871,13 +871,13 @@ func (s *state) applyGlueLabel(i int) {
 	}
 	s.glueErr[i] = ""
 	if err := s.store.Update(func(c *settings.Settings) { *glueField(&c.Glue, i) = txt }); err != nil {
-		s.glueErr[i] = i18n.T("Не удалось сохранить: ") + err.Error()
+		s.glueErr[i] = i18n.T("Could not save: ") + err.Error()
 	}
 }
 
 // glueControls — три поля со словами подписей склейки.
 func (s *state) glueControls() layout.Widget {
-	names := [3]string{i18n.T("Первая из двух"), i18n.T("Вторая из двух"), i18n.T("Если больше двух")}
+	names := [3]string{i18n.T("First of two"), i18n.T("Second of two"), i18n.T("If more than two")}
 	hints := [3]string{i18n.T(settings.DefaultGlueBefore), i18n.T(settings.DefaultGlueAfter), i18n.T(settings.DefaultGlueStep)}
 	return func(gtx layout.Context) layout.Dimensions {
 		var children []layout.FlexChild
@@ -904,7 +904,7 @@ func (s *state) glueControls() layout.Widget {
 // autostartControl — переключатель автозапуска и сообщение об ошибке под ним.
 func (s *state) autostartControl() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
-		children := []layout.FlexChild{layout.Rigid(s.checkbox(&s.autostart, i18n.T("Запускать значок при входе в систему")))}
+		children := []layout.FlexChild{layout.Rigid(s.checkbox(&s.autostart, i18n.T("Start the icon at login")))}
 		if s.autoErr != "" {
 			children = append(children, layout.Rigid(s.label(material.Caption, s.autoErr, errorColor)))
 		}
@@ -916,9 +916,9 @@ func (s *state) autostartControl() layout.Widget {
 func (s *state) updateControl() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(s.checkbox(&s.checkUpd, i18n.T("Проверять при запуске окна настроек и значка"))),
+			layout.Rigid(s.checkbox(&s.checkUpd, i18n.T("Check when the settings window and the tray icon start"))),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout),
-			layout.Rigid(s.taskControl(&s.update, i18n.T("Проверить сейчас"))),
+			layout.Rigid(s.taskControl(&s.update, i18n.T("Check now"))),
 		)
 	}
 }
@@ -929,7 +929,7 @@ func (s *state) hotkeyControl() layout.Widget {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(s.field(&s.hotkeyEd, "Print")),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout),
-			layout.Rigid(s.taskControl(&s.hotkey, i18n.T("Назначить"))),
+			layout.Rigid(s.taskControl(&s.hotkey, i18n.T("Assign"))),
 		)
 	}
 }
@@ -948,7 +948,7 @@ func (s *state) toolChoiceRadios() layout.Widget {
 // Если выбран язык с иероглифами, а системного шрифта для них нет, под списком
 // подсказка, что поставить.
 func (s *state) languageRadios() layout.Widget {
-	items := []layout.Widget{s.radio(&s.lang, i18n.Auto, i18n.T("Как в системе"))}
+	items := []layout.Widget{s.radio(&s.lang, i18n.Auto, i18n.T("Same as the system"))}
 	for _, l := range i18n.Languages {
 		name := l.Name
 		if l.Hint != "" {
@@ -961,7 +961,7 @@ func (s *state) languageRadios() layout.Widget {
 		children := []layout.FlexChild{layout.Rigid(columns)}
 		if lang := i18n.Language(); !fontAvailable(lang) {
 			children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout),
-				layout.Rigid(s.label(material.Caption, i18n.T("Для этого языка нужен шрифт с иероглифами. Установите его: sudo apt install fonts-noto-cjk"), errorColor)))
+				layout.Rigid(s.label(material.Caption, i18n.T("This language needs a font with ideographs. Install it: sudo apt install fonts-noto-cjk"), errorColor)))
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
@@ -1014,9 +1014,9 @@ func (s *state) tabs() []settingsTab {
 				return b.Layout
 			}
 			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(btn(&s.reset, i18n.T("По умолчанию"))),
+				layout.Rigid(btn(&s.reset, i18n.T("Default"))),
 				layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
-				layout.Rigid(btn(&s.openDir, i18n.T("Открыть папку"))),
+				layout.Rigid(btn(&s.openDir, i18n.T("Open folder"))),
 			)
 		}))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
@@ -1033,102 +1033,102 @@ func (s *state) tabs() []settingsTab {
 			current = s.store.Get()
 		}
 		example := current.FileName(time.Now().Format(settings.StampLayout))
-		children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout), layout.Rigid(s.label(material.Caption, i18n.T("Например: ")+example, mutedColor)))
+		children = append(children, layout.Rigid(layout.Spacer{Height: unit.Dp(6)}.Layout), layout.Rigid(s.label(material.Caption, i18n.T("For example: ")+example, mutedColor)))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
 
 	general := []layout.Widget{
-		s.row(i18n.T("Язык интерфейса"), i18n.T("Окно настроек меняется сразу, оверлей и уведомления при следующем снимке."),
+		s.row(i18n.T("Interface language"), i18n.T("The settings window changes at once; the overlay and notifications change on the next shot."),
 			s.languageRadios()),
-		s.section(i18n.T("Действия")),
-		s.row(i18n.T("Двойной клик внутри выделения"), i18n.T("Работает с инструментом «выделение», не на рамке."),
+		s.section(i18n.T("Actions")),
+		s.row(i18n.T("Double click inside the selection"), i18n.T("Works with the \"select\" tool, not on the frame."),
 			radios(
-				s.radio(&s.choice, string(settings.DoubleClickOff), i18n.T("Ничего")),
-				s.radio(&s.choice, string(settings.DoubleClickCopy), i18n.T("Копировать в буфер обмена")),
-				s.radio(&s.choice, string(settings.DoubleClickCopySave), i18n.T("Копировать и сохранить в файл")),
+				s.radio(&s.choice, string(settings.DoubleClickOff), i18n.T("Nothing")),
+				s.radio(&s.choice, string(settings.DoubleClickCopy), i18n.T("Copy to the clipboard")),
+				s.radio(&s.choice, string(settings.DoubleClickCopySave), i18n.T("Copy and save to a file")),
 			)),
-		s.row(i18n.T("Клавиша Enter"), i18n.T("Ctrl+C, Ctrl+S и кнопки на панели от этой настройки не зависят."),
+		s.row(i18n.T("Enter key"), i18n.T("Ctrl+C, Ctrl+S and the toolbar buttons do not depend on this setting."),
 			radios(
-				s.radio(&s.enter, string(settings.EnterCopySave), i18n.T("Копировать и сохранить в файл")),
-				s.radio(&s.enter, string(settings.EnterCopy), i18n.T("Только копировать в буфер обмена")),
-				s.radio(&s.enter, string(settings.EnterSave), i18n.T("Только сохранить в файл")),
+				s.radio(&s.enter, string(settings.EnterCopySave), i18n.T("Copy and save to a file")),
+				s.radio(&s.enter, string(settings.EnterCopy), i18n.T("Only copy to the clipboard")),
+				s.radio(&s.enter, string(settings.EnterSave), i18n.T("Only save to a file")),
 			)),
-		s.row(i18n.T("Курсор мыши"), i18n.T("Работает при обычном захвате экрана. В запасном способе через Screenshot portal курсора в снимке нет."),
-			s.checkbox(&s.cursor, i18n.T("Показывать курсор на снимке"))),
-		s.row(i18n.T("После копирования"), i18n.T("Enter, Ctrl+C, Ctrl+S, двойной клик и кнопки панели. Выход по Esc."),
-			s.checkbox(&s.keepOpen, i18n.T("Не закрывать, а продолжать редактировать"))),
-		s.row(i18n.T("Уведомления"), i18n.T("После снимка и действий с подборкой. Ошибки показываются всегда."),
-			s.checkbox(&s.notify, i18n.T("Показывать уведомления"))),
-		s.row(i18n.T("Прошлая область"), i18n.T("Показывается сразу при запуске и по клавише R. Без неё «было/стало» не подставит область само."),
-			s.checkbox(&s.remember, i18n.T("Запоминать область снимка"))),
+		s.row(i18n.T("Mouse cursor"), i18n.T("Works with the normal screen capture. The fallback through the Screenshot portal has no cursor in the shot."),
+			s.checkbox(&s.cursor, i18n.T("Show the cursor in the shot"))),
+		s.row(i18n.T("After copying"), i18n.T("Enter, Ctrl+C, Ctrl+S, double click and the toolbar buttons. Leave with Esc."),
+			s.checkbox(&s.keepOpen, i18n.T("Keep editing instead of closing"))),
+		s.row(i18n.T("Notifications"), i18n.T("After a shot and collection actions. Errors are always shown."),
+			s.checkbox(&s.notify, i18n.T("Show notifications"))),
+		s.row(i18n.T("Previous area"), i18n.T("Shown right at launch and with the R key. Without it, before/after will not fill in the area by itself."),
+			s.checkbox(&s.remember, i18n.T("Remember the shot area"))),
 	}
 	tools := []layout.Widget{
-		s.row(i18n.T("Инструмент после выбора области"), i18n.T("Включается сам, когда область выделена. «Выделение»: ничего не включать."),
+		s.row(i18n.T("Tool after selecting an area"), i18n.T("Switches on by itself once an area is selected. \"Select\": switch nothing on."),
 			s.toolChoiceRadios()),
-		s.row(i18n.T("Цвет и толщина по умолчанию"), i18n.T("Цвет #RRGGBB: пусто значит не менять. Цвет работает, пока вы сами не выбрали цвет в панели. Толщина для текста это размер, для размытия сила."),
+		s.row(i18n.T("Default colour and thickness"), i18n.T("Colour #RRGGBB: empty means keep as is. The colour applies until you pick a colour in the toolbar yourself. For text, thickness is the size; for blur, the strength."),
 			s.toolControls()),
-		s.row(i18n.T("Цвета панели"), i18n.T("Восемь цветов в панели инструментов, #RRGGBB. Пустое поле: цвет по умолчанию. Применяется при следующем снимке."),
+		s.row(i18n.T("Toolbar colours"), i18n.T("Eight colours in the toolbar, #RRGGBB. Empty field: the default colour. Applies on the next shot."),
 			s.paletteControls()),
-		s.row(i18n.T("Прозрачность маркера"), i18n.T("Чем больше процент, тем плотнее закраска."), s.slider(s.marker)),
+		s.row(i18n.T("Marker opacity"), i18n.T("The higher the percentage, the denser the fill."), s.slider(s.marker)),
 	}
 	look := []layout.Widget{
-		s.row(i18n.T("Рамка выделения"), i18n.T("Пунктир вокруг выбранной области."), s.borderControls()),
-		s.row(i18n.T("Размер области"), i18n.T("Подпись «ширина × высота» над левым верхним углом."),
-			s.checkbox(&s.showSize, i18n.T("Показывать размер"))),
-		s.row(i18n.T("Лупа"), i18n.T("Увеличенные пиксели рядом с курсором, пока выбирают область и тянут рамку."),
-			s.checkbox(&s.showLoupe, i18n.T("Показывать лупу"))),
-		s.row(i18n.T("Угловые ручки"), i18n.T("Кружки в углах рамки, за них меняют размер области. «нет» прячет их."), s.slider(s.handle)),
-		s.row(i18n.T("Затемнение вне области"), i18n.T("0% не затемняет совсем, 100% закрашивает чёрным."), s.slider(s.dim)),
+		s.row(i18n.T("Selection frame"), i18n.T("Dashed line around the selected area."), s.borderControls()),
+		s.row(i18n.T("Area size"), i18n.T("A \"width × height\" label above the top-left corner."),
+			s.checkbox(&s.showSize, i18n.T("Show size"))),
+		s.row(i18n.T("Magnifier"), i18n.T("Magnified pixels next to the cursor while you pick an area and drag a frame."),
+			s.checkbox(&s.showLoupe, i18n.T("Show the magnifier"))),
+		s.row(i18n.T("Corner handles"), i18n.T("Circles in the frame corners; drag them to resize the area. \"none\" hides them."), s.slider(s.handle)),
+		s.row(i18n.T("Dimming outside the area"), i18n.T("0% does not dim at all, 100% paints it black."), s.slider(s.dim)),
 	}
 	glue := []layout.Widget{
-		s.row(i18n.T("Расположение"), i18n.T("Картинки выравниваются по самой низкой (рядом) или по самой узкой (друг под другом)."),
+		s.row(i18n.T("Layout"), i18n.T("Images are aligned to the lowest one (side by side) or the narrowest one (stacked)."),
 			radios(
-				s.radio(&s.glueLayout, string(settings.GlueSide), i18n.T("Рядом, слева направо")),
-				s.radio(&s.glueLayout, string(settings.GlueStack), i18n.T("Друг под другом, сверху вниз")),
+				s.radio(&s.glueLayout, string(settings.GlueSide), i18n.T("Side by side, left to right")),
+				s.radio(&s.glueLayout, string(settings.GlueStack), i18n.T("Stacked, top to bottom")),
 			)),
-		s.row(i18n.T("Фон"), "", radios(
-			s.radio(&s.glueBg, string(settings.GlueLight), i18n.T("Белый")),
-			s.radio(&s.glueBg, string(settings.GlueDark), i18n.T("Тёмный")),
+		s.row(i18n.T("Background"), "", radios(
+			s.radio(&s.glueBg, string(settings.GlueLight), i18n.T("White")),
+			s.radio(&s.glueBg, string(settings.GlueDark), i18n.T("Dark")),
 		)),
-		s.row(i18n.T("Отступы"), i18n.T("От краёв и между картинками."), s.slider(s.gluePad)),
-		s.row(i18n.T("Размер подписи"), "", s.slider(s.glueFont)),
-		s.row(i18n.T("Подписи над картинками"), i18n.T("Пусто: слова по умолчанию. При трёх и больше картинок к слову добавляется номер: «Шаг 1»."),
+		s.row(i18n.T("Margins"), i18n.T("From the edges and between images."), s.slider(s.gluePad)),
+		s.row(i18n.T("Caption size"), "", s.slider(s.glueFont)),
+		s.row(i18n.T("Captions above images"), i18n.T("Empty: default words. With three or more images a number is added to the word: \"Step 1\"."),
 			s.glueControls()),
 	}
 	files := []layout.Widget{
-		s.row(i18n.T("Папка для скриншотов"), i18n.T("Пусто: ~/Pictures/Screenshots. Можно писать ~/Папка или полный путь."), dirField),
-		s.row(i18n.T("Имя файла"), i18n.T("Начало имени, дальше идут дата и время. Пусто: ")+settings.DefaultFilePrefix+".", prefixField),
-		s.row(i18n.T("Формат файла"), i18n.T("В буфер обмена снимок всегда идёт в PNG."), radios(
-			s.radio(&s.format, string(settings.FormatPNG), i18n.T("PNG: без потерь")),
-			s.radio(&s.format, string(settings.FormatJPEG), i18n.T("JPEG: файл меньше, есть потери")),
+		s.row(i18n.T("Screenshot folder"), i18n.T("Empty: ~/Pictures/Screenshots. You can write ~/Folder or a full path."), dirField),
+		s.row(i18n.T("File name"), i18n.T("Start of the name, followed by date and time. Empty: ")+settings.DefaultFilePrefix+".", prefixField),
+		s.row(i18n.T("File format"), i18n.T("The clipboard always gets PNG."), radios(
+			s.radio(&s.format, string(settings.FormatPNG), i18n.T("PNG: lossless")),
+			s.radio(&s.format, string(settings.FormatJPEG), i18n.T("JPEG: smaller file, lossy")),
 		)),
-		s.row(i18n.T("Качество JPEG"), i18n.T("Чем выше, тем лучше картинка и больше файл."), s.slider(s.quality)),
+		s.row(i18n.T("JPEG quality"), i18n.T("The higher, the better the picture and the bigger the file."), s.slider(s.quality)),
 	}
 	keys := []layout.Widget{
-		s.row(i18n.T("Клавиши"), i18n.T("Нажмите кнопку и затем новую комбинацию. Esc отменяет запись. Применяются при следующем снимке."),
+		s.row(i18n.T("Keys"), i18n.T("Press a button and then the new combination. Esc cancels recording. Applies on the next shot."),
 			s.keyControls()),
 	}
-	system := append([]layout.Widget{s.section(i18n.T("Захват экрана"))}, s.captureRows()...)
+	system := append([]layout.Widget{s.section(i18n.T("Screen capture"))}, s.captureRows()...)
 	system = append(system,
-		s.section(i18n.T("Запуск")),
-		s.row(i18n.T("Автозапуск"), i18n.T("При входе в систему запускается значок в области уведомлений (scrawl -tray): левый клик делает снимок. На GNOME нужно расширение AppIndicator."),
+		s.section(i18n.T("Startup")),
+		s.row(i18n.T("Autostart"), i18n.T("At login a notification-area icon is started (scrawl -tray): left click takes a screenshot. GNOME needs the AppIndicator extension."),
 			s.autostartControl()),
 	)
 	about := []layout.Widget{
 		s.row("Scrawl "+version.String(), version.Home, nil),
-		s.row(i18n.T("Обновления"), i18n.T("Единственное место, где программа выходит в интернет: запрос к GitHub Releases. По умолчанию выключено; кнопка работает и при выключенной проверке."),
+		s.row(i18n.T("Updates"), i18n.T("The only place where the program goes online: a request to GitHub Releases. Off by default; the button works even when the check is off."),
 			s.updateControl()),
 	}
 
 	return []settingsTab{
-		{id: "general", label: i18n.T("Общие"), rows: general},
-		{id: "tools", label: i18n.T("Инструменты"), rows: tools},
-		{id: "look", label: i18n.T("Вид"), rows: look},
-		{id: "glue", label: i18n.T("Склейка"), rows: glue},
-		{id: "files", label: i18n.T("Файлы"), rows: files},
-		{id: "keys", label: i18n.T("Клавиши"), rows: keys},
-		{id: "system", label: i18n.T("Система"), rows: system},
-		{id: "about", label: i18n.T("О программе"), rows: about},
+		{id: "general", label: i18n.T("General"), rows: general},
+		{id: "tools", label: i18n.T("Tools"), rows: tools},
+		{id: "look", label: i18n.T("Appearance"), rows: look},
+		{id: "glue", label: i18n.T("Collage"), rows: glue},
+		{id: "files", label: i18n.T("Files"), rows: files},
+		{id: "keys", label: i18n.T("Keys"), rows: keys},
+		{id: "system", label: i18n.T("System"), rows: system},
+		{id: "about", label: i18n.T("About"), rows: about},
 	}
 }
 
@@ -1136,24 +1136,24 @@ func (s *state) tabs() []settingsTab {
 // разрешение выдавать не нужно, вместо этих кнопок короткое пояснение.
 func (s *state) captureRows() []layout.Widget {
 	rows := []layout.Widget{
-		s.row(i18n.T("Горячая клавиша запуска"), i18n.T("Создаёт или обновляет ярлык в настройках клавиатуры GNOME. Формат: Print, <Super>s, <Control><Alt>p. Чужие ярлыки не меняются."),
+		s.row(i18n.T("Launch hotkey"), i18n.T("Creates or updates a shortcut in the GNOME keyboard settings. Format: Print, <Super>s, <Control><Alt>p. Other shortcuts are not changed."),
 			s.hotkeyControl()),
 	}
 	if onWindows {
 		// В Windows нет ни портала, ни GNOME: экран снимается напрямую через GDI, а комбинацию
 		// держит значок в трее (scrawl -tray).
-		rows[0] = s.row(i18n.T("Горячая клавиша запуска"), i18n.T("Работает, пока запущен значок в трее. Формат: Print, <Super>s, <Control><Alt>p. Print может занимать другая программа (Greenshot, «Ножницы»): тогда выберите другую комбинацию."),
+		rows[0] = s.row(i18n.T("Launch hotkey"), i18n.T("Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination."),
 			s.hotkeyControl())
 		return rows
 	}
 	if x11Session() {
-		return append(rows, s.row(i18n.T("Сеанс X11"), i18n.T("Экран снимается напрямую, без портала: выбирать мониторы и выдавать разрешение не нужно. Для буфера обмена нужен xclip."), nil))
+		return append(rows, s.row(i18n.T("X11 session"), i18n.T("The screen is captured directly, without a portal: there is no need to pick monitors or grant a permission. The clipboard needs xclip."), nil))
 	}
 	return append(rows,
-		s.row(i18n.T("Мониторы"), i18n.T("Выбрать мониторы заново: GNOME покажет диалог на каждый монитор. Нужно после подключения или замены монитора. Раньше: scrawl -setup."),
-			s.taskControl(&s.monitors, i18n.T("Выбрать мониторы заново"))),
-		s.row(i18n.T("Разрешение на запасной снимок"), i18n.T("Нужно запасному способу захвата через Screenshot portal, когда PipeWire не отдал кадр. Раньше: scrawl -grant-screenshot."),
-			s.taskControl(&s.grant, i18n.T("Выдать разрешение"))),
+		s.row(i18n.T("Monitors"), i18n.T("Pick the monitors again: GNOME shows a dialog for each monitor. Needed after connecting or replacing a monitor. Formerly: scrawl -setup."),
+			s.taskControl(&s.monitors, i18n.T("Pick monitors again"))),
+		s.row(i18n.T("Fallback capture permission"), i18n.T("Needed by the fallback capture through the Screenshot portal when PipeWire gave no frame. Formerly: scrawl -grant-screenshot."),
+			s.taskControl(&s.grant, i18n.T("Grant permission"))),
 	)
 }
 
@@ -1233,7 +1233,7 @@ func (s *state) layout(gtx layout.Context) layout.Dimensions {
 
 	return layout.UniformInset(unit.Dp(22)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(s.label(material.H6, i18n.T("Настройки"), fgColor)),
+			layout.Rigid(s.label(material.H6, i18n.T("Settings"), fgColor)),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(10)}.Layout),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions { return s.tabBar(gtx, tabs) }),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(14)}.Layout),
@@ -1245,10 +1245,10 @@ func (s *state) layout(gtx layout.Context) layout.Dimensions {
 				})
 			}),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(10)}.Layout),
-			layout.Rigid(s.label(material.Caption, i18n.T("Изменения применяются сразу. Файл: ")+settings.Path(), mutedColor)),
+			layout.Rigid(s.label(material.Caption, i18n.T("Changes apply immediately. File: ")+settings.Path(), mutedColor)),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(10)}.Layout),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				b := material.Button(th, &s.close, i18n.T("Закрыть"))
+				b := material.Button(th, &s.close, i18n.T("Close"))
 				b.Background = accentColor
 				return b.Layout(gtx)
 			}),
