@@ -56,9 +56,13 @@ Write-Host "Готово: ${Out} (${Version})"
 if ($Package) {
     $name = "scrawl-$Version-windows-amd64"
     $dir = Join-Path "dist" $name
-    Remove-Item $dir, "dist\$name.zip", "dist\$name.zip.sha256" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item $dir, "dist\$name.zip", "dist\$name.zip.sha256", "dist\$name.exe", "dist\$name.exe.sha256" -Recurse -Force -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Force $dir | Out-Null
     Copy-Item $Out (Join-Path $dir "scrawl.exe")
+    # The bare .exe is also published on its own: the program is portable, the archive only adds docs.
+    Copy-Item $Out "dist\$name.exe"
+    $exeHash = (Get-FileHash "dist\$name.exe" -Algorithm SHA256).Hash.ToLower()
+    "$exeHash  $name.exe" | Set-Content "dist\$name.exe.sha256" -Encoding ascii
     Copy-Item LICENSE, THIRD_PARTY_NOTICES.md, README.md, docs\translations\README.ru.md, docs\WINDOWS.md $dir
     # We write the archive ourselves: Compress-Archive and ZipFile.CreateFromDirectory in
     # Windows PowerShell 5.1 put backslashes in the names, and such an archive extracts

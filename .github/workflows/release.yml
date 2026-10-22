@@ -42,7 +42,7 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" dist/scrawl-*.tar.gz dist/scrawl_*.deb dist/SHA256SUMS \
             --verify-tag --generate-notes --title "Scrawl ${GITHUB_REF_NAME}" $flags
 
-  # Windows: a portable archive, its SHA-256 and the Scoop manifest. It is built on real
+  # Windows: a portable archive, the bare scrawl.exe, their SHA-256 and the Scoop manifest. It is built on real
   # Windows in public CI, and the origin of the file is confirmed by a GitHub attestation
   # (gh attestation verify).
   windows:
@@ -68,7 +68,9 @@ jobs:
       - name: Аттестация сборки
         uses: actions/attest-build-provenance@v4
         with:
-          subject-path: dist/scrawl-*-windows-amd64.zip
+          subject-path: |
+            dist/scrawl-*-windows-amd64.zip
+            dist/scrawl-*-windows-amd64.exe
 
       - name: Манифест Scoop
         shell: pwsh
@@ -84,7 +86,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # PowerShell does not expand * for external programs, so we build the file list ourselves.
-          $files = Get-ChildItem dist/scrawl-*-windows-amd64.zip, dist/scrawl-*-windows-amd64.zip.sha256, dist/scrawl.json | ForEach-Object FullName
+          $files = Get-ChildItem dist/scrawl-*-windows-amd64.zip, dist/scrawl-*-windows-amd64.zip.sha256, dist/scrawl-*-windows-amd64.exe, dist/scrawl-*-windows-amd64.exe.sha256, dist/scrawl.json | ForEach-Object FullName
           gh release upload "${env:GITHUB_REF_NAME}" @files --clobber
 
   # After the release we update the apt repository (if a signing key is configured).

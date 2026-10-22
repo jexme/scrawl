@@ -48,6 +48,8 @@ Next to the Linux packages it adds to the same release:
 
 - `scrawl-vX.Y.Z-windows-amd64.zip`: `scrawl.exe`, the licenses, the README and this file;
 - `scrawl-vX.Y.Z-windows-amd64.zip.sha256`;
+- `scrawl-vX.Y.Z-windows-amd64.exe`: the same `scrawl.exe` on its own, for those who do not want an archive;
+- `scrawl-vX.Y.Z-windows-amd64.exe.sha256`;
 - `scrawl.json`: a Scoop manifest with the ready URL and hash.
 
 The archive is built on `windows-latest` by the same `scripts/build-windows.ps1 -Package` as locally, and comes with
