@@ -15,6 +15,7 @@ import (
 
 	"gioui.org/app"
 
+	"github.com/jexme/scrawl/internal/autostart"
 	"github.com/jexme/scrawl/internal/editor"
 	"github.com/jexme/scrawl/internal/fonts"
 	"github.com/jexme/scrawl/internal/i18n"
@@ -38,6 +39,8 @@ func main() {
 	grant := flag.Bool("grant-screenshot", false, i18n.T("allow the app the fallback capture through the Screenshot portal and exit"))
 	exitAfter := flag.Duration("exit-after", 0, i18n.T("exit normally after the given time (for testing)"))
 	trayMode := flag.Bool("tray", false, i18n.T("keep an icon in the notification area (for starting at login)"))
+	autostartRun := flag.Bool("autostart", false, i18n.T("set by the start-at-login entry: stay silent if the tray is already running"))
+	flag.Bool("shot", false, i18n.T("take one screenshot (what the tray menu and its hotkey run)"))
 	showVersion := flag.Bool("version", false, i18n.T("show the version and exit"))
 	flag.Parse()
 
@@ -46,9 +49,13 @@ func main() {
 		return
 	}
 
-	if *trayMode {
-		runTray(*exitAfter)
-		return
+	// On Windows a bare start (double click) runs the tray; if one is already running, the bare
+	// start falls through and takes a screenshot, like on Linux.
+	bare := bareStartIsTray && flag.NFlag() == 0 && flag.NArg() == 0
+	if *trayMode || bare {
+		if running := runTray(*exitAfter, bare, *autostartRun); !running || *trayMode {
+			return
+		}
 	}
 
 	if *grant && x11capture.IsSession() {
@@ -214,13 +221,24 @@ func fatal(f string, a ...any) {
 
 // runTray keeps the tray icon in the notification area: screenshots and settings run as
 // separate processes, so the icon stays light and does not hold the screen capture.
-func runTray(exitAfter time.Duration) {
+// It returns true without doing anything if another tray is already running (and tells the
+// user so, unless this is a bare or autostart launch, which must stay quiet).
+func runTray(exitAfter time.Duration, bare, autostartLaunch bool) (alreadyRunning bool) {
 	if ok, err := singleton.Acquire("scrawl-tray"); err == nil && !ok {
-		return
+		if !bare && !autostartLaunch {
+			showAlreadyRunning(runningTrayVersion())
+		}
+		return true
 	}
 	exe, err := os.Executable()
 	if err != nil {
 		fatal("%v", err)
+	}
+	recordTrayVersion(version.String())
+	// Self-healing autostart: if it is enabled but points elsewhere (the exe was moved or
+	// updated in place), it is rewritten to this exe. A disabled autostart stays disabled.
+	if _, err := autostart.Heal(exe); err != nil {
+		fmt.Fprintln(os.Stderr, "autostart:", err)
 	}
 	spawn := func(args ...string) {
 		cmd := exec.Command(exe, args...)
@@ -239,12 +257,15 @@ func runTray(exitAfter time.Duration) {
 		go watchUpdates()
 	}
 	err = tray.Run(tray.Handlers{
-		Shot:     func() { spawn() },
+		Shot:     func() { spawn("-shot") },
 		Settings: func() { spawn("-settings") },
+		Version:  version.String(),
+		Welcome:  firstRunHint(),
 	}, stop)
 	if err != nil {
 		fatal("%s: %v", i18n.T("tray icon"), err)
 	}
+	return false
 }
 
 // watchUpdates checks for a new version when the tray icon starts and then once a day;

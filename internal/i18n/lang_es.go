@@ -291,4 +291,11 @@ var es = map[string]string{
 	"Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination.": "Funciona mientras el icono de la bandeja esté activo. Formato: Print, <Super>s, <Control><Alt>p. Otro programa puede ocupar Print (Greenshot, Recortes): elija entonces otra combinación.",
 
 	"autostart was not set: the program is in a temporary folder (%s); move it to a permanent folder first": "no se activó el inicio automático: el programa está en una carpeta temporal (%s); muévalo primero a una carpeta permanente",
+
+	"set by the start-at-login entry: stay silent if the tray is already running":                                          "lo pone la entrada de inicio automático: no avisar si el icono ya está en marcha",
+	"take one screenshot (what the tray menu and its hotkey run)":                                                          "hacer una captura de pantalla (lo que ejecutan el menú del icono y su atajo)",
+	"Scrawl is running in the notification area. Press Print (or the combination from the settings) to take a screenshot.": "Scrawl se está ejecutando en el área de notificación. Pulse Impr Pant (o la combinación de los ajustes) para hacer una captura.",
+	"Scrawl is already running (version %s). Quit it from the tray icon menu, then start the new version.":                 "Scrawl ya se está ejecutando (versión %s). Ciérrelo desde el menú del icono del área de notificación y luego inicie la nueva versión.",
+	"Scrawl is already running. Quit it from the tray icon menu, then start the new version.":                              "Scrawl ya se está ejecutando. Ciérrelo desde el menú del icono del área de notificación y luego inicie la nueva versión.",
+	"could not put the icon in the notification area: %v":                                                                  "no se pudo colocar el icono en el área de notificación: %v",
 }

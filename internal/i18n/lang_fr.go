@@ -291,4 +291,11 @@ var fr = map[string]string{
 	"Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination.": "Fonctionne tant que l'icône de la zone de notification est lancée. Format : Print, <Super>s, <Control><Alt>p. Un autre programme peut occuper Print (Greenshot, Outil Capture) : choisissez alors une autre combinaison.",
 
 	"autostart was not set: the program is in a temporary folder (%s); move it to a permanent folder first": "le démarrage automatique n'a pas été activé : le programme se trouve dans un dossier temporaire (%s) ; déplacez-le d'abord vers un dossier permanent",
+
+	"set by the start-at-login entry: stay silent if the tray is already running":                                          "défini par l'entrée de démarrage automatique : rester silencieux si l'icône tourne déjà",
+	"take one screenshot (what the tray menu and its hotkey run)":                                                          "prendre une capture d'écran (ce que lancent le menu de l'icône et son raccourci)",
+	"Scrawl is running in the notification area. Press Print (or the combination from the settings) to take a screenshot.": "Scrawl s'exécute dans la zone de notification. Appuyez sur Impr. écran (ou sur la combinaison des paramètres) pour prendre une capture.",
+	"Scrawl is already running (version %s). Quit it from the tray icon menu, then start the new version.":                 "Scrawl est déjà en cours d'exécution (version %s). Quittez-le depuis le menu de l'icône de la zone de notification, puis lancez la nouvelle version.",
+	"Scrawl is already running. Quit it from the tray icon menu, then start the new version.":                              "Scrawl est déjà en cours d'exécution. Quittez-le depuis le menu de l'icône de la zone de notification, puis lancez la nouvelle version.",
+	"could not put the icon in the notification area: %v":                                                                  "impossible de placer l'icône dans la zone de notification : %v",
 }

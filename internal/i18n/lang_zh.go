@@ -291,4 +291,11 @@ var zh = map[string]string{
 	"Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination.": "仅在托盘图标运行时有效。格式：Print、<Super>s、<Control><Alt>p。Print 可能被其他程序占用（Greenshot、截图工具），此时请换一个组合。",
 
 	"autostart was not set: the program is in a temporary folder (%s); move it to a permanent folder first": "未启用开机自启动：程序位于临时文件夹（%s）中；请先将其移到固定文件夹",
+
+	"set by the start-at-login entry: stay silent if the tray is already running":                                          "由开机自启动项设置：图标已在运行时保持静默",
+	"take one screenshot (what the tray menu and its hotkey run)":                                                          "截取一张屏幕截图（托盘图标菜单及其快捷键所运行的命令）",
+	"Scrawl is running in the notification area. Press Print (or the combination from the settings) to take a screenshot.": "Scrawl 正在通知区域运行。按 Print（或设置中的组合键）即可截图。",
+	"Scrawl is already running (version %s). Quit it from the tray icon menu, then start the new version.":                 "Scrawl 已在运行（版本 %s）。请先从通知区域图标的菜单中退出它，然后启动新版本。",
+	"Scrawl is already running. Quit it from the tray icon menu, then start the new version.":                              "Scrawl 已在运行。请先从通知区域图标的菜单中退出它，然后启动新版本。",
+	"could not put the icon in the notification area: %v":                                                                  "无法将图标放入通知区域：%v",
 }

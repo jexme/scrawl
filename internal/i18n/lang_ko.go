@@ -291,4 +291,11 @@ var ko = map[string]string{
 	"Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination.": "트레이 아이콘이 실행 중일 때만 동작합니다. 형식: Print, <Super>s, <Control><Alt>p. Print를 다른 프로그램(Greenshot, 캡처 도구)이 사용 중일 수 있습니다. 그럴 때는 다른 조합을 선택하세요.",
 
 	"autostart was not set: the program is in a temporary folder (%s); move it to a permanent folder first": "자동 시작이 설정되지 않았습니다: 프로그램이 임시 폴더(%s)에 있습니다. 먼저 영구 폴더로 옮기세요",
+
+	"set by the start-at-login entry: stay silent if the tray is already running":                                          "시작 시 실행 항목이 지정: 아이콘이 이미 실행 중이면 조용히 종료",
+	"take one screenshot (what the tray menu and its hotkey run)":                                                          "스크린샷을 한 장 찍기 (아이콘 메뉴와 그 단축키가 실행)",
+	"Scrawl is running in the notification area. Press Print (or the combination from the settings) to take a screenshot.": "Scrawl이 알림 영역에서 실행 중입니다. Print (또는 설정의 조합)를 눌러 스크린샷을 찍으세요.",
+	"Scrawl is already running (version %s). Quit it from the tray icon menu, then start the new version.":                 "Scrawl이 이미 실행 중입니다 (버전 %s). 알림 영역 아이콘의 메뉴에서 종료한 다음 새 버전을 실행하세요.",
+	"Scrawl is already running. Quit it from the tray icon menu, then start the new version.":                              "Scrawl이 이미 실행 중입니다. 알림 영역 아이콘의 메뉴에서 종료한 다음 새 버전을 실행하세요.",
+	"could not put the icon in the notification area: %v":                                                                  "알림 영역에 아이콘을 둘 수 없습니다: %v",
 }

@@ -291,4 +291,11 @@ var ru = map[string]string{
 	"Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination.": "Работает, пока запущен значок в трее. Формат: Print, <Super>s, <Control><Alt>p. Print может занимать другая программа (Greenshot, «Ножницы»): тогда выберите другую комбинацию.",
 
 	"autostart was not set: the program is in a temporary folder (%s); move it to a permanent folder first": "автозапуск не включён: программа лежит во временной папке (%s); сначала перенесите её в постоянную папку",
+
+	"set by the start-at-login entry: stay silent if the tray is already running":                                          "задаётся записью автозапуска: молчать, если значок уже запущен",
+	"take one screenshot (what the tray menu and its hotkey run)":                                                          "сделать один снимок экрана (это запускают меню значка и его сочетание клавиш)",
+	"Scrawl is running in the notification area. Press Print (or the combination from the settings) to take a screenshot.": "Scrawl работает в области уведомлений. Нажмите Print (или сочетание из настроек), чтобы сделать снимок экрана.",
+	"Scrawl is already running (version %s). Quit it from the tray icon menu, then start the new version.":                 "Scrawl уже запущен (версия %s). Выйдите из него через меню значка в области уведомлений и запустите новую версию.",
+	"Scrawl is already running. Quit it from the tray icon menu, then start the new version.":                              "Scrawl уже запущен. Выйдите из него через меню значка в области уведомлений и запустите новую версию.",
+	"could not put the icon in the notification area: %v":                                                                  "не удалось поместить значок в область уведомлений: %v",
 }

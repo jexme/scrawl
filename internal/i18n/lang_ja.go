@@ -291,4 +291,11 @@ var ja = map[string]string{
 	"Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination.": "トレイアイコンが起動している間のみ動作します。形式: Print、<Super>s、<Control><Alt>p。Print は他のプログラム（Greenshot、Snipping Tool）が使用している場合があります。その場合は別の組み合わせを選んでください。",
 
 	"autostart was not set: the program is in a temporary folder (%s); move it to a permanent folder first": "自動起動は設定されませんでした: プログラムが一時フォルダー (%s) にあります。先に固定のフォルダーへ移動してください",
+
+	"set by the start-at-login entry: stay silent if the tray is already running":                                          "自動起動の項目が指定: アイコンがすでに動作中なら何も表示しない",
+	"take one screenshot (what the tray menu and its hotkey run)":                                                          "スクリーンショットを1枚撮る (アイコンのメニューとそのショートカットが実行する)",
+	"Scrawl is running in the notification area. Press Print (or the combination from the settings) to take a screenshot.": "Scrawl は通知領域で動作しています。Print (または設定のキー操作) を押すとスクリーンショットを撮ります。",
+	"Scrawl is already running (version %s). Quit it from the tray icon menu, then start the new version.":                 "Scrawl はすでに起動しています (バージョン %s)。通知領域のアイコンのメニューから終了してから、新しいバージョンを起動してください。",
+	"Scrawl is already running. Quit it from the tray icon menu, then start the new version.":                              "Scrawl はすでに起動しています。通知領域のアイコンのメニューから終了してから、新しいバージョンを起動してください。",
+	"could not put the icon in the notification area: %v":                                                                  "通知領域にアイコンを置けませんでした: %v",
 }

@@ -291,4 +291,11 @@ var de = map[string]string{
 	"Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination.": "Funktioniert, solange das Symbol im Infobereich läuft. Format: Print, <Super>s, <Control><Alt>p. Print kann von einem anderen Programm belegt sein (Greenshot, Snipping Tool): wählen Sie dann eine andere Kombination.",
 
 	"autostart was not set: the program is in a temporary folder (%s); move it to a permanent folder first": "Autostart wurde nicht aktiviert: Das Programm liegt in einem temporären Ordner (%s); verschieben Sie es zuerst in einen dauerhaften Ordner",
+
+	"set by the start-at-login entry: stay silent if the tray is already running":                                          "vom Autostart-Eintrag gesetzt: still bleiben, wenn das Symbol bereits läuft",
+	"take one screenshot (what the tray menu and its hotkey run)":                                                          "einen Screenshot aufnehmen (das starten das Symbolmenü und sein Tastenkürzel)",
+	"Scrawl is running in the notification area. Press Print (or the combination from the settings) to take a screenshot.": "Scrawl läuft im Infobereich. Drücken Sie Druck (oder das Kürzel aus den Einstellungen), um einen Screenshot aufzunehmen.",
+	"Scrawl is already running (version %s). Quit it from the tray icon menu, then start the new version.":                 "Scrawl läuft bereits (Version %s). Beenden Sie es über das Menü des Symbols im Infobereich und starten Sie dann die neue Version.",
+	"Scrawl is already running. Quit it from the tray icon menu, then start the new version.":                              "Scrawl läuft bereits. Beenden Sie es über das Menü des Symbols im Infobereich und starten Sie dann die neue Version.",
+	"could not put the icon in the notification area: %v":                                                                  "Das Symbol konnte nicht im Infobereich abgelegt werden: %v",
 }
