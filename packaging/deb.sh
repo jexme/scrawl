@@ -44,7 +44,7 @@ Section: graphics
 Priority: optional
 Installed-Size: $size
 Homepage: https://github.com/jexme/scrawl
-Depends: libc6 (>= 2.34), libpipewire-0.3-0t64 | libpipewire-0.3-0, libwayland-client0, libwayland-egl1, libwayland-cursor0, libxkbcommon-x11-0, libegl1, libx11-6, libxcursor1
+Depends: libc6 (>= 2.34), libpipewire-0.3-0t64 | libpipewire-0.3-0, libwayland-client0, libwayland-egl1, libwayland-cursor0, libxkbcommon0, libxkbcommon-x11-0, libegl1, libx11-6, libx11-xcb1, libxcursor1, libxfixes3
 Recommends: wl-clipboard, xclip, libnotify-bin
 Description: Fast screenshots with annotations for GNOME (Wayland and X11)
  Select an area, draw arrows, boxes, text and blur, copy to the clipboard

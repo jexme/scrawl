@@ -57,12 +57,20 @@ sudo apt install xclip libnotify-bin          # X11
 **Aus dem apt-Repository** (Debian, Ubuntu; Updates kommen mit `apt upgrade`):
 
 ```bash
-curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/sources.list.d/scrawl.sources
 sudo apt update && sudo apt install scrawl
 ```
 
 Das Repository ist mit dem Schlüssel `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0` signiert.
+Der Schlüssel ist in der `.sources`-Datei eingebettet. Die Pakete gibt es nur für amd64; unter arm64 aus dem Quellcode bauen.
+
+Auf älteren Systemen (Ubuntu 20.04, Debian 11: apt älter als 2.4) stattdessen einen separaten Schlüsselbund und eine einzeilige Quelle verwenden (Befehle und Dateinamen bleiben wie im englischen README unverändert):
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
 
 **Aus dem Quellcode (funktioniert heute):**
 
@@ -137,7 +145,7 @@ Machen Sie die erste Aufnahme und drücken Sie `A`. Machen Sie die nächste: Der
 
 ## Tray-Symbol und Autostart
 
-`scrawl -tray` hält ein Symbol im Benachrichtigungsbereich: Linksklick macht einen Screenshot, das Menü bietet „Screenshot“, „Settings“ und „Quit“. Damit es beim Anmelden startet, schalten Sie *Settings → System → Autostart* ein. Unter GNOME braucht das Symbol die AppIndicator-Erweiterung (unter Ubuntu standardmäßig aktiv).
+`scrawl -tray` hält ein Symbol im Benachrichtigungsbereich: Linksklick macht einen Take screenshot, das Menü bietet „Screenshot“, „Settings“ und „Quit“. Damit es beim Anmelden startet, schalten Sie *Settings → System → Autostart* ein. Unter GNOME braucht das Symbol die AppIndicator-Erweiterung (unter Ubuntu standardmäßig aktiv).
 
 ## Einstellungen
 
@@ -163,6 +171,7 @@ Machen Sie die erste Aufnahme und drücken Sie `A`. Machen Sie die nächste: Der
 | `-fresh` | bietet den Bereich der vorherigen Aufnahme nicht an |
 | `-v` | gibt Zeitmessungen aus |
 | `-version` | gibt die Version aus und beendet das Programm |
+| `-exit-after DURATION` | beendet sich nach der angegebenen Zeit normal, für Tests (zum Beispiel `-exit-after 3s`) |
 
 ## Fehlerbehebung
 

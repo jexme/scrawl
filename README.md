@@ -24,10 +24,12 @@ On Ubuntu or Debian (Wayland or X11) it takes three steps.
 **1. Install** from the signed apt repository (updates then come with `apt upgrade`):
 
 ```bash
-curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/sources.list.d/scrawl.sources
 sudo apt update && sudo apt install scrawl
 ```
+
+The `.sources` file carries the signing key inside it, so there is no separate keyring to manage. The packages are
+built for **amd64** only; on arm64 [build from source](#install).
 
 **2. Set up once:** run `scrawl -settings`, open the tab "System". On Wayland press "Pick monitors again"
 (GNOME asks once per monitor; tick "Remember this choice") and "Grant permission". Then type a hotkey
@@ -103,12 +105,23 @@ sudo apt install xclip libnotify-bin          # X11
 **From the apt repository** (Debian, Ubuntu; updates come with `apt upgrade`):
 
 ```bash
+sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/sources.list.d/scrawl.sources
+sudo apt update && sudo apt install scrawl
+```
+
+The packages are built for amd64 only (arm64 users: build from source, see below). The repository is signed with the
+key `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`, which is embedded in `scrawl.sources`.
+
+On older systems (Ubuntu 20.04, Debian 11: apt older than 2.4 cannot read a key inside a `.sources` file) use a
+separate keyring and a one-line source instead:
+
+```bash
 curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
 echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
 sudo apt update && sudo apt install scrawl
 ```
 
-The repository is signed with the key `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`.
+The key is also published ASCII-armored as `scrawl-archive-keyring.asc`.
 
 **From a .deb package** (Debian, Ubuntu): download `scrawl_VERSION_amd64.deb`
 from the [Releases](https://github.com/jexme/scrawl/releases) page, then
@@ -121,7 +134,7 @@ Build it yourself with `make deb`.
 [Releases](https://github.com/jexme/scrawl/releases) page, then:
 
 ```bash
-sha256sum -c --ignore-missing SHA256SUMS   # the .deb is listed with "~" but GitHub saves it with "."; check it by hand
+sha256sum -c --ignore-missing SHA256SUMS   # checks every downloaded file listed in SHA256SUMS
 tar xzf scrawl-*-linux-amd64.tar.gz && cd scrawl-*-linux-amd64
 ./install.sh            # to ~/.local (PREFIX=/usr/local for system-wide)
 sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland-cursor0 \
@@ -192,8 +205,9 @@ Open the settings window (`scrawl -settings`, tab "System") and use these button
    This lets Scrawl use the slower Screenshot portal on the rare shot when
    PipeWire gives no frame.
 3. **Set a hotkey:** on GNOME the archive installer (`install.sh`) and `make install` assign `Print` themselves unless another custom shortcut already uses it. After installing with apt or the `.deb`, or to change the key: the "Launch hotkey" field and the "Assign" button (default `Print`),
-   or `scripts/gnome-hotkey.sh [KEY]`. It creates a GNOME custom shortcut and never
-   overwrites one that is taken. If `Print` still opens GNOME's own screenshot tool, turn that
+   or `scripts/gnome-hotkey.sh [KEY]`. It creates a GNOME custom shortcut named "scrawl" (or updates it
+   if it exists, so running it again never makes a second one) and never
+   overwrites someone else's shortcut that is taken. If `Print` still opens GNOME's own screenshot tool, turn that
    off in *Settings → Keyboard → View and Customize Shortcuts → Screenshots*.
 
 ### Upgrading from screen-editor
@@ -253,7 +267,7 @@ at the bottom of the screen shows what is in the collection and has the same act
 ## Tray icon and autostart
 
 `scrawl -tray` keeps an icon in the notification area: left click takes a screenshot,
-the menu has "Screenshot", "Settings" and "Quit". To start it at login, switch on
+the menu has "Take screenshot", "Settings" and "Quit". To start it at login, switch on
 *Settings → System → Autostart*. On GNOME the icon needs the AppIndicator
 extension (enabled by default in Ubuntu).
 
@@ -285,6 +299,7 @@ Every key is described in the [settings reference](docs/SETTINGS.md).
 | `-fresh` | do not offer the area of the previous shot |
 | `-v` | print timings |
 | `-version` | print the version and exit |
+| `-exit-after DURATION` | exit normally after the given time, for testing (for example `-exit-after 3s`) |
 
 ## Troubleshooting
 
@@ -298,6 +313,31 @@ Every key is described in the [settings reference](docs/SETTINGS.md).
 - **No notifications.** Install `libnotify-bin` (the `notify-send` command), and check that notifications are on in the settings.
 - **No tray icon.** Enable the AppIndicator GNOME extension.
 - **`Print` opens GNOME's screenshot tool.** Turn it off in the keyboard shortcuts (see step 3).
+
+## Uninstall
+
+**apt or `.deb`:**
+
+```bash
+sudo apt remove scrawl     # or: sudo apt purge scrawl (the package keeps no files outside /usr, so they are the same)
+sudo rm /etc/apt/sources.list.d/scrawl.sources   # optional: forget the repository (scrawl.list for the old form)
+```
+
+apt cannot touch your home folder, so some per-user leftovers stay: the GNOME hotkey, the autostart entry if you
+turned it on, and your settings. Remove the hotkey with Scrawl's `gnome-hotkey.sh` (it is in `scripts/` of the
+repository and in the release archive) or by hand in *Settings → Keyboard → View and Customize Shortcuts → Custom
+Shortcuts*; the rest is plain files:
+
+```bash
+sh gnome-hotkey.sh --remove
+rm -f ~/.config/autostart/io.github.jexme.Scrawl.desktop
+rm -rf ~/.config/scrawl ~/.cache/scrawl     # optional: settings and cache
+```
+
+**Release archive or `make install`:** run `./uninstall.sh` from the unpacked archive (`make uninstall` in a source
+checkout). It removes the binary, the `.desktop` file, the GNOME shortcut and the autostart entry. Add `--purge`
+(`make uninstall PURGE=1`) to delete the settings (`~/.config/scrawl`) and the cache (`~/.cache/scrawl`) too. Pass
+the same `PREFIX` as for the install if you changed it. Your screenshots in `~/Pictures/Screenshots` are never touched.
 
 ## How it works
 

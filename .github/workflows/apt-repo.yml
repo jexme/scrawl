@@ -8,6 +8,12 @@ name: APT repository
 # passphrase): without it the steps are skipped, and the workflow stays green.
 on:
   workflow_call:
+    # The caller passes only the two secrets this workflow needs (no `secrets: inherit`).
+    secrets:
+      APT_GPG_PRIVATE_KEY:
+        required: false
+      APT_GPG_PASSPHRASE:
+        required: false
   workflow_dispatch:
 
 permissions:
@@ -19,6 +25,10 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+defaults:
+  run:
+    shell: bash # runs as bash -eo pipefail
+
 jobs:
   publish:
     runs-on: ubuntu-24.04
@@ -27,6 +37,8 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Ключ подписи
         id: key
@@ -50,8 +62,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y dpkg-dev
           mkdir debs
-          for tag in $(gh release list --json tagName --jq '.[].tagName'); do
-            gh release download "$tag" --pattern '*.deb' --dir debs || true
+          # A release without a .deb (an old one) is skipped; a failed download of an existing
+          # .deb fails the job, so a package never silently disappears from the repository.
+          for tag in $(gh release list --limit 200 --json tagName --jq '.[].tagName'); do
+            assets=$(gh release view "$tag" --json assets --jq '.assets[].name')
+            if printf '%s\n' "$assets" | grep -q '\.deb$'; then
+              gh release download "$tag" --pattern '*.deb' --dir debs
+            else
+              echo "release $tag has no .deb, skipping"
+            fi
           done
           ls debs
           [ -n "$(ls debs)" ] || { echo "::error::в релизах нет .deb"; exit 1; }

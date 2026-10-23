@@ -57,12 +57,20 @@ sudo apt install xclip libnotify-bin          # X11
 **apt 저장소에서** (Debian, Ubuntu; 업데이트는 `apt upgrade`로 받습니다):
 
 ```bash
-curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/sources.list.d/scrawl.sources
 sudo apt update && sudo apt install scrawl
 ```
 
 저장소는 다음 키로 서명되어 있습니다: `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`.
+키는 `.sources` 파일 안에 들어 있습니다. 패키지는 amd64용만 제공됩니다. arm64에서는 소스에서 빌드하세요.
+
+오래된 시스템(Ubuntu 20.04, Debian 11: apt 2.4 미만)에서는 대신 별도의 키링과 한 줄짜리 소스를 사용하세요(명령과 파일 이름은 영어 README와 같습니다):
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
 
 **소스에서 (지금 가능):**
 
@@ -137,7 +145,7 @@ Scrawl은 screen-editor의 새 이름입니다. `~/.config/scrawl/config.json`�
 
 ## 트레이 아이콘과 자동 시작
 
-`scrawl -tray`는 알림 영역에 아이콘을 둡니다. 왼쪽 클릭은 스크린샷, 메뉴에는 “Screenshot”, “Settings”, “Quit”이 있습니다. 로그인할 때 시작하려면 *Settings → System → Autostart*를 켜세요. GNOME에서는 아이콘을 보려면 AppIndicator 확장이 필요합니다(Ubuntu에서는 기본으로 켜져 있습니다).
+`scrawl -tray`는 알림 영역에 아이콘을 둡니다. 왼쪽 클릭은 스크린샷, 메뉴에는 “Take screenshot”, “Settings”, “Quit”이 있습니다. 로그인할 때 시작하려면 *Settings → System → Autostart*를 켜세요. GNOME에서는 아이콘을 보려면 AppIndicator 확장이 필요합니다(Ubuntu에서는 기본으로 켜져 있습니다).
 
 ## 설정
 
@@ -163,6 +171,7 @@ Scrawl은 screen-editor의 새 이름입니다. `~/.config/scrawl/config.json`�
 | `-fresh` | 이전 촬영의 영역을 제안하지 않는다 |
 | `-v` | 소요 시간을 출력한다 |
 | `-version` | 버전을 출력하고 종료한다 |
+| `-exit-after DURATION` | 지정한 시간이 지나면 정상 종료한다. 테스트용 (예: `-exit-after 3s`) |
 
 ## 문제 해결
 

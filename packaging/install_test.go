@@ -11,8 +11,10 @@ import (
 )
 
 // runInstaller runs the real install.sh from a temporary folder holding fake scrawl and
-// .desktop files, with a PATH made only of the listed programs. It returns the output and
-// the install folder.
+// .desktop files, with a PATH made only of the listed programs. A tool written as
+// "name=text" prints text when run (for example a fake ldd). The environment entry
+// "ON_PATH=1" puts the install folder into PATH. It returns the output and the install
+// folder.
 func runInstaller(t *testing.T, env []string, tools ...string) (out string, prefix string) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
@@ -48,14 +50,24 @@ func runInstaller(t *testing.T, env []string, tools ...string) (out string, pref
 			t.Fatal(err)
 		}
 	}
-	for _, name := range tools {
-		if err := os.WriteFile(filepath.Join(bin, name), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+	for _, tool := range tools {
+		name, text, _ := strings.Cut(tool, "=")
+		body := "#!/bin/sh\nexit 0\n"
+		if text != "" {
+			body = "#!/bin/sh\ncat <<'EOF'\n" + text + "\nEOF\nexit 0\n"
+		}
+		if err := os.WriteFile(filepath.Join(bin, name), []byte(body), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	prefix = t.TempDir()
 	cmd := exec.Command(sh, filepath.Join(dir, "install.sh"))
 	cmd.Env = append([]string{"PATH=" + bin, "PREFIX=" + prefix, "HOME=" + prefix}, env...)
+	for _, e := range env {
+		if e == "ON_PATH=1" { // the last PATH entry wins
+			cmd.Env = append(cmd.Env, "PATH="+bin+string(os.PathListSeparator)+filepath.Join(prefix, "bin"))
+		}
+	}
 	b, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("install.sh: %v\n%s", err, b)

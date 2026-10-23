@@ -30,7 +30,11 @@ third_party/gio/.scrawl-patched: third_party/gio.patch scripts/setup-gio.sh go.m
 	./scripts/setup-gio.sh -f
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null)
-LDFLAGS := $(if $(VERSION),-ldflags "-X github.com/jexme/scrawl/internal/version.Version=$(VERSION)")
+# Release targets (dist, deb) strip the symbol table and DWARF (-s -w): a smaller binary and
+# package. `make build` keeps them for debugging.
+STRIP :=
+dist deb: STRIP := -s -w
+LDFLAGS = $(if $(or $(STRIP),$(VERSION)),-ldflags "$(STRIP) $(if $(VERSION),-X github.com/jexme/scrawl/internal/version.Version=$(VERSION))")
 
 build: gio
 	$(GO) build $(LDFLAGS) -o bin/scrawl ./cmd/scrawl
@@ -52,8 +56,10 @@ install: build
 	@sh scripts/gnome-hotkey.sh Print $(BINDIR)/scrawl --auto; case $$? in 0) echo "Клавиша Print назначена на Scrawl.";; 12) echo "Print занята другим ярлыком: назначьте свою в scrawl -settings.";; esac
 	@echo "Установлено в $(BINDIR). Дальше: scrawl -setup, затем scrawl -grant-screenshot"
 
+# Removes the binary, the .desktop file, the GNOME shortcut and the autostart entry;
+# `make uninstall PURGE=1` also deletes the settings and the cache.
 uninstall:
-	rm -f $(DESTDIR)$(BINDIR)/scrawl $(DESTDIR)$(APPDIR)/$(DESKTOP)
+	PREFIX="$(PREFIX)" BINDIR="$(BINDIR)" APPDIR="$(APPDIR)" DESTDIR="$(DESTDIR)" sh packaging/uninstall.sh $(if $(PURGE),--purge)
 
 # Release archive: binary, .desktop, installer, licenses and README, plus SHA-256.
 # The version is taken from git describe or from VERSION=v1.2.3.
@@ -63,7 +69,7 @@ PKG = scrawl-$(VERSION)-linux-$(shell $(GO) env GOARCH)
 dist: build
 	rm -rf $(DIST)/$(PKG) $(DIST)/$(PKG).tar.gz $(DIST)/$(PKG).tar.gz.sha256
 	mkdir -p $(DIST)/$(PKG)
-	cp bin/scrawl packaging/$(DESKTOP) packaging/install.sh scripts/gnome-hotkey.sh LICENSE THIRD_PARTY_NOTICES.md README.md docs/translations/README.ru.md $(DIST)/$(PKG)/
+	cp bin/scrawl packaging/$(DESKTOP) packaging/install.sh packaging/uninstall.sh scripts/gnome-hotkey.sh LICENSE THIRD_PARTY_NOTICES.md README.md docs/translations/README.ru.md $(DIST)/$(PKG)/
 	tar -C $(DIST) --owner=0 --group=0 -czf $(DIST)/$(PKG).tar.gz $(PKG)
 	cd $(DIST) && sha256sum $(PKG).tar.gz > $(PKG).tar.gz.sha256
 	@echo "Готово: $(DIST)/$(PKG).tar.gz"

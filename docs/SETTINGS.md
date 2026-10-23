@@ -38,7 +38,7 @@ Example:
 | Key | Values (default first) | Meaning |
 | --- | --- | --- |
 | `enter` | `copy_save`, `copy`, `save` | what `Enter` does: copy and save, only copy, only save |
-| `double_click` | `copy`, `copy_save`, `off` | what a double click inside the selection does (with any tool except text) |
+| `double_click` | `copy`, `copy_save`, `off` | what a double click inside the selection does (with any tool except text and stamp) |
 | `keep_open` | `false`, `true` | stay in the editor after copying or saving; leave with `Esc` |
 | `notifications` | `true`, `false` | notifications after a shot; errors are always shown |
 | `remember_region` | `true`, `false` | remember the last area, show it at launch, `R` restores it |

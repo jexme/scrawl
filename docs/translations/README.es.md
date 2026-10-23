@@ -57,12 +57,20 @@ sudo apt install xclip libnotify-bin          # X11
 **Desde el repositorio apt** (Debian, Ubuntu; las actualizaciones llegan con `apt upgrade`):
 
 ```bash
-curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/sources.list.d/scrawl.sources
 sudo apt update && sudo apt install scrawl
 ```
 
 El repositorio está firmado con la clave `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`.
+La clave va incluida en el archivo `.sources`. Los paquetes se compilan solo para amd64; en arm64 compila desde el código fuente.
+
+En sistemas más antiguos (Ubuntu 20.04, Debian 11: apt anterior a 2.4) usa en su lugar un llavero aparte y una fuente de una sola línea (los comandos y nombres de archivo no cambian respecto al README en inglés):
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
 
 **Desde el código fuente (funciona hoy):**
 
@@ -137,7 +145,7 @@ Haz la primera captura y pulsa `A`. Haz la siguiente: el área anterior ya está
 
 ## Icono en la bandeja e inicio automático
 
-`scrawl -tray` mantiene un icono en el área de notificaciones: el clic izquierdo hace una captura y el menú tiene «Screenshot», «Settings» y «Quit». Para iniciarlo al entrar en la sesión, activa *Settings → System → Autostart*. En GNOME el icono necesita la extensión AppIndicator (activada por defecto en Ubuntu).
+`scrawl -tray` mantiene un icono en el área de notificaciones: el clic izquierdo hace una captura y el menú tiene «Take screenshot», «Settings» y «Quit». Para iniciarlo al entrar en la sesión, activa *Settings → System → Autostart*. En GNOME el icono necesita la extensión AppIndicator (activada por defecto en Ubuntu).
 
 ## Ajustes
 
@@ -163,6 +171,7 @@ Haz la primera captura y pulsa `A`. Haz la siguiente: el área anterior ya está
 | `-fresh` | no ofrece el área de la captura anterior |
 | `-v` | muestra los tiempos |
 | `-version` | muestra la versión y sale |
+| `-exit-after DURATION` | sale normalmente tras el tiempo indicado, para pruebas (por ejemplo `-exit-after 3s`) |
 
 ## Solución de problemas
 

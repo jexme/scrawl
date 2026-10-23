@@ -3,6 +3,11 @@
 # Usage: scripts/build-apt-repo.sh DEB_DIR OUTPUT_DIR
 # Signing: the key GPG_KEY_ID from the current gpg keyring (in CI the workflow puts it
 # there). Without GPG_KEY_ID the repository is built unsigned (to check the structure).
+# Besides the repository itself it writes the files users need to set it up:
+#   scrawl-archive-keyring.gpg  the public key, binary (for [signed-by=...] in one-line sources)
+#   scrawl-archive-keyring.asc  the same key, ASCII-armored
+#   scrawl.sources              a ready deb822 source file with the armored key inline
+# APT_REPO_URL overrides the public address written into scrawl.sources.
 # Requires: dpkg-dev (dpkg-scanpackages), gzip, gpg.
 set -eu
 
@@ -11,6 +16,7 @@ out=${2:?выходная папка}
 suite=stable
 comp=main
 arch=amd64
+url=${APT_REPO_URL:-https://jexme.github.io/scrawl}
 
 mkdir -p "$out"
 out=$(cd "$out" && pwd)
@@ -41,12 +47,31 @@ cp "$in"/*.deb "$out/$pool/"
 	} > "dists/$suite/Release"
 
 	if [ -n "${GPG_KEY_ID:-}" ]; then
-		gpg --batch --yes --pinentry-mode loopback ${GPG_PASSPHRASE:+--passphrase "$GPG_PASSPHRASE"} \
-			-u "$GPG_KEY_ID" --clearsign -o "dists/$suite/InRelease" "dists/$suite/Release"
-		gpg --batch --yes --pinentry-mode loopback ${GPG_PASSPHRASE:+--passphrase "$GPG_PASSPHRASE"} \
-			-u "$GPG_KEY_ID" --armor --detach-sign -o "dists/$suite/Release.gpg" "dists/$suite/Release"
-		# The public key for apt: signed-by accepts a binary (dearmored) file.
+		# The passphrase goes to gpg through a pipe (--passphrase-fd 0), never through argv,
+		# where every local user could read it in the process list.
+		sign() {
+			if [ -n "${GPG_PASSPHRASE:-}" ]; then
+				printf '%s' "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 -u "$GPG_KEY_ID" "$@"
+			else
+				gpg --batch --yes --pinentry-mode loopback -u "$GPG_KEY_ID" "$@"
+			fi
+		}
+		sign --clearsign -o "dists/$suite/InRelease" "dists/$suite/Release"
+		sign --armor --detach-sign -o "dists/$suite/Release.gpg" "dists/$suite/Release"
+		# The public key for apt: signed-by accepts a binary (dearmored) file, and the armored
+		# one can be embedded into a deb822 .sources file.
 		gpg --batch --yes --export "$GPG_KEY_ID" > scrawl-archive-keyring.gpg
+		gpg --batch --yes --armor --export "$GPG_KEY_ID" > scrawl-archive-keyring.asc
+		{
+			echo "Types: deb"
+			echo "URIs: $url"
+			echo "Suites: $suite"
+			echo "Components: $comp"
+			echo "Architectures: $arch"
+			echo "Signed-By:"
+			# deb822 multi-line value: every line starts with a space, an empty line is " .".
+			sed -e 's/^$/./' -e 's/^/ /' scrawl-archive-keyring.asc
+		} > scrawl.sources
 	fi
 )
 
