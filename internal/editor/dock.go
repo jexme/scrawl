@@ -88,6 +88,12 @@ func (m *monitor) placeDock(gtx layout.Context, win image.Point, w, h int) image
 	case free(top):
 		return top
 	}
+	// The whole screen is selected and the toolbar sits inside it: the panel goes just above the
+	// toolbar, where it covers only the picture, instead of lying over the buttons.
+	above := image.Pt(x, m.barSpace.Min.Y-h-margin)
+	if r := (image.Rectangle{Min: above, Max: above.Add(image.Pt(w, h))}); above.Y >= margin && !r.Overlaps(m.barSpace) {
+		return above
+	}
 	return bottom
 }
 

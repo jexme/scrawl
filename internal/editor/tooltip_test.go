@@ -60,3 +60,30 @@ func TestToolbarTooltip(t *testing.T) {
 		t.Errorf("the tooltip must go away with the cursor: %q", m.tipText)
 	}
 }
+
+// With the whole screen selected the toolbar is inside the selection, and the "To collection"
+// panel must not lie over its buttons.
+func TestDockDoesNotCoverToolbarOnFullScreenSelection(t *testing.T) {
+	testenv.Config(t, t.TempDir())
+	const W, H = 800, 600
+	m := newMonitor(Config{Fresh: true}, &screencast.Frame{Img: image.NewRGBA(image.Rect(0, 0, W, H))}, func() {})
+	m.selectAll()
+	size := image.Pt(W, H)
+	var r input.Router
+	var ops op.Ops
+	gtx := func() layout.Context {
+		ops.Reset()
+		return layout.Context{Ops: &ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(size), Source: r.Source()}
+	}
+	g := gtx()
+	m.layout(g, size)
+	r.Frame(&ops)
+	g = gtx()
+	m.layout(g, size)
+	for _, w := range []int{260, 300} {
+		p := m.placeDock(g, size, w, 40)
+		if got := (image.Rectangle{Min: p, Max: p.Add(image.Pt(w, 40))}); got.Overlaps(m.barSpace) {
+			t.Errorf("the dock %v lies over the toolbar %v", got, m.barSpace)
+		}
+	}
+}

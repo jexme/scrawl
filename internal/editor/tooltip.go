@@ -41,7 +41,7 @@ func (m *monitor) hoverTip(hovered bool, origin image.Point, x0, y, btn int, tex
 // for a moment. It hangs on the far side of the toolbar from the selection, so it never
 // covers the buttons it describes.
 func (m *monitor) layoutTip(gtx layout.Context, win image.Point) {
-	if m.tipCand == "" {
+	if m.tipCand == "" || m.menuOpen { // an open menu is drawn over the toolbar: no tooltip under it
 		m.tipText = ""
 		return
 	}
