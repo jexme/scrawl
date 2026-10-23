@@ -31,9 +31,11 @@ sudo apt update && sudo apt install scrawl
 The `.sources` file carries the signing key inside it, so there is no separate keyring to manage. The packages are
 built for **amd64** only; on arm64 [build from source](#install).
 
-**2. Set up once:** run `scrawl -settings`, open the tab "System". On Wayland press "Pick monitors again"
+**2. Set up once:** start Scrawl from the application menu (or run `scrawl`): the first launch opens a short guide
+on the tab "System" (you can open it any time with `scrawl -settings`). On Wayland press "Pick monitors again"
 (GNOME asks once per monitor; tick "Remember this choice") and "Grant permission". Then type a hotkey
-(`Print` by default) and press "Assign". On X11 only the hotkey is needed.
+(`Print` by default) and press "Assign". GNOME's own screenshot tool also uses `Print`: press "Free the key" to
+turn that built-in shortcut off (only that one key, and you can undo it). On X11 only the hotkey is needed.
 
 **3. Take a screenshot:** press the hotkey, drag an area, press `Enter`. The picture is in your clipboard and in
 `~/Pictures/Screenshots`.
