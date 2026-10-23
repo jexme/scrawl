@@ -298,4 +298,6 @@ var ko = map[string]string{
 	"Scrawl is already running (version %s). Quit it from the tray icon menu, then start the new version.":                 "Scrawl이 이미 실행 중입니다 (버전 %s). 알림 영역 아이콘의 메뉴에서 종료한 다음 새 버전을 실행하세요.",
 	"Scrawl is already running. Quit it from the tray icon menu, then start the new version.":                              "Scrawl이 이미 실행 중입니다. 알림 영역 아이콘의 메뉴에서 종료한 다음 새 버전을 실행하세요.",
 	"could not put the icon in the notification area: %v":                                                                  "알림 영역에 아이콘을 둘 수 없습니다: %v",
+
+	"could not open the window: %v": "창을 열 수 없습니다: %v",
 }

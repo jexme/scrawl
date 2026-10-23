@@ -298,4 +298,6 @@ var fr = map[string]string{
 	"Scrawl is already running (version %s). Quit it from the tray icon menu, then start the new version.":                 "Scrawl est déjà en cours d'exécution (version %s). Quittez-le depuis le menu de l'icône de la zone de notification, puis lancez la nouvelle version.",
 	"Scrawl is already running. Quit it from the tray icon menu, then start the new version.":                              "Scrawl est déjà en cours d'exécution. Quittez-le depuis le menu de l'icône de la zone de notification, puis lancez la nouvelle version.",
 	"could not put the icon in the notification area: %v":                                                                  "impossible de placer l'icône dans la zone de notification : %v",
+
+	"could not open the window: %v": "impossible d'ouvrir la fenêtre : %v",
 }

@@ -298,4 +298,6 @@ var ja = map[string]string{
 	"Scrawl is already running (version %s). Quit it from the tray icon menu, then start the new version.":                 "Scrawl はすでに起動しています (バージョン %s)。通知領域のアイコンのメニューから終了してから、新しいバージョンを起動してください。",
 	"Scrawl is already running. Quit it from the tray icon menu, then start the new version.":                              "Scrawl はすでに起動しています。通知領域のアイコンのメニューから終了してから、新しいバージョンを起動してください。",
 	"could not put the icon in the notification area: %v":                                                                  "通知領域にアイコンを置けませんでした: %v",
+
+	"could not open the window: %v": "ウィンドウを開けませんでした: %v",
 }

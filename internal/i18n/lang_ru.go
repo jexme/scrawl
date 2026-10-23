@@ -298,4 +298,6 @@ var ru = map[string]string{
 	"Scrawl is already running (version %s). Quit it from the tray icon menu, then start the new version.":                 "Scrawl уже запущен (версия %s). Выйдите из него через меню значка в области уведомлений и запустите новую версию.",
 	"Scrawl is already running. Quit it from the tray icon menu, then start the new version.":                              "Scrawl уже запущен. Выйдите из него через меню значка в области уведомлений и запустите новую версию.",
 	"could not put the icon in the notification area: %v":                                                                  "не удалось поместить значок в область уведомлений: %v",
+
+	"could not open the window: %v": "не удалось открыть окно: %v",
 }

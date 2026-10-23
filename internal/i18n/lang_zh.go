@@ -298,4 +298,6 @@ var zh = map[string]string{
 	"Scrawl is already running (version %s). Quit it from the tray icon menu, then start the new version.":                 "Scrawl 已在运行（版本 %s）。请先从通知区域图标的菜单中退出它，然后启动新版本。",
 	"Scrawl is already running. Quit it from the tray icon menu, then start the new version.":                              "Scrawl 已在运行。请先从通知区域图标的菜单中退出它，然后启动新版本。",
 	"could not put the icon in the notification area: %v":                                                                  "无法将图标放入通知区域：%v",
+
+	"could not open the window: %v": "无法打开窗口：%v",
 }
