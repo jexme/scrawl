@@ -162,3 +162,36 @@ func TestAssignWarnsAboutBuiltin(t *testing.T) {
 		t.Errorf("первый ярлык: %v", got)
 	}
 }
+
+func TestFreeBuiltinRemovesOnlyThatCombination(t *testing.T) {
+	v := map[string]string{
+		"org.gnome.shell.keybindings show-screenshot-ui":       "['<Shift><Super>s', 'Print']",
+		"org.gnome.shell.keybindings screenshot":               "['<Alt>Print']",
+		"org.gnome.shell.keybindings show-screen-recording-ui": "['Print']",
+	}
+	f := install(t, v)
+	changed, err := FreeBuiltin("Print")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := parseStrings(v["org.gnome.shell.keybindings show-screenshot-ui"]); len(got) != 1 || got[0] != "<Shift><Super>s" {
+		t.Errorf("only Print must go, the other binding stays: %v", v["org.gnome.shell.keybindings show-screenshot-ui"])
+	}
+	if got := v["org.gnome.shell.keybindings show-screen-recording-ui"]; len(parseStrings(got)) != 0 {
+		t.Errorf("a setting with only Print becomes empty: %q", got)
+	}
+	if v["org.gnome.shell.keybindings screenshot"] != "['<Alt>Print']" {
+		t.Errorf("a different combination must not be touched: %q", v["org.gnome.shell.keybindings screenshot"])
+	}
+	if len(changed) != 2 || len(f.sets) != 2 {
+		t.Errorf("changed %v, writes %v", changed, f.sets)
+	}
+	// A second call changes nothing.
+	f.sets = nil
+	if changed, err := FreeBuiltin("Print"); err != nil || len(changed) != 0 || len(f.sets) != 0 {
+		t.Errorf("the second call must be a no-op: %v %v %v", changed, err, f.sets)
+	}
+	if _, err := FreeBuiltin("not a key!"); err == nil {
+		t.Error("an invalid combination must be refused")
+	}
+}

@@ -73,6 +73,22 @@ func main() {
 		return
 	}
 
+	// The very first launch with no arguments (from the application menu, say): there is nothing
+	// to capture with yet (no hotkey, on Wayland no monitors chosen), so the guide opens
+	// instead of a dark overlay with no explanation. The config file is created right away, so
+	// the guide appears once.
+	if runtime.GOOS == "linux" && len(os.Args) == 1 && settings.FirstRun() {
+		if ok, err := singleton.Acquire("scrawl-settings"); err == nil && !ok {
+			return
+		}
+		store := settings.NewStore()
+		if err := settings.Save(store.Get()); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		settingsui.RunWelcome(store)
+		return
+	}
+
 	// Pressing the hotkey again must not open a second overlay over the first
 	// (and send parallel requests to the portal).
 	if ok, err := singleton.Acquire("scrawl"); err == nil && !ok {
@@ -103,6 +119,7 @@ func main() {
 		T0:      t0,
 		Verbose: *verbose,
 		Fresh:   *fresh,
+		Hint:    editor.NextHint(),
 	})
 	if *exitAfter > 0 {
 		time.AfterFunc(*exitAfter, closeEditor)

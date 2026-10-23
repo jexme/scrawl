@@ -220,6 +220,44 @@ func Assign(accel, bin string) (Result, error) {
 	return res, nil
 }
 
+// FreeBuiltin removes the combination accel from the built-in GNOME shortcuts that use it: the
+// GNOME screenshot tool takes Print by default, so without this the Print key opens it instead
+// of Scrawl. It returns the names of the settings that were changed. Nothing else is touched,
+// and the user can bring a setting back with `gsettings reset org.gnome.shell.keybindings NAME`.
+// This only runs on the user's explicit request.
+func FreeBuiltin(accel string) ([]string, error) {
+	if onWindows {
+		return nil, nil
+	}
+	if err := ValidateAccel(accel); err != nil {
+		return nil, err
+	}
+	var changed []string
+	for _, b := range builtin {
+		out, err := gsettings("get", b[0], b[1])
+		if err != nil {
+			continue // not GNOME, or no such setting in this version
+		}
+		var keep []string
+		hit := false
+		for _, other := range parseStrings(out) {
+			if sameAccel(other, accel) {
+				hit = true
+			} else {
+				keep = append(keep, other)
+			}
+		}
+		if !hit {
+			continue
+		}
+		if _, err := gsettings("set", b[0], b[1], quoteList(keep)); err != nil {
+			return changed, fmt.Errorf("gsettings: %w", err)
+		}
+		changed = append(changed, b[1])
+	}
+	return changed, nil
+}
+
 // PreferredBinary returns the path worth writing into the shortcut: the permanent
 // ~/.local/bin/scrawl if it leads to the running binary, otherwise the binary itself.
 func PreferredBinary() (string, error) {

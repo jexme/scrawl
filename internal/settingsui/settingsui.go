@@ -89,6 +89,8 @@ type state struct {
 	grant      task   // granting permission for the fallback capture
 	monitors   task   // re-picking monitors
 	hotkey     task   // assigning the hotkey
+	freeKey    task   // turning off GNOME's own use of that key
+	welcome    bool   // first launch: open on the System tab with a short guide
 	hotkeyEd   widget.Editor
 	lang       widget.Enum        // UI language: auto, ru, en
 	tab        int                // selected tab
@@ -121,6 +123,14 @@ func newState(store *settings.Store) *state {
 	tabs := s.tabs()
 	s.tabBtns = make([]widget.Clickable, len(tabs))
 	s.tab = rememberedTab(tabs) // the window opens on the tab that was open when it was closed
+	if welcomeMode {
+		s.welcome = true
+		for i, t := range tabs {
+			if t.id == "system" {
+				s.tab = i
+			}
+		}
+	}
 	px := func(v float64) string { return fmt.Sprintf("%.1f px", v) }
 	s.dim = s.addSlider(0, 100, 1, func(v float64) string { return fmt.Sprintf("%.0f%%", v) },
 		func(c settings.Settings) float64 { return float64(c.DimPercent) },
@@ -202,6 +212,16 @@ func newState(store *settings.Store) *state {
 }
 
 // Run opens the settings window and runs until it is closed. Call it from main.
+// welcomeMode makes the next window a first-launch welcome: the System tab with a short guide.
+var welcomeMode bool
+
+// RunWelcome opens the settings window for the first launch of the program: on the System tab,
+// with the three steps that make the first screenshot possible.
+func RunWelcome(store *settings.Store) {
+	welcomeMode = true
+	Run(store)
+}
+
 func Run(store *settings.Store) {
 	i18n.SetLanguage(store.Get().Language)
 	app.ID = screencast.AppID
@@ -318,6 +338,19 @@ func (s *state) apply(gtx layout.Context) {
 				msg += i18n.T(". Warning: ") + res.Warning
 			}
 			return msg, nil
+		})
+	}
+	if s.freeKey.btn.Clicked(gtx) {
+		accel := strings.TrimSpace(s.hotkeyEd.Text())
+		s.start(&s.freeKey, func(func(string)) (string, error) {
+			changed, err := freeBuiltin(accel)
+			if err != nil {
+				return "", err
+			}
+			if len(changed) == 0 {
+				return fmt.Sprintf(i18n.T("No built-in GNOME shortcut uses %s: nothing to change"), accel), nil
+			}
+			return fmt.Sprintf(i18n.T("Turned off in GNOME for %s: %s"), accel, strings.Join(changed, ", ")), nil
 		})
 	}
 	if s.monitors.btn.Clicked(gtx) {
@@ -1137,25 +1170,39 @@ func (s *state) tabs() []settingsTab {
 // captureRows are the capture settings. An X11 session has no portal: there is no need to
 // pick monitors or grant permission, so a short explanation replaces those buttons.
 func (s *state) captureRows() []layout.Widget {
-	rows := []layout.Widget{
-		s.row(i18n.T("Launch hotkey"), i18n.T("Creates or updates a shortcut in the GNOME keyboard settings. Format: Print, <Super>s, <Control><Alt>p. Other shortcuts are not changed."),
-			s.hotkeyControl()),
+	var rows []layout.Widget
+	if s.welcome {
+		guide := i18n.T("Set up once. 1. Press \"Pick monitors again\" and \"Grant permission\" below (GNOME asks once per monitor: tick \"Remember this choice\"). 2. Type the hotkey (Print by default), press \"Assign\" and, if GNOME's own screenshot tool uses that key, \"Free the key\". 3. Press the hotkey, drag an area and press Enter.")
+		if onWindows {
+			guide = i18n.T("Set up once. 1. Type the hotkey (Print by default) and press \"Assign\". 2. Press the hotkey, drag an area and press Enter.")
+		} else if x11Session() {
+			guide = i18n.T("Set up once. 1. Type the hotkey (Print by default), press \"Assign\" and, if GNOME's own screenshot tool uses that key, \"Free the key\" (on KDE, Xfce and others bind the command \"scrawl\" to a key in the system keyboard settings). 2. Press the hotkey, drag an area and press Enter.")
+		}
+		rows = append(rows, s.row(i18n.T("Welcome to Scrawl"), guide, nil))
 	}
+	hotkeyRow := s.row(i18n.T("Launch hotkey"), i18n.T("Creates or updates a shortcut in the GNOME keyboard settings. Format: Print, <Super>s, <Control><Alt>p. Other shortcuts are not changed."),
+		s.hotkeyControl())
 	if onWindows {
 		// Windows has neither a portal nor GNOME: the screen is captured directly via GDI, and the
 		// combination is held by the tray icon (scrawl -tray).
-		rows[0] = s.row(i18n.T("Launch hotkey"), i18n.T("Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination."),
-			s.hotkeyControl())
-		return rows
+		return append(rows, s.row(i18n.T("Launch hotkey"), i18n.T("Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination."),
+			s.hotkeyControl()))
 	}
+	freeRow := s.row(i18n.T("Free the key from GNOME"),
+		i18n.T("GNOME's own screenshot tool takes Print before Scrawl does. This turns that built-in shortcut off for the key typed above; nothing else is changed. To undo: gsettings reset org.gnome.shell.keybindings show-screenshot-ui"),
+		s.taskControl(&s.freeKey, i18n.T("Free the key")))
 	if x11Session() {
-		return append(rows, s.row(i18n.T("X11 session"), i18n.T("The screen is captured directly, without a portal: there is no need to pick monitors or grant a permission. The clipboard needs xclip."), nil))
+		// An X11 session has no portal: no monitors to pick and no permission to grant.
+		return append(rows, hotkeyRow, freeRow,
+			s.row(i18n.T("X11 session"), i18n.T("The screen is captured directly, without a portal: there is no need to pick monitors or grant a permission. The clipboard needs xclip."), nil))
 	}
+	// Wayland: the capture setup comes first, it is what a new user has to do before anything else.
 	return append(rows,
 		s.row(i18n.T("Monitors"), i18n.T("Pick the monitors again: GNOME shows a dialog for each monitor. Needed after connecting or replacing a monitor. Formerly: scrawl -setup."),
 			s.taskControl(&s.monitors, i18n.T("Pick monitors again"))),
 		s.row(i18n.T("Fallback capture permission"), i18n.T("Needed by the fallback capture through the Screenshot portal when PipeWire gave no frame. Formerly: scrawl -grant-screenshot."),
 			s.taskControl(&s.grant, i18n.T("Grant permission"))),
+		hotkeyRow, freeRow,
 	)
 }
 

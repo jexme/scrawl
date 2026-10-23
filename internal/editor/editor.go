@@ -44,6 +44,7 @@ type Config struct {
 	T0      time.Time // the moment of the "hotkey press", for timing measurements
 	Verbose bool
 	Fresh   bool // do not suggest the region of the previous screenshot
+	Hint    bool // show the first-launch hint while nothing is selected
 }
 
 var (
@@ -314,6 +315,9 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 			m.layoutSizeLabel(gtx, m.selWin)
 		}
 		m.layoutToast(gtx, win, m.selWin)
+	}
+	if m.cfg.Hint && !m.hasSel && !m.dragging && m.alone() {
+		m.layoutHint(gtx, win)
 	}
 	m.layoutDock(gtx, win)
 	m.layoutLoupe(gtx, win, sx, sy)
@@ -1034,3 +1038,7 @@ func boolInt(b bool) int {
 	}
 	return 0
 }
+
+// alone reports that this is the only overlay or the first one: the hint is drawn once, not
+// on every monitor.
+func (m *monitor) alone() bool { return len(m.peers) <= 1 || m.peers[0] == m }

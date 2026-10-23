@@ -27,6 +27,7 @@ var (
 	grantPermission = screencast.GrantScreenshotPermission
 	setupMonitors   = screencast.SetupMonitors
 	assignHotkey    = hotkey.Assign
+	freeBuiltin     = hotkey.FreeBuiltin
 	currentHotkey   = hotkey.Current
 	hotkeyBinary    = hotkey.PreferredBinary
 	checkUpdate     = func() (update.Result, error) { return update.Check(context.Background(), version.String()) }

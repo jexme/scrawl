@@ -256,6 +256,13 @@ func readConfigRaw() (raw map[string]json.RawMessage, exists, ok bool) {
 	return nil, false, false
 }
 
+// FirstRun reports that the program has never been configured on this machine: there is no
+// config file, neither of this program nor of its old name (screen-editor).
+func FirstRun() bool {
+	_, exists, ok := readConfigRaw()
+	return !exists && !ok
+}
+
 // Load reads the settings from the file. Each key is decoded separately: a missing key
 // or one of the wrong type gets its default value and does not spoil the others.
 // No file or a corrupted one: default settings.

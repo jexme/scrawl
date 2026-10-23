@@ -815,9 +815,16 @@ func TestCaptureRowsDependOnSession(t *testing.T) {
 	wayland := len(s.captureRows())
 	x11Session = func() bool { return true }
 	x11 := len(s.captureRows())
-	if wayland != 3 || x11 != 2 {
-		t.Errorf("строк захвата: Wayland %d (ожидали 3), X11 %d (ожидали 2: без кнопок портала)", wayland, x11)
+	if wayland != 4 || x11 != 3 {
+		t.Errorf("строк захвата: Wayland %d (ожидали 4), X11 %d (ожидали 3: без кнопок портала)", wayland, x11)
 	}
+	// The first-launch welcome adds one card with the steps, in every kind of session.
+	s.welcome = true
+	if n := len(s.captureRows()); n != x11+1 {
+		t.Errorf("с приветствием строк %d, ожидали %d", n, x11+1)
+	}
+	s.layout(frameContext(700, 3300))
+	s.welcome = false
 	s.layout(frameContext(700, 3300)) // the window is drawn in an X11 session without errors
 
 	// Windows: no portal and no GNOME, only a single hotkey line remains.
@@ -969,3 +976,30 @@ var tmpX = func() string {
 	}
 	return "/tmp/x"
 }()
+
+func TestFreeKeyButton(t *testing.T) {
+	old := freeBuiltin
+	defer func() { freeBuiltin = old }()
+	var gotAccel string
+	freeBuiltin = func(accel string) ([]string, error) {
+		gotAccel = accel
+		return []string{"show-screenshot-ui"}, nil
+	}
+	s := testState(t)
+	s.hotkeyEd.SetText("  Print ")
+	s.freeKey.btn.Click()
+	s.layout(frameContext(700, 650))
+	waitDone(t, &s.freeKey)
+	msg, failed, _ := s.freeKey.status()
+	if gotAccel != "Print" || failed || !strings.Contains(msg, "show-screenshot-ui") {
+		t.Errorf("combination %q, message %q (failed %v)", gotAccel, msg, failed)
+	}
+
+	freeBuiltin = func(string) ([]string, error) { return nil, nil }
+	s.freeKey.btn.Click()
+	s.layout(frameContext(700, 650))
+	waitDone(t, &s.freeKey)
+	if msg, _, _ := s.freeKey.status(); !strings.Contains(msg, "nothing to change") {
+		t.Errorf("nothing to free: %q", msg)
+	}
+}

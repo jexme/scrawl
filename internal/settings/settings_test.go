@@ -789,3 +789,16 @@ func TestStoreUpdateKeepsOtherProcessChanges(t *testing.T) {
 		t.Errorf("after saving, the store must hold the merged settings: %q", window.Get().CustomColor)
 	}
 }
+
+func TestFirstRun(t *testing.T) {
+	sandbox(t)
+	if !FirstRun() {
+		t.Fatal("with no config file this is the first run")
+	}
+	if err := Save(Default()); err != nil {
+		t.Fatal(err)
+	}
+	if FirstRun() {
+		t.Error("after the config file is written it is no longer the first run")
+	}
+}
