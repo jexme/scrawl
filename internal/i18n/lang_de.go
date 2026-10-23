@@ -289,4 +289,6 @@ var de = map[string]string{
 	"screen capture is only available on Linux (GNOME, Wayland) and Windows for now; the settings window works: scrawl -settings":                                                 "Bildschirmaufnahme gibt es bisher nur unter Linux (GNOME, Wayland) und Windows; das Einstellungsfenster funktioniert: scrawl -settings",
 	"Hotkey %s is unavailable (%v). Choose another in the settings: scrawl -settings":                                                                                             "Tastenkombination %s ist nicht verfügbar (%v). Wählen Sie in den Einstellungen eine andere: scrawl -settings",
 	"Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination.": "Funktioniert, solange das Symbol im Infobereich läuft. Format: Print, <Super>s, <Control><Alt>p. Print kann von einem anderen Programm belegt sein (Greenshot, Snipping Tool): wählen Sie dann eine andere Kombination.",
+
+	"autostart was not set: the program is in a temporary folder (%s); move it to a permanent folder first": "Autostart wurde nicht aktiviert: Das Programm liegt in einem temporären Ordner (%s); verschieben Sie es zuerst in einen dauerhaften Ordner",
 }

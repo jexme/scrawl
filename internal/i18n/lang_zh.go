@@ -289,4 +289,6 @@ var zh = map[string]string{
 	"screen capture is only available on Linux (GNOME, Wayland) and Windows for now; the settings window works: scrawl -settings":                                                 "屏幕截图目前仅支持 Linux（GNOME、Wayland）和 Windows；设置窗口可用：scrawl -settings",
 	"Hotkey %s is unavailable (%v). Choose another in the settings: scrawl -settings":                                                                                             "快捷键 %s 不可用（%v）。请在设置中选择其他快捷键：scrawl -settings",
 	"Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination.": "仅在托盘图标运行时有效。格式：Print、<Super>s、<Control><Alt>p。Print 可能被其他程序占用（Greenshot、截图工具），此时请换一个组合。",
+
+	"autostart was not set: the program is in a temporary folder (%s); move it to a permanent folder first": "未启用开机自启动：程序位于临时文件夹（%s）中；请先将其移到固定文件夹",
 }

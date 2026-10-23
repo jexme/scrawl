@@ -289,4 +289,6 @@ var ko = map[string]string{
 	"screen capture is only available on Linux (GNOME, Wayland) and Windows for now; the settings window works: scrawl -settings":                                                 "화면 캡처는 아직 Linux(GNOME, Wayland)와 Windows에서만 사용할 수 있습니다. 설정 창은 동작합니다: scrawl -settings",
 	"Hotkey %s is unavailable (%v). Choose another in the settings: scrawl -settings":                                                                                             "단축키 %s을(를) 사용할 수 없습니다(%v). 설정에서 다른 단축키를 선택하세요: scrawl -settings",
 	"Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination.": "트레이 아이콘이 실행 중일 때만 동작합니다. 형식: Print, <Super>s, <Control><Alt>p. Print를 다른 프로그램(Greenshot, 캡처 도구)이 사용 중일 수 있습니다. 그럴 때는 다른 조합을 선택하세요.",
+
+	"autostart was not set: the program is in a temporary folder (%s); move it to a permanent folder first": "자동 시작이 설정되지 않았습니다: 프로그램이 임시 폴더(%s)에 있습니다. 먼저 영구 폴더로 옮기세요",
 }
