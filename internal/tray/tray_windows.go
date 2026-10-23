@@ -7,7 +7,10 @@ import (
 	"fmt"
 	"runtime"
 	"syscall"
+	"time"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 
 	"github.com/jexme/scrawl/internal/hotkey"
 	"github.com/jexme/scrawl/internal/i18n"
@@ -30,6 +33,7 @@ var (
 	procRegisterHotKey         = user32.NewProc("RegisterHotKey")
 	procUnregisterHotKey       = user32.NewProc("UnregisterHotKey")
 	procSetTimer               = user32.NewProc("SetTimer")
+	procKillTimer              = user32.NewProc("KillTimer")
 	procCreatePopupMenu        = user32.NewProc("CreatePopupMenu")
 	procAppendMenuW            = user32.NewProc("AppendMenuW")
 	procTrackPopupMenu         = user32.NewProc("TrackPopupMenu")
@@ -58,7 +62,7 @@ const (
 	nimAdd, nimModify, nimDelete = 0, 1, 2
 	nifMessage, nifIcon, nifTip  = 0x1, 0x2, 0x4
 	nifInfo                      = 0x10
-	niifWarning                  = 0x2
+	niifInfo, niifWarning        = 0x1, 0x2
 
 	tpmRightButton = 0x0002
 	tpmBottomAlign = 0x0020
@@ -70,7 +74,11 @@ const (
 
 	modNoRepeat = 0x4000
 	hotkeyID    = 1
-	watchTimer  = 1
+	watchTimer  = 1 // polls the settings file for a new key combination
+	addTimer    = 2 // retries adding the icon while Explorer is not ready
+
+	addRetry  = 3 * time.Second // how often a failed NIM_ADD is retried
+	addGiveUp = 2 * time.Minute // only after this long without an icon is the user told
 )
 
 type point struct{ X, Y int32 }
@@ -128,6 +136,12 @@ type state struct {
 	accel       string // the combination we tried to register
 	hotkeyReady bool
 	warned      bool // the hint about the combination being taken has already been shown
+
+	iconAdded bool      // the icon is in the notification area
+	failSince time.Time // when adding the icon first failed (zero: no failure pending)
+	errShown  bool      // the "no icon" error has already been shown
+	welcomed  bool      // the one-time balloon has been shown
+	tip       string    // the icon tooltip
 }
 
 var cur *state
@@ -147,7 +161,10 @@ func Run(h Handlers, stop <-chan struct{}) error {
 	runtime.LockOSThread() // the window and the message loop belong to a single thread
 	defer runtime.UnlockOSThread()
 
-	s := &state{h: h}
+	s := &state{h: h, tip: "Scrawl"}
+	if h.Version != "" {
+		s.tip = "Scrawl " + h.Version
+	}
 	cur = s
 	userQuit := h.Quit
 	s.h.Quit = func() {
@@ -173,10 +190,9 @@ func Run(h Handlers, stop <-chan struct{}) error {
 	s.taskbarMsg = uint32(r)
 
 	s.icon = makeIcon()
-	if err := s.notify(nimAdd, nifMessage|nifIcon|nifTip, "", ""); err != nil {
-		procDestroyWindow.Call(hwnd)
-		return err
-	}
+	// At logon Explorer may not be ready yet and the first NIM_ADD fails; that must not end
+	// the program (it would never come back). addIcon retries on a timer and on TaskbarCreated.
+	s.addIcon()
 	s.syncHotkey()
 	// The combination is changed in the settings window (another process): every couple of
 	// seconds we check the file.
@@ -217,6 +233,10 @@ func wndProc(hwnd, message, wParam, lParam uintptr) uintptr {
 			s.shot()
 			return 0
 		case wmTimer:
+			if wParam == addTimer {
+				s.addIcon()
+				return 0
+			}
 			s.syncHotkey()
 			return 0
 		case wmClose:
@@ -224,7 +244,7 @@ func wndProc(hwnd, message, wParam, lParam uintptr) uintptr {
 			return 0
 		case wmDestroy:
 			procUnregisterHotKey.Call(hwnd, hotkeyID)
-			s.notify(nimDelete, 0, "", "")
+			s.notify(nimDelete, 0, "", "", 0)
 			if s.icon != 0 {
 				procDestroyIcon.Call(s.icon)
 			}
@@ -232,13 +252,48 @@ func wndProc(hwnd, message, wParam, lParam uintptr) uintptr {
 			return 0
 		}
 		if s.taskbarMsg != 0 && uint32(message) == s.taskbarMsg {
-			// Explorer restarted: the icon disappeared along with the taskbar, so we add it again.
-			s.notify(nimAdd, nifMessage|nifIcon|nifTip, "", "")
+			// Explorer (re)started: the icon is gone with the old taskbar, so we add it again.
+			s.iconAdded = false
+			s.addIcon()
 			return 0
 		}
 	}
 	r, _, _ := procDefWindowProcW.Call(hwnd, message, wParam, lParam)
 	return r
+}
+
+// addIcon puts the icon into the notification area. On failure it arms a retry timer and,
+// only after addGiveUp, tells the user once; the hotkey keeps working without the icon.
+func (s *state) addIcon() {
+	const flags = nifMessage | nifIcon | nifTip
+	err := s.notify(nimAdd, flags, "", "", 0)
+	if err != nil && s.notify(nimModify, flags, "", "", 0) == nil {
+		// Explorer can time out NIM_ADD although the icon was added: then it already exists.
+		err = nil
+	}
+	if err != nil {
+		if s.failSince.IsZero() {
+			s.failSince = time.Now()
+		}
+		procSetTimer.Call(s.hwnd, addTimer, uintptr(addRetry/time.Millisecond), 0)
+		if !s.errShown && time.Since(s.failSince) >= addGiveUp {
+			s.errShown = true
+			// MessageBox blocks, and the message loop must keep running: another goroutine.
+			go func() {
+				t, _ := windows.UTF16PtrFromString("Scrawl")
+				m, _ := windows.UTF16PtrFromString(fmt.Sprintf(i18n.T("could not put the icon in the notification area: %v"), err))
+				windows.MessageBox(0, m, t, windows.MB_OK|windows.MB_ICONWARNING|windows.MB_SETFOREGROUND)
+			}()
+		}
+		return
+	}
+	procKillTimer.Call(s.hwnd, addTimer)
+	s.iconAdded = true
+	s.failSince, s.errShown = time.Time{}, false
+	if s.h.Welcome != "" && !s.welcomed {
+		s.welcomed = true
+		s.notify(nimModify, nifMessage|nifIcon|nifTip, "Scrawl", s.h.Welcome, niifInfo)
+	}
 }
 
 func (s *state) shot() {
@@ -247,13 +302,14 @@ func (s *state) shot() {
 	}
 }
 
-// notify adds, changes or removes the icon; balloon (if not empty) shows a popup hint.
-func (s *state) notify(op uintptr, flags uint32, balloonTitle, balloon string) error {
+// notify adds, changes or removes the icon; balloon (if not empty) shows a popup hint with
+// the given NIIF_* icon (0: none).
+func (s *state) notify(op uintptr, flags uint32, balloonTitle, balloon string, infoIcon uint32) error {
 	nid := notifyIconData{Size: uint32(unsafe.Sizeof(notifyIconData{})), Wnd: s.hwnd, ID: 1, Flags: flags, CallbackMessage: wmTrayIcon, Icon: s.icon}
-	utf16Copy(nid.Tip[:], "Scrawl")
+	utf16Copy(nid.Tip[:], s.tip)
 	if balloon != "" {
 		nid.Flags |= nifInfo
-		nid.InfoFlags = niifWarning
+		nid.InfoFlags = infoIcon
 		utf16Copy(nid.InfoTitle[:], balloonTitle)
 		utf16Copy(nid.Info[:], balloon)
 	}
@@ -300,9 +356,12 @@ func (s *state) syncHotkey() {
 	if s.warned {
 		return
 	}
-	s.warned = true
-	s.notify(nimModify, nifMessage|nifIcon|nifTip, "Scrawl",
-		fmt.Sprintf(i18n.T("Hotkey %s is unavailable (%v). Choose another in the settings: scrawl -settings"), accel, err))
+	// Without the icon (Explorer not ready yet) the balloon cannot be shown: stay unwarned,
+	// the next timer tick tries again.
+	if s.notify(nimModify, nifMessage|nifIcon|nifTip, "Scrawl",
+		fmt.Sprintf(i18n.T("Hotkey %s is unavailable (%v). Choose another in the settings: scrawl -settings"), accel, err), niifWarning) == nil {
+		s.warned = true
+	}
 }
 
 func (s *state) showMenu() {

@@ -29,6 +29,7 @@ import (
 	"github.com/jexme/scrawl/internal/screencast"
 	"github.com/jexme/scrawl/internal/settings"
 	"github.com/jexme/scrawl/internal/version"
+	"github.com/jexme/scrawl/internal/windowerr"
 )
 
 var (
@@ -244,6 +245,7 @@ func loop(s *state) {
 	for {
 		switch e := w.Event().(type) {
 		case app.DestroyEvent:
+			windowerr.Report(e.Err) // e.Err != nil: the window failed; do not exit silently
 			return
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)

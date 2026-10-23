@@ -19,6 +19,10 @@ type Handlers struct {
 	Shot     func() // take a shot
 	Settings func() // open the settings
 	Quit     func() // remove the tray icon (Run itself returns after this)
+
+	// Windows only (the StatusNotifierItem ignores them):
+	Version string // program version, shown in the icon tooltip
+	Welcome string // one-time balloon text shown once the icon is in the notification area
 }
 
 // layout is a menu node in the com.canonical.dbusmenu format: (ia{sv}av).

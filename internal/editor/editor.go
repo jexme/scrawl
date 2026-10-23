@@ -35,6 +35,7 @@ import (
 	"github.com/jexme/scrawl/internal/keymap"
 	"github.com/jexme/scrawl/internal/screencast"
 	"github.com/jexme/scrawl/internal/settings"
+	"github.com/jexme/scrawl/internal/windowerr"
 )
 
 // Config holds the editor launch parameters.
@@ -241,6 +242,7 @@ func (m *monitor) loop() {
 	for {
 		switch e := w.Event().(type) {
 		case app.DestroyEvent:
+			windowerr.Report(e.Err) // e.Err != nil: the window failed; do not exit silently
 			// The window was closed (by us or by the compositor): remember the region, close the other
 			// windows and exit once all of them are closed.
 			m.rememberRegion()

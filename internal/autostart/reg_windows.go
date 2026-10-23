@@ -4,6 +4,7 @@ package autostart
 
 import (
 	"errors"
+	"os"
 
 	"golang.org/x/sys/windows/registry"
 )
@@ -34,7 +35,29 @@ func regEnable(bin string) error {
 		return err
 	}
 	defer k.Close()
-	return k.SetStringValue(regValueName, `"`+bin+`" -tray`)
+	return k.SetStringValue(regValueName, runCommand(bin))
+}
+
+// regHeal rewrites the Run value when it exists but differs from the command for bin.
+func regHeal(bin string) (bool, error) {
+	k, err := registry.OpenKey(registry.CURRENT_USER, regKeyPath, registry.QUERY_VALUE|registry.SET_VALUE)
+	if errors.Is(err, registry.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	defer k.Close()
+	cur, _, err := k.GetStringValue(regValueName)
+	exists := err == nil
+	if err != nil && !errors.Is(err, registry.ErrNotExist) {
+		return false, err
+	}
+	// %TEMP% and %TMP% can differ, and the process may see either spelling of the path.
+	if !needsRepair(cur, exists, bin, os.TempDir(), os.Getenv("TEMP"), os.Getenv("TMP")) {
+		return false, nil
+	}
+	return true, k.SetStringValue(regValueName, runCommand(bin))
 }
 
 func regDisable() error {

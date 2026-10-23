@@ -10,10 +10,21 @@
     "shortcuts": [
         ["scrawl.exe", "Scrawl", "-tray"]
     ],
-    "notes": "Запуск значка в трее и горячая клавиша: scrawl -tray. Настройки: scrawl -settings. Print может занимать другая программа (Greenshot, Ножницы).",
-    "checkver": "github",
+    "notes": [
+        "Scrawl lives in the notification area: start it from the Start menu (Scrawl) or run 'scrawl'. Press Print to take a screenshot.",
+        "Settings: scrawl -settings. Another program may hold Print (Greenshot, Snipping Tool): pick another key in the settings.",
+        "Before updating, quit the running Scrawl from its tray icon menu, otherwise the old version keeps serving the hotkey."
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/jexme/scrawl/releases",
+        "jsonpath": "$[0].tag_name",
+        "regex": "v(.+)"
+    },
     "autoupdate": {
         "url": "https://github.com/jexme/scrawl/releases/download/v$version/scrawl-v$version-windows-amd64.zip",
-        "extract_dir": "scrawl-v$version-windows-amd64"
+        "extract_dir": "scrawl-v$version-windows-amd64",
+        "hash": {
+            "url": "$url.sha256"
+        }
     }
 }
