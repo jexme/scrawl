@@ -192,8 +192,9 @@ Open the settings window (`scrawl -settings`, tab "System") and use these button
    This lets Scrawl use the slower Screenshot portal on the rare shot when
    PipeWire gives no frame.
 3. **Set a hotkey:** on GNOME the archive installer (`install.sh`) and `make install` assign `Print` themselves unless another custom shortcut already uses it. After installing with apt or the `.deb`, or to change the key: the "Launch hotkey" field and the "Assign" button (default `Print`),
-   or `scripts/gnome-hotkey.sh [KEY]`. It creates a GNOME custom shortcut and never
-   overwrites one that is taken. If `Print` still opens GNOME's own screenshot tool, turn that
+   or `scripts/gnome-hotkey.sh [KEY]`. It creates a GNOME custom shortcut named "scrawl" (or updates it
+   if it exists, so running it again never makes a second one) and never
+   overwrites someone else's shortcut that is taken. If `Print` still opens GNOME's own screenshot tool, turn that
    off in *Settings → Keyboard → View and Customize Shortcuts → Screenshots*.
 
 ### Upgrading from screen-editor
@@ -298,6 +299,31 @@ Every key is described in the [settings reference](docs/SETTINGS.md).
 - **No notifications.** Install `libnotify-bin` (the `notify-send` command), and check that notifications are on in the settings.
 - **No tray icon.** Enable the AppIndicator GNOME extension.
 - **`Print` opens GNOME's screenshot tool.** Turn it off in the keyboard shortcuts (see step 3).
+
+## Uninstall
+
+**apt or `.deb`:**
+
+```bash
+sudo apt remove scrawl     # or: sudo apt purge scrawl (the package keeps no files outside /usr, so they are the same)
+sudo rm /etc/apt/sources.list.d/scrawl.sources   # optional: forget the repository (scrawl.list for the old form)
+```
+
+apt cannot touch your home folder, so some per-user leftovers stay: the GNOME hotkey, the autostart entry if you
+turned it on, and your settings. Remove the hotkey with Scrawl's `gnome-hotkey.sh` (it is in `scripts/` of the
+repository and in the release archive) or by hand in *Settings → Keyboard → View and Customize Shortcuts → Custom
+Shortcuts*; the rest is plain files:
+
+```bash
+sh gnome-hotkey.sh --remove
+rm -f ~/.config/autostart/io.github.jexme.Scrawl.desktop
+rm -rf ~/.config/scrawl ~/.cache/scrawl     # optional: settings and cache
+```
+
+**Release archive or `make install`:** run `./uninstall.sh` from the unpacked archive (`make uninstall` in a source
+checkout). It removes the binary, the `.desktop` file, the GNOME shortcut and the autostart entry. Add `--purge`
+(`make uninstall PURGE=1`) to delete the settings (`~/.config/scrawl`) and the cache (`~/.cache/scrawl`) too. Pass
+the same `PREFIX` as for the install if you changed it. Your screenshots in `~/Pictures/Screenshots` are never touched.
 
 ## How it works
 
