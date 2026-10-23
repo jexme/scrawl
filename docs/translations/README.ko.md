@@ -25,7 +25,7 @@ sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/source
 sudo apt update && sudo apt install scrawl
 ```
 
-서명 키가 `.sources` 파일 안에 들어 있으므로 키링을 따로 관리할 필요가 없습니다. 패키지는 **amd64**용만 제공됩니다. arm64에서는 [소스에서 빌드](#설치)하세요.
+서명 키가 `.sources` 파일 안에 들어 있으므로 키링을 따로 관리할 필요가 없습니다. 패키지는 **amd64**와 **arm64**용이 제공됩니다(arm64 빌드는 최선을 다하는 방식입니다). 다른 아키텍처에서는 [소스에서 빌드](#설치)하세요.
 
 **2. 한 번만 설정:** 애플리케이션 메뉴에서 Scrawl을 실행합니다(또는 `scrawl`을 실행). 처음 실행하면 “시스템” 탭에 짧은 안내가 열립니다(언제든 `scrawl -settings`로 열 수 있습니다). Wayland에서는 “캡처 설정”을 누릅니다(GNOME이 모니터마다 한 번씩 묻습니다. 대화상자마다 다른 모니터를 고르고 “이 선택 기억”에 체크하세요). 그다음 단축키(기본값 `Print`)를 입력하고 “지정”을 누릅니다. GNOME의 기본 스크린샷 도구도 `Print`를 사용합니다. “키 해제”를 누르면 그 기본 단축키가 꺼집니다(그 키 하나만 꺼지며, 되돌릴 수 있습니다). X11에서는 단축키만 있으면 됩니다.
 
@@ -86,7 +86,7 @@ sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/source
 sudo apt update && sudo apt install scrawl
 ```
 
-패키지는 amd64용만 제공됩니다(arm64 사용자는 아래를 참고해 소스에서 빌드하세요). 저장소는 다음 키로 서명되어 있습니다: `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`. 이 키는 `scrawl.sources`에 들어 있습니다.
+패키지는 amd64와 arm64용이 제공됩니다(arm64 빌드는 최선을 다하는 방식이며, 다른 아키텍처에서는 아래를 참고해 소스에서 빌드하세요). 저장소는 다음 키로 서명되어 있습니다: `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`. 이 키는 `scrawl.sources`에 들어 있습니다.
 
 오래된 시스템(Ubuntu 20.04, Debian 11: apt 2.4 미만은 `.sources` 파일 안의 키를 읽지 못합니다)에서는 대신 별도의 키링과 한 줄짜리 소스를 사용하세요(명령과 파일 이름은 영어 README와 같습니다):
 

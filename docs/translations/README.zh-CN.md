@@ -25,7 +25,7 @@ sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/source
 sudo apt update && sudo apt install scrawl
 ```
 
-`.sources` 文件里已经带有签名密钥，不需要另外管理密钥环。软件包仅提供 **amd64** 版本；arm64 请[从源码构建](#安装)。
+`.sources` 文件里已经带有签名密钥，不需要另外管理密钥环。软件包提供 **amd64** 和 **arm64** 版本（arm64 版本尽力而为）；其他架构请[从源码构建](#安装)。
 
 **2. 设置一次：**从应用菜单启动 Scrawl（或运行 `scrawl`）：首次启动会在“系统”标签页打开一份简短的引导（任何时候都可以用 `scrawl -settings` 打开）。在 Wayland 上点击“设置截图”（GNOME 会对每个显示器询问一次：在每个对话框里选择不同的显示器，并勾选“记住此选择”）。然后输入快捷键（默认 `Print`），点击“分配”。GNOME 自带的截图工具也使用 `Print`：点击“释放按键”可关闭这个内置快捷键（只关闭这一个键，并且可以撤销）。在 X11 上只需要设置快捷键。
 
@@ -86,7 +86,7 @@ sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/source
 sudo apt update && sudo apt install scrawl
 ```
 
-软件包仅提供 amd64 版本（arm64 用户请从源码构建，见下文）。仓库使用以下密钥签名：`E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`，该密钥已嵌入 `scrawl.sources`。
+软件包提供 amd64 和 arm64 版本（arm64 版本尽力而为；其他架构请从源码构建，见下文）。仓库使用以下密钥签名：`E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`，该密钥已嵌入 `scrawl.sources`。
 
 在较旧的系统上（Ubuntu 20.04、Debian 11：apt 低于 2.4，无法读取 `.sources` 文件里的密钥），请改用单独的密钥环和单行格式的源（命令和文件名与英文版 README 相同，保持不变）：
 

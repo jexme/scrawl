@@ -26,7 +26,7 @@ sudo apt update && sudo apt install scrawl
 ```
 
 Die `.sources`-Datei enthält den Signaturschlüssel selbst, einen separaten Schlüsselbund muss man also nicht verwalten. Die Pakete
-gibt es nur für **amd64**; unter arm64 [aus dem Quellcode bauen](#installation).
+gibt es für **amd64** und **arm64** (der arm64-Build ist ein Best-Effort); auf anderen Architekturen [aus dem Quellcode bauen](#installation).
 
 **2. Einmal einrichten:** Starten Sie Scrawl aus dem Anwendungsmenü (oder führen Sie `scrawl` aus): Beim ersten Start öffnet sich eine kurze Anleitung
 im Tab „System“ (Sie können sie jederzeit mit `scrawl -settings` öffnen). Drücken Sie unter Wayland „Aufnahme einrichten“
@@ -99,7 +99,7 @@ sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/source
 sudo apt update && sudo apt install scrawl
 ```
 
-Die Pakete gibt es nur für amd64 (unter arm64 aus dem Quellcode bauen, siehe unten). Das Repository ist mit dem
+Die Pakete gibt es für amd64 und arm64 (der arm64-Build ist ein Best-Effort; auf anderen Architekturen aus dem Quellcode bauen, siehe unten). Das Repository ist mit dem
 Schlüssel `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0` signiert, der in `scrawl.sources` eingebettet ist.
 
 Auf älteren Systemen (Ubuntu 20.04, Debian 11: apt älter als 2.4 kann einen Schlüssel in einer `.sources`-Datei nicht lesen) stattdessen einen

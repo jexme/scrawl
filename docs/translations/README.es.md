@@ -26,7 +26,7 @@ sudo apt update && sudo apt install scrawl
 ```
 
 El archivo `.sources` lleva dentro la clave de firma, así que no hay que gestionar ningún llavero aparte. Los paquetes se
-compilan solo para **amd64**; en arm64 [compila desde el código fuente](#instalación).
+compilan para **amd64** y **arm64** (la de arm64 es de mejor esfuerzo); en otras arquitecturas [compila desde el código fuente](#instalación).
 
 **2. Configura una sola vez:** inicia Scrawl desde el menú de aplicaciones (o ejecuta `scrawl`): el primer arranque abre una breve guía
 en la pestaña «Sistema» (puedes abrirla cuando quieras con `scrawl -settings`). En Wayland pulsa «Configurar la captura»
@@ -101,7 +101,7 @@ sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/source
 sudo apt update && sudo apt install scrawl
 ```
 
-Los paquetes se compilan solo para amd64 (en arm64: compila desde el código fuente, ver más abajo). El repositorio está firmado con la
+Los paquetes se compilan para amd64 y arm64 (la de arm64 es de mejor esfuerzo; en otras arquitecturas: compila desde el código fuente, ver más abajo). El repositorio está firmado con la
 clave `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`, que va incluida en `scrawl.sources`.
 
 En sistemas más antiguos (Ubuntu 20.04, Debian 11: un apt anterior a 2.4 no puede leer una clave dentro de un archivo `.sources`) usa en su lugar un

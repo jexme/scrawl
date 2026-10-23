@@ -25,8 +25,8 @@ sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/source
 sudo apt update && sudo apt install scrawl
 ```
 
-Le fichier `.sources` contient lui-même la clé de signature, il n'y a donc pas de trousseau séparé à gérer. Les paquets ne sont
-construits que pour **amd64** ; sur arm64, [compilez depuis les sources](#installation).
+Le fichier `.sources` contient lui-même la clé de signature, il n'y a donc pas de trousseau séparé à gérer. Les paquets sont
+construits pour **amd64** et **arm64** (la version arm64 est faite au mieux) ; sur les autres architectures, [compilez depuis les sources](#installation).
 
 **2. Régler une fois :** lancez Scrawl depuis le menu des applications (ou exécutez `scrawl`) : le premier lancement ouvre un court guide
 dans l'onglet « Système » (vous pouvez l'ouvrir à tout moment avec `scrawl -settings`). Sous Wayland, appuyez sur « Régler la capture »
@@ -99,7 +99,7 @@ sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/source
 sudo apt update && sudo apt install scrawl
 ```
 
-Les paquets ne sont construits que pour amd64 (sur arm64, compilez depuis les sources, voir plus bas). Le dépôt est signé avec la
+Les paquets sont construits pour amd64 et arm64 (la version arm64 est faite au mieux ; sur les autres architectures, compilez depuis les sources, voir plus bas). Le dépôt est signé avec la
 clé `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`, qui est incluse dans `scrawl.sources`.
 
 Sur les systèmes plus anciens (Ubuntu 20.04, Debian 11 : un apt antérieur à 2.4 ne sait pas lire une clé dans un fichier `.sources`), utilisez plutôt un

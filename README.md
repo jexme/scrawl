@@ -29,7 +29,7 @@ sudo apt update && sudo apt install scrawl
 ```
 
 The `.sources` file carries the signing key inside it, so there is no separate keyring to manage. The packages are
-built for **amd64** only; on arm64 [build from source](#install).
+built for **amd64** and **arm64** (the arm64 build is best effort); on other architectures [build from source](#install).
 
 **2. Set up once:** start Scrawl from the application menu (or run `scrawl`): the first launch opens a short guide
 on the tab "System" (you can open it any time with `scrawl -settings`). On Wayland press "Set up capture"
@@ -111,7 +111,7 @@ sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/source
 sudo apt update && sudo apt install scrawl
 ```
 
-The packages are built for amd64 only (arm64 users: build from source, see below). The repository is signed with the
+The packages are built for amd64 and arm64 (the arm64 build is best effort; on other architectures build from source, see below). The repository is signed with the
 key `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`, which is embedded in `scrawl.sources`.
 
 On older systems (Ubuntu 20.04, Debian 11: apt older than 2.4 cannot read a key inside a `.sources` file) use a
@@ -158,6 +158,8 @@ make install            # builds and installs to ~/.local (PREFIX=/usr/local for
 
 You need Go (the version from `go.mod`). No `sudo`? `scripts/fetch-pipewire-headers.sh`
 unpacks the PipeWire headers into `.deps/`, and the Makefile picks them up.
+
+On arm64 take `scrawl_VERSION_arm64.deb` or `scrawl-VERSION-linux-arm64.tar.gz` and check them against `SHA256SUMS-arm64`.
 
 Make sure `~/.local/bin` is in your `PATH`.
 
