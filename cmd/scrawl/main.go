@@ -250,12 +250,22 @@ func runTray(exitAfter time.Duration) {
 // watchUpdates checks for a new version when the tray icon starts and then once a day;
 // it announces each new version once. Works only if the check is enabled in the settings.
 func watchUpdates() {
+	failures := 0
 	for {
-		if res, err := update.Check(context.Background(), version.String()); err == nil && res.Newer && !update.AlreadyNotified(res.Latest) {
+		res, err := update.Check(context.Background(), version.String())
+		if err == nil && res.Newer && !update.AlreadyNotified(res.Latest) {
 			notify(i18n.T("A new version is available"), res.Message())
 			update.MarkNotified(res.Latest)
 		}
-		time.Sleep(24 * time.Hour)
+		wait := 24 * time.Hour
+		if err != nil && failures < 5 {
+			// At login the network may not be up yet: try again soon instead of waiting a day.
+			failures++
+			wait = 2 * time.Minute
+		} else {
+			failures = 0
+		}
+		time.Sleep(wait)
 		if !settings.Load().CheckUpdates {
 			return // turned off in the settings
 		}

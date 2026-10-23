@@ -289,4 +289,8 @@ var zh = map[string]string{
 	"screen capture is only available on Linux (GNOME, Wayland) and Windows for now; the settings window works: scrawl -settings":                                                 "屏幕截图目前仅支持 Linux（GNOME、Wayland）和 Windows；设置窗口可用：scrawl -settings",
 	"Hotkey %s is unavailable (%v). Choose another in the settings: scrawl -settings":                                                                                             "快捷键 %s 不可用（%v）。请在设置中选择其他快捷键：scrawl -settings",
 	"Works while the tray icon is running. Format: Print, <Super>s, <Control><Alt>p. Another program may hold Print (Greenshot, Snipping Tool): then choose another combination.": "仅在托盘图标运行时有效。格式：Print、<Super>s、<Control><Alt>p。Print 可能被其他程序占用（Greenshot、截图工具），此时请换一个组合。",
+	"To update: sudo apt update && sudo apt install --only-upgrade scrawl":                                                                                                        "更新方法：sudo apt update && sudo apt install --only-upgrade scrawl",
+	"To update: download the new archive and run its install.sh":                                                                                                                  "更新方法：下载新的压缩包并运行其中的 install.sh",
+	"To update: scoop update scrawl (or install again from the new manifest address)":                                                                                             "更新方法：scoop update scrawl（或使用新清单的地址重新安装）",
+	"To update: download the new installer or zip from the releases page; quit Scrawl from the tray icon menu first":                                                              "更新方法：从发布页下载新的安装程序或 zip；请先通过托盘图标菜单退出 Scrawl",
 }
