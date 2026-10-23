@@ -45,7 +45,7 @@ static void on_state_changed(void *data, enum pw_stream_state old,
 	struct capture *c = data;
 	(void)old;
 	if (state == PW_STREAM_STATE_ERROR)
-		finish(c, SEC_STREAM, error ? error : "ошибка потока PipeWire");
+		finish(c, SEC_STREAM, error ? error : "PipeWire stream error");
 }
 
 // After the format is negotiated we ask for plain memory (memfd/memptr): a dma-buf
@@ -132,7 +132,7 @@ static void on_process(void *data)
 static void on_timeout(void *data, uint64_t expirations)
 {
 	(void)expirations;
-	finish((struct capture *)data, SEC_TIMEOUT, "кадр не пришёл вовремя");
+	finish((struct capture *)data, SEC_TIMEOUT, "the frame did not arrive in time");
 }
 
 static const struct pw_stream_events stream_events = {
@@ -170,21 +170,21 @@ int sec_capture(int fd, uint32_t node, int timeout_ms, uint8_t **pixels,
 	c.loop = pw_main_loop_new(NULL);
 	if (!c.loop) {
 		close(fd);
-		snprintf(err, errlen, "не удалось создать цикл PipeWire");
+		snprintf(err, errlen, "could not create the PipeWire loop");
 		return SEC_SETUP;
 	}
 	context = pw_context_new(pw_main_loop_get_loop(c.loop), NULL, 0);
 	if (!context) {
 		close(fd);
 		pw_main_loop_destroy(c.loop);
-		snprintf(err, errlen, "не удалось создать контекст PipeWire");
+		snprintf(err, errlen, "could not create the PipeWire context");
 		return SEC_SETUP;
 	}
 	core = pw_context_connect_fd(context, fd, NULL, 0); // takes ownership of the fd
 	if (!core) {
 		pw_context_destroy(context);
 		pw_main_loop_destroy(c.loop);
-		snprintf(err, errlen, "не удалось подключиться к PipeWire по fd");
+		snprintf(err, errlen, "could not connect to PipeWire through the fd");
 		return SEC_SETUP;
 	}
 
@@ -196,7 +196,7 @@ int sec_capture(int fd, uint32_t node, int timeout_ms, uint8_t **pixels,
 		pw_core_disconnect(core);
 		pw_context_destroy(context);
 		pw_main_loop_destroy(c.loop);
-		snprintf(err, errlen, "не удалось создать поток PipeWire");
+		snprintf(err, errlen, "could not create the PipeWire stream");
 		return SEC_SETUP;
 	}
 	pw_stream_add_listener(c.stream, &listener, &stream_events, &c);
@@ -215,7 +215,7 @@ int sec_capture(int fd, uint32_t node, int timeout_ms, uint8_t **pixels,
 	if (pw_stream_connect(c.stream, PW_DIRECTION_INPUT, node,
 	                      PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS,
 	                      params, 1) < 0) {
-		finish(&c, SEC_STREAM, "pw_stream_connect не удался");
+		finish(&c, SEC_STREAM, "pw_stream_connect failed");
 	} else {
 		c.timer = pw_loop_add_timer(pw_main_loop_get_loop(c.loop), on_timeout, &c);
 		ts.tv_sec = timeout_ms / 1000;

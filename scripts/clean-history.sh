@@ -12,7 +12,7 @@ set -eu
 [ $# -ge 3 ] || { sed -n '2,11p' "$0"; exit 1; }
 name=$1 new=$2 old=$3
 branch=${4:-$(git rev-parse --abbrev-ref HEAD)}
-command -v git-filter-repo >/dev/null || { echo "нужен git-filter-repo (sudo apt install git-filter-repo)" >&2; exit 1; }
+command -v git-filter-repo >/dev/null || { echo "git-filter-repo is required (sudo apt install git-filter-repo)" >&2; exit 1; }
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -23,11 +23,11 @@ echo "$old==>old@example.com" > "$tmp/replace"
 
 # Checks: there must be neither a copy of Gio nor the old address.
 cd "$tmp/clean"
-if git log --name-only --format= | grep -q '^third_party/gio/'; then echo "в истории осталась копия Gio" >&2; exit 1; fi
-if git log --format='%ae %ce' | grep -q "$old"; then echo "в истории остался старый email" >&2; exit 1; fi
-if [ -n "$(git log --all -S"$old" --format=%h | head -n 1)" ]; then echo "старый email остался в тексте файлов" >&2; exit 1; fi
+if git log --name-only --format= | grep -q '^third_party/gio/'; then echo "a copy of Gio is still in the history" >&2; exit 1; fi
+if git log --format='%ae %ce' | grep -q "$old"; then echo "the old email is still in the history" >&2; exit 1; fi
+if [ -n "$(git log --all -S"$old" --format=%h | head -n 1)" ]; then echo "the old email is still in the text of files" >&2; exit 1; fi
 cd - >/dev/null
 
 git fetch -q "$tmp/clean" "$branch"
 git branch -f clean/main FETCH_HEAD
-echo "Готово: ветка clean/main ($(git rev-list --count clean/main) коммитов), дерево совпадает с $branch: $([ "$(git rev-parse clean/main^{tree})" = "$(git rev-parse "$branch"^{tree})" ] && echo да || echo НЕТ)"
+echo "Done: branch clean/main ($(git rev-list --count clean/main) commits), the tree matches $branch: $([ "$(git rev-parse clean/main^{tree})" = "$(git rev-parse "$branch"^{tree})" ] && echo yes || echo NO)"

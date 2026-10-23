@@ -21,13 +21,13 @@ while ($dir -and -not $gitUsrBin) {
     if (Test-Path (Join-Path $dir "usr\bin\sh.exe")) { $gitUsrBin = Join-Path $dir "usr\bin" }
     $dir = Split-Path $dir
 }
-if (-not $gitUsrBin) { throw "не нашёл usr\bin\sh.exe рядом с git.exe: нужен Git for Windows" }
+if (-not $gitUsrBin) { throw "usr\bin\sh.exe was not found next to git.exe: Git for Windows is required" }
 $env:PATH = "$gitUsrBin;$env:PATH"
 
 # Gio of the required version with our patch (a rerun does nothing while the version has
 # not changed).
 & sh scripts/setup-gio.sh
-if ($LASTEXITCODE -ne 0) { throw "setup-gio.sh завершился с кодом $LASTEXITCODE" }
+if ($LASTEXITCODE -ne 0) { throw "setup-gio.sh exited with code $LASTEXITCODE" }
 
 if (-not $Version) { $Version = (& git describe --tags --always --dirty 2>$null) }
 $major = 0; $minor = 0; $patch = 0
@@ -43,15 +43,15 @@ try {
         -product-ver-major $major -product-ver-minor $minor -product-ver-patch $patch `
         -file-version "$Version" -product-version "$Version" `
         -o "..\..\$syso" versioninfo.json
-    if ($LASTEXITCODE -ne 0) { throw "goversioninfo завершился с кодом $LASTEXITCODE" }
+    if ($LASTEXITCODE -ne 0) { throw "goversioninfo exited with code $LASTEXITCODE" }
 } finally { Pop-Location }
 
 $ldflags = "-H=windowsgui"
 if ($Version) { $ldflags += " -X github.com/jexme/scrawl/internal/version.Version=$Version" }
 New-Item -ItemType Directory -Force (Split-Path $Out) | Out-Null
 & go build -trimpath -ldflags $ldflags -o $Out ./cmd/scrawl
-if ($LASTEXITCODE -ne 0) { throw "go build завершился с кодом $LASTEXITCODE" }
-Write-Host "Готово: ${Out} (${Version})"
+if ($LASTEXITCODE -ne 0) { throw "go build exited with code $LASTEXITCODE" }
+Write-Host "Done: ${Out} (${Version})"
 
 if ($Package) {
     $name = "scrawl-$Version-windows-amd64"
@@ -78,6 +78,6 @@ if ($Package) {
     $za.Dispose(); $fs.Dispose()
     $hash = (Get-FileHash "dist\$name.zip" -Algorithm SHA256).Hash.ToLower()
     "$hash  $name.zip" | Set-Content "dist\$name.zip.sha256" -Encoding ascii
-    Write-Host "Архив: dist\$name.zip"
+    Write-Host "Archive: dist\$name.zip"
     Write-Host "SHA-256: $hash"
 }

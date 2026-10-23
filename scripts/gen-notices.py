@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Собирает THIRD_PARTY_NOTICES.md: лицензии всего стороннего, что попадает в бинарник.
+"""Builds THIRD_PARTY_NOTICES.md: the licenses of everything third-party that goes into the binary.
 
-Берёт модули, реально участвующие в сборке ./cmd/scrawl, читает их LICENSE
-из модульного кэша (Gio из third_party/gio), добавляет лицензии Go, шрифтов Go и
-иконок Tabler. Запуск: make notices.
+Takes the modules that really take part in building ./cmd/scrawl, reads their LICENSE
+from the module cache (Gio from third_party/gio), adds the licenses of Go, the Go fonts and
+the Tabler icons. Run: make notices.
 """
 import json
 import os
@@ -60,11 +60,11 @@ def read_license(directory):
         if os.path.isfile(path):
             with open(path, encoding="utf-8") as f:
                 return f.read().strip()
-    sys.exit(f"нет файла лицензии в {directory}")
+    sys.exit(f"no license file in {directory}")
 
 
 def modules():
-    """Модули, участвующие в сборке, без самого проекта: путь, версия, каталог."""
+    """The modules that take part in the build, without the project itself: path, version, directory."""
     out = run("go", "list", "-deps", "-f",
               "{{with .Module}}{{.Path}}|{{.Version}}|{{.Dir}}|{{with .Replace}}{{.Dir}}{{end}}{{end}}",
               "./cmd/scrawl")
@@ -109,7 +109,7 @@ def main():
 
     with open(os.path.join(ROOT, "THIRD_PARTY_NOTICES.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(out))
-    print(f"THIRD_PARTY_NOTICES.md: {len(mods) + 3} компонентов")
+    print(f"THIRD_PARTY_NOTICES.md: {len(mods) + 3} components")
 
 
 if __name__ == "__main__":

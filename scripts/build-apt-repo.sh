@@ -11,24 +11,36 @@
 # Requires: dpkg-dev (dpkg-scanpackages), gzip, gpg.
 set -eu
 
-in=${1:?папка с .deb}
-out=${2:?выходная папка}
+in=${1:?directory with the .deb files}
+out=${2:?output directory}
 suite=stable
 comp=main
-arch=amd64
 url=${APT_REPO_URL:-https://jexme.github.io/scrawl}
 
 mkdir -p "$out"
 out=$(cd "$out" && pwd)
 pool="pool/$comp"
-mkdir -p "$out/$pool" "$out/dists/$suite/$comp/binary-$arch"
+mkdir -p "$out/$pool"
 cp "$in"/*.deb "$out/$pool/"
+
+# The architectures present in the packages (amd64 always, arm64 when that build exists).
+archs=$(for f in "$out/$pool"/*.deb; do dpkg-deb -f "$f" Architecture; done | sort -u | tr '\n' ' ' | sed 's/ $//')
+[ -n "$archs" ] || { echo "no .deb files in $in" >&2; exit 1; }
 
 (
 	cd "$out"
-	bin="dists/$suite/$comp/binary-$arch"
-	dpkg-scanpackages --multiversion --arch "$arch" "$pool" /dev/null > "$bin/Packages" 2>/dev/null
-	gzip -9nk -f "$bin/Packages"
+	sums=""
+	for arch in $archs; do
+		bin="dists/$suite/$comp/binary-$arch"
+		mkdir -p "$bin"
+		dpkg-scanpackages --multiversion --arch "$arch" "$pool" /dev/null > "$bin/Packages" 2>/dev/null
+		gzip -9nk -f "$bin/Packages"
+		for f in "$bin/Packages" "$bin/Packages.gz"; do
+			rel=${f#dists/$suite/}
+			sums="$sums$(printf ' %s %s %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$(wc -c < "$f")" "$rel")
+"
+		done
+	done
 
 	{
 		echo "Origin: Scrawl"
@@ -36,14 +48,11 @@ cp "$in"/*.deb "$out/$pool/"
 		echo "Suite: $suite"
 		echo "Codename: $suite"
 		echo "Date: $(LC_ALL=C date -Ru)"
-		echo "Architectures: $arch"
+		echo "Architectures: $archs"
 		echo "Components: $comp"
 		echo "Description: Scrawl screenshot tool"
 		echo "SHA256:"
-		for f in "$bin/Packages" "$bin/Packages.gz"; do
-			rel=${f#dists/$suite/}
-			printf ' %s %s %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$(wc -c < "$f")" "$rel"
-		done
+		printf '%s' "$sums"
 	} > "dists/$suite/Release"
 
 	if [ -n "${GPG_KEY_ID:-}" ]; then
@@ -67,7 +76,7 @@ cp "$in"/*.deb "$out/$pool/"
 			echo "URIs: $url"
 			echo "Suites: $suite"
 			echo "Components: $comp"
-			echo "Architectures: $arch"
+			echo "Architectures: $archs"
 			echo "Signed-By:"
 			# deb822 multi-line value: every line starts with a space, an empty line is " .".
 			sed -e 's/^$/./' -e 's/^/ /' scrawl-archive-keyring.asc

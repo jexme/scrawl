@@ -51,14 +51,14 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Системные библиотеки
+      - name: System libraries
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc pkg-config patch libwayland-dev libx11-dev libx11-xcb-dev \
             libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev \
             libvulkan-dev libpipewire-0.3-dev
 
-      - name: Архив и контрольные суммы
+      - name: Archive and checksums
         run: |
           make dist VERSION="${GITHUB_REF_NAME}"
           make deb VERSION="${GITHUB_REF_NAME}"
@@ -72,7 +72,7 @@ jobs:
           sha256sum scrawl-*.tar.gz scrawl_*.deb > SHA256SUMS
           cat SHA256SUMS
 
-      - name: Публикация релиза
+      - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -80,6 +80,48 @@ jobs:
           case "${GITHUB_REF_NAME}" in *-*) flags="--prerelease" ;; esac
           gh release create "${GITHUB_REF_NAME}" dist/scrawl-*.tar.gz dist/scrawl_*.deb dist/SHA256SUMS \
             --verify-tag --generate-notes --title "Scrawl ${GITHUB_REF_NAME}" $flags
+
+  # arm64: the same archive and .deb built natively on a GitHub arm64 runner and added to the
+  # release. It is best effort: if the runner or the build fails, the release stays as it is
+  # (amd64 and Windows) and the apt repository is still updated.
+  linux-arm64:
+    needs: release
+    runs-on: ubuntu-24.04-arm
+    continue-on-error: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Build libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc pkg-config patch libwayland-dev libx11-dev libx11-xcb-dev \
+            libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev \
+            libvulkan-dev libpipewire-0.3-dev
+
+      - name: Archive, .deb and checksums
+        run: |
+          make dist VERSION="${GITHUB_REF_NAME}"
+          make deb VERSION="${GITHUB_REF_NAME}"
+          cd dist
+          for f in scrawl_*~*.deb; do
+            [ -e "$f" ] && mv "$f" "$(printf '%s' "$f" | tr '~' '.')"
+          done
+          sha256sum scrawl-*-linux-arm64.tar.gz scrawl_*_arm64.deb > SHA256SUMS-arm64
+          cat SHA256SUMS-arm64
+
+      - name: Add to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" dist/scrawl-*-linux-arm64.tar.gz dist/scrawl_*_arm64.deb dist/SHA256SUMS-arm64
 
   # Windows: a portable archive, the bare scrawl.exe, their SHA-256 and the Scoop manifest. It is built on real
   # Windows in public CI, and the origin of the file is confirmed by a GitHub attestation
@@ -100,7 +142,7 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Сборка и архив
+      - name: Build and archive
         shell: pwsh
         run: ./scripts/build-windows.ps1 -Version "${env:GITHUB_REF_NAME}" -Package
 
@@ -128,7 +170,7 @@ jobs:
           "$hash  $($setup.Name)" | Set-Content "$($setup.FullName).sha256" -Encoding ascii
           Write-Host "Installer: $($setup.Name) $hash"
 
-      - name: Аттестация сборки
+      - name: Build attestation
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
@@ -136,7 +178,7 @@ jobs:
             dist/scrawl-*-windows-amd64.exe
             dist/scrawl-*-windows-amd64-setup.exe
 
-      - name: Манифест Scoop
+      - name: Scoop manifest
         shell: pwsh
         run: |
           $ver = "${env:GITHUB_REF_NAME}".TrimStart('v')
@@ -144,7 +186,7 @@ jobs:
           (Get-Content packaging/windows/scoop/scrawl.json.in -Raw).Replace('@VERSION@', $ver).Replace('@HASH@', $hash) |
             Set-Content dist/scrawl.json -Encoding utf8
 
-      - name: Загрузка в релиз
+      - name: Upload to the release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -157,7 +199,9 @@ jobs:
 
   # After the release we update the apt repository (if a signing key is configured).
   apt-repo:
-    needs: release
+    needs: [release, linux-arm64]
+    # The arm64 build is optional: its failure must not stop the repository from updating.
+    if: ${{ !cancelled() && needs.release.result == 'success' }}
     permissions:
       contents: read
       pages: write

@@ -3,9 +3,9 @@
 # Usage: packaging/deb.sh VERSION ARCH OUTDIR   (VERSION as in the tag: v0.1.0-rc12)
 set -eu
 
-version=${1:?версия, например v0.1.0-rc12}
-arch=${2:?архитектура, например amd64}
-out=${3:?папка для .deb}
+version=${1:?version, for example v0.1.0-rc12}
+arch=${2:?architecture, for example amd64}
+out=${3:?directory for the .deb}
 root=$(cd "$(dirname "$0")/.." && pwd)
 desktop=io.github.jexme.Scrawl.desktop
 

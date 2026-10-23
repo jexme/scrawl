@@ -27,17 +27,17 @@ jobs:
 
       # The public history has only noreply addresses. Checked on a push to any branch (other
       # people's pull requests come with their own addresses, this does not concern them).
-      - name: Адреса авторов
+      - name: Author addresses
         if: github.event_name == 'push'
         run: |
           bad=$(git log --format='%h %ae %ce' | ALLOWED='(@users\.noreply\.github\.com|^noreply@github\.com)$' awk '$2 !~ ENVIRON["ALLOWED"] || $3 !~ ENVIRON["ALLOWED"]')
-          if [ -n "$bad" ]; then echo "Коммиты с личным адресом:"; echo "$bad"; exit 1; fi
+          if [ -n "$bad" ]; then echo "Commits with a personal address:"; echo "$bad"; exit 1; fi
 
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
-      - name: Системные библиотеки
+      - name: System libraries
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc pkg-config patch libwayland-dev libx11-dev libx11-xcb-dev \
@@ -47,7 +47,7 @@ jobs:
       - name: gofmt
         run: test -z "$(gofmt -l cmd internal)"
 
-      - name: Патч Gio и go vet
+      - name: Gio patch and go vet
         run: |
           make gio
           go vet ./...
@@ -55,7 +55,7 @@ jobs:
       # The tests draw through headless Gio (EGL). Without a GPU this goes through software Mesa
       # (surfaceless EGL), xvfb is needed by the X11 tests; tests that have nothing to draw with
       # skip themselves.
-      - name: Тесты
+      - name: Tests
         run: xvfb-run -a make test
         env:
           LIBGL_ALWAYS_SOFTWARE: "1"
@@ -63,7 +63,7 @@ jobs:
           # supports DRI.
           EGL_PLATFORM: surfaceless
 
-      - name: Сборка
+      - name: Build
         run: |
           make build
           ./bin/scrawl -version
@@ -82,16 +82,16 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Сборка (как в релизе)
+      - name: Build (as in the release)
         shell: pwsh
         run: ./scripts/build-windows.ps1 -Version "ci-${env:GITHUB_SHA}" -Package
 
       - name: go vet
         run: go vet ./...
 
-      - name: Тесты
+      - name: Tests
         run: go test ./...
 
-      - name: Запуск собранной программы
+      - name: Run the built program
         shell: pwsh
         run: ./bin/scrawl.exe -version

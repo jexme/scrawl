@@ -25,4 +25,4 @@ done
 # which is absent from the unpacked folder: we redirect it to the system library.
 lib=$(ls /usr/lib/*/libpipewire-0.3.so.0 | head -n 1)
 ln -sfn "$lib" "$dst/usr/lib/$(basename "$(dirname "$lib")")/libpipewire-0.3.so"
-echo "Заголовки PipeWire распакованы в $dst"
+echo "PipeWire headers unpacked into $dst"

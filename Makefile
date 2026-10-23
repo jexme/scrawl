@@ -53,8 +53,8 @@ install: build
 	install -d $(DESTDIR)$(APPDIR)
 	sed 's|^Exec=scrawl|Exec=$(BINDIR)/scrawl|' packaging/$(DESKTOP) > $(DESTDIR)$(APPDIR)/$(DESKTOP)
 	chmod 644 $(DESTDIR)$(APPDIR)/$(DESKTOP)
-	@sh scripts/gnome-hotkey.sh Print $(BINDIR)/scrawl --auto; case $$? in 0) echo "Клавиша Print назначена на Scrawl.";; 12) echo "Print занята другим ярлыком: назначьте свою в scrawl -settings.";; esac
-	@echo "Установлено в $(BINDIR). Дальше: scrawl -setup, затем scrawl -grant-screenshot"
+	@sh scripts/gnome-hotkey.sh Print $(BINDIR)/scrawl --auto; case $$? in 0) echo "The Print key is now assigned to Scrawl.";; 12) echo "Print is taken by another shortcut: set your own in scrawl -settings.";; esac
+	@echo "Installed to $(BINDIR). Next: scrawl -settings (monitors, permission, hotkey)"
 
 # Removes the binary, the .desktop file, the GNOME shortcut and the autostart entry;
 # `make uninstall PURGE=1` also deletes the settings and the cache.
@@ -72,7 +72,7 @@ dist: build
 	cp bin/scrawl packaging/$(DESKTOP) packaging/install.sh packaging/uninstall.sh scripts/gnome-hotkey.sh LICENSE THIRD_PARTY_NOTICES.md README.md docs/translations/README.ru.md $(DIST)/$(PKG)/
 	tar -C $(DIST) --owner=0 --group=0 -czf $(DIST)/$(PKG).tar.gz $(PKG)
 	cd $(DIST) && sha256sum $(PKG).tar.gz > $(PKG).tar.gz.sha256
-	@echo "Готово: $(DIST)/$(PKG).tar.gz"
+	@echo "Done: $(DIST)/$(PKG).tar.gz"
 
 # Package for Debian and Ubuntu: dist/scrawl_VERSION_ARCH.deb.
 deb: build
@@ -81,7 +81,7 @@ deb: build
 # Enables checks before commit and push: a personal email must not get into the history.
 hooks:
 	git config core.hooksPath .githooks
-	@echo "Хуки включены: адрес автора проверяется перед коммитом и перед push."
+	@echo "Hooks enabled: the author address is checked before a commit and before a push."
 
 clean:
 	rm -rf bin $(DIST)
