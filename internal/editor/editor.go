@@ -180,6 +180,8 @@ type monitor struct {
 	widths      map[annotate.Tool]float32 // thickness or strength for each tool separately
 	shapes      []annotate.Shape
 	cur         *annotate.Shape
+	stroke      []f32.Point // the raw path of the pen or marker stroke being drawn
+	shift       bool        // Shift is held (the last pointer event): straight lines and squares
 
 	editing bool
 	editAt  f32.Point
@@ -573,6 +575,7 @@ func (m *monitor) handlePointer(gtx layout.Context, toFrame func(f32.Point) f32.
 		p := toFrame(e.Position)
 		m.hover = p
 		m.hoverIn = e.Kind != pointer.Leave
+		m.shift = e.Modifiers.Contain(key.ModShift)
 		switch e.Kind {
 		case pointer.Press:
 			if e.Buttons.Contain(pointer.ButtonPrimary) {
@@ -699,7 +702,8 @@ func (m *monitor) press(p f32.Point) {
 		m.ed.SetText("")
 		m.focusEditor = true
 	case annotate.ToolPen, annotate.ToolMarker:
-		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: []f32.Point{p}, Alpha: m.store.Get().MarkerAlpha()}
+		m.stroke = []f32.Point{p}
+		m.cur = &annotate.Shape{Tool: m.tool, Color: m.color, Width: m.curWidth(), Pts: m.stroke, Alpha: m.store.Get().MarkerAlpha()}
 	case annotate.ToolStamp:
 		// The stamp is placed under the cursor immediately; while the button is held, it can be
 		// moved.
@@ -721,10 +725,25 @@ func (m *monitor) drag(p f32.Point) {
 		p = m.clamp(p)
 		switch m.cur.Tool {
 		case annotate.ToolPen, annotate.ToolMarker:
-			m.cur.Pts = append(m.cur.Pts, p)
+			m.stroke = append(m.stroke, p)
+			if m.shift {
+				// Shift: a straight line from where the stroke began, snapped to 45 degrees. The
+				// raw path is kept, so releasing Shift brings the freehand stroke back.
+				m.cur.Pts = []f32.Point{m.stroke[0], snapAngle(m.stroke[0], p, m.sel)}
+			} else {
+				m.cur.Pts = m.stroke
+			}
 		case annotate.ToolStamp:
 			m.cur.Pts[0] = p
-		default:
+		case annotate.ToolLine, annotate.ToolArrow:
+			if m.shift {
+				p = snapAngle(m.cur.Pts[0], p, m.sel)
+			}
+			m.cur.Pts[1] = p
+		default: // box and blur: Shift makes a square
+			if m.shift {
+				p = squareTo(m.cur.Pts[0], p, m.sel)
+			}
 			m.cur.Pts[1] = p
 		}
 	}

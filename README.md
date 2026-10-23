@@ -54,6 +54,7 @@ Other systems: [Windows](#windows-10-and-11), other Linux distributions (a relea
 - Pen, line, arrow, box, marker, **blur**, text and **numbered stamps** (a click puts a circle with 1, 2, 3 and so on, like in flameshot); eight colours.
 - Mouse wheel (or the `−` / `+` buttons) changes the thickness, the text size or the blur strength.
 - The **blur** has six levels (wheel or `−` / `+`): 1-3 soft Gaussian blur, 4-6 mosaic with growing squares. The mosaic cells start at the corner of the area, and the note that pops up when you change the level names the mode.
+- Hold **Shift** while drawing: the pen and the marker make a straight line, a line or an arrow snaps to 45°, a box or a blur becomes a square.
 - Undo with `Ctrl+Z`.
 
 **Save and share**
