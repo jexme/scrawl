@@ -542,9 +542,19 @@ func TestHotkeyButton(t *testing.T) {
 		t.Errorf("комбинация %q, бинарник %q, сообщение %q (ошибка %v)", gotAccel, gotBin, msg, failed)
 	}
 
+	// The plain "Ctrl+Alt+P" form is accepted and written the GNOME way.
+	gotAccel = ""
+	s.hotkeyEd.SetText("Ctrl+Alt+P")
+	s.hotkey.btn.Click()
+	s.layout(frameContext(700, 650))
+	waitDone(t, &s.hotkey)
+	if gotAccel != "<Control><Alt>p" || s.hotkeyEd.Text() != "<Control><Alt>p" {
+		t.Errorf("введено Ctrl+Alt+P: вызов %q, поле %q", gotAccel, s.hotkeyEd.Text())
+	}
+
 	// An invalid entry is rejected before gsettings is called.
 	gotAccel = ""
-	s.hotkeyEd.SetText("Ctrl+S")
+	s.hotkeyEd.SetText("Hyper+S")
 	s.hotkey.btn.Click()
 	s.layout(frameContext(700, 650))
 	waitDone(t, &s.hotkey)
@@ -815,8 +825,8 @@ func TestCaptureRowsDependOnSession(t *testing.T) {
 	wayland := len(s.captureRows())
 	x11Session = func() bool { return true }
 	x11 := len(s.captureRows())
-	if wayland != 4 || x11 != 3 {
-		t.Errorf("строк захвата: Wayland %d (ожидали 4), X11 %d (ожидали 3: без кнопок портала)", wayland, x11)
+	if wayland != 5 || x11 != 3 {
+		t.Errorf("строк захвата: Wayland %d (ожидали 5), X11 %d (ожидали 3: без кнопок портала)", wayland, x11)
 	}
 	// The first-launch welcome adds one card with the steps, in every kind of session.
 	s.welcome = true
@@ -1001,5 +1011,35 @@ func TestFreeKeyButton(t *testing.T) {
 	waitDone(t, &s.freeKey)
 	if msg, _, _ := s.freeKey.status(); !strings.Contains(msg, "nothing to change") {
 		t.Errorf("nothing to free: %q", msg)
+	}
+}
+
+func TestSetupCaptureButton(t *testing.T) {
+	oldMon, oldGrant, oldSaved := setupMonitors, grantPermission, savedMonitors
+	defer func() { setupMonitors, grantPermission, savedMonitors = oldMon, oldGrant, oldSaved }()
+	var order []string
+	setupMonitors = func(func(string)) (string, error) {
+		order = append(order, "monitors")
+		return "Monitors set up: 2", nil
+	}
+	grantPermission = func() error { order = append(order, "grant"); return nil }
+	savedMonitors = func() int { return 2 }
+	s := testState(t)
+	s.setup.btn.Click()
+	s.layout(frameContext(700, 650))
+	waitDone(t, &s.setup)
+	msg, failed, _ := s.setup.status()
+	if failed || strings.Join(order, ",") != "monitors,grant" || !strings.Contains(msg, "Permission granted") {
+		t.Errorf("one button does both, in this order: %v, message %q (failed %v)", order, msg, failed)
+	}
+
+	// A failure of the first step stops the second.
+	order = nil
+	setupMonitors = func(func(string)) (string, error) { return "", errors.New("no portal") }
+	s.setup.btn.Click()
+	s.layout(frameContext(700, 650))
+	waitDone(t, &s.setup)
+	if msg, failed, _ := s.setup.status(); !failed || !strings.Contains(msg, "no portal") || len(order) != 0 {
+		t.Errorf("a failed first step must stop the second: %q failed=%v order=%v", msg, failed, order)
 	}
 }

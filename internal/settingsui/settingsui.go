@@ -91,6 +91,7 @@ type state struct {
 	monitors   task   // re-picking monitors
 	hotkey     task   // assigning the hotkey
 	freeKey    task   // turning off GNOME's own use of that key
+	setup      task   // monitors and permission in one go
 	welcome    bool   // first launch: open on the System tab with a short guide
 	hotkeyEd   widget.Editor
 	lang       widget.Enum        // UI language: auto, ru, en
@@ -319,7 +320,8 @@ func (s *state) apply(gtx layout.Context) {
 	}
 	s.updateKeys(gtx)
 	if s.hotkey.btn.Clicked(gtx) {
-		accel := strings.TrimSpace(s.hotkeyEd.Text())
+		accel := hotkey.NormalizeAccel(s.hotkeyEd.Text())
+		s.hotkeyEd.SetText(accel) // "Ctrl+Alt+P" turns into the GNOME form
 		s.start(&s.hotkey, func(func(string)) (string, error) {
 			if err := hotkey.ValidateAccel(accel); err != nil {
 				return "", err
@@ -343,7 +345,8 @@ func (s *state) apply(gtx layout.Context) {
 		})
 	}
 	if s.freeKey.btn.Clicked(gtx) {
-		accel := strings.TrimSpace(s.hotkeyEd.Text())
+		accel := hotkey.NormalizeAccel(s.hotkeyEd.Text())
+		s.hotkeyEd.SetText(accel)
 		s.start(&s.freeKey, func(func(string)) (string, error) {
 			changed, err := freeBuiltin(accel)
 			if err != nil {
@@ -353,6 +356,19 @@ func (s *state) apply(gtx layout.Context) {
 				return fmt.Sprintf(i18n.T("No built-in GNOME shortcut uses %s: nothing to change"), accel), nil
 			}
 			return fmt.Sprintf(i18n.T("Turned off in GNOME for %s: %s"), accel, strings.Join(changed, ", ")), nil
+		})
+	}
+	if s.setup.btn.Clicked(gtx) {
+		s.start(&s.setup, func(progress func(string)) (string, error) {
+			progress(i18n.T("Waiting for the GNOME dialogs…"))
+			msg, err := setupMonitors(progress)
+			if err != nil {
+				return "", err
+			}
+			if err := grantPermission(); err != nil {
+				return "", fmt.Errorf(i18n.T("Could not grant the permission: %w"), err)
+			}
+			return msg + ". " + i18n.T("Permission granted to the app ") + screencast.AppID, nil
 		})
 	}
 	if s.monitors.btn.Clicked(gtx) {
@@ -1199,7 +1215,14 @@ func (s *state) captureRows() []layout.Widget {
 			s.row(i18n.T("X11 session"), i18n.T("The screen is captured directly, without a portal: there is no need to pick monitors or grant a permission. The clipboard needs xclip."), nil))
 	}
 	// Wayland: the capture setup comes first, it is what a new user has to do before anything else.
+	status := i18n.T("No monitors saved yet")
+	if n := savedMonitors(); n > 0 {
+		status = fmt.Sprintf(i18n.T("Monitors saved: %d"), n)
+	}
 	return append(rows,
+		s.row(i18n.T("Screen capture setup"),
+			fmt.Sprintf(i18n.T("Picks the monitors (GNOME shows a dialog for each one: choose a different monitor in each and tick \"Remember this choice\") and grants the permission for the fallback capture, all in one go. Needed once, and again after connecting or replacing a monitor. %s"), status),
+			s.taskControl(&s.setup, i18n.T("Set up capture"))),
 		s.row(i18n.T("Monitors"), i18n.T("Pick the monitors again: GNOME shows a dialog for each monitor. Needed after connecting or replacing a monitor. Formerly: scrawl -setup."),
 			s.taskControl(&s.monitors, i18n.T("Pick monitors again"))),
 		s.row(i18n.T("Fallback capture permission"), i18n.T("Needed by the fallback capture through the Screenshot portal when PipeWire gave no frame. Formerly: scrawl -grant-screenshot."),

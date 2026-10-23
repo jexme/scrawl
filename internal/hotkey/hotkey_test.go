@@ -195,3 +195,22 @@ func TestFreeBuiltinRemovesOnlyThatCombination(t *testing.T) {
 		t.Error("an invalid combination must be refused")
 	}
 }
+
+func TestNormalizeAccel(t *testing.T) {
+	for in, want := range map[string]string{
+		"Ctrl+Alt+P":      "<Control><Alt>p",
+		" super + S ":     "<Super>s",
+		"Shift+Ctrl+F5":   "<Shift><Control>F5",
+		"Print":           "Print",
+		"<Control><Alt>p": "<Control><Alt>p", // already in the GNOME form
+		"Hyper+x":         "Hyper+x",         // an unknown modifier is left for the validator
+		"":                "",
+	} {
+		if got := NormalizeAccel(in); got != want {
+			t.Errorf("NormalizeAccel(%q) = %q, expected %q", in, got, want)
+		}
+	}
+	if err := ValidateAccel(NormalizeAccel("Ctrl+Shift+S")); err != nil {
+		t.Errorf("a normalised combination must be valid: %v", err)
+	}
+}

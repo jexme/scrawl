@@ -28,6 +28,7 @@ var (
 	setupMonitors   = screencast.SetupMonitors
 	assignHotkey    = hotkey.Assign
 	freeBuiltin     = hotkey.FreeBuiltin
+	savedMonitors   = func() int { return len(screencast.LoadTokens()) }
 	currentHotkey   = hotkey.Current
 	hotkeyBinary    = hotkey.PreferredBinary
 	checkUpdate     = func() (update.Result, error) { return update.Check(context.Background(), version.String()) }

@@ -45,6 +45,41 @@ var gsettings = func(args ...string) (string, error) {
 
 var accelRe = regexp.MustCompile(`(?i)^(<(Super|Control|Primary|Shift|Alt|Mod1|Ctrl)>)*[A-Za-z0-9_]+$`)
 
+// NormalizeAccel turns the combination as people write it ("Ctrl+Alt+P", "super + s") into the
+// GTK form ("<Control><Alt>p", "<Super>s"). A string that already has angle brackets, or is
+// a single key name such as Print, is returned trimmed and otherwise unchanged.
+func NormalizeAccel(in string) string {
+	in = strings.TrimSpace(in)
+	if in == "" || strings.Contains(in, "<") || !strings.Contains(in, "+") {
+		return in
+	}
+	parts := strings.Split(in, "+")
+	var out strings.Builder
+	for i, part := range parts {
+		part = strings.TrimSpace(part)
+		if i == len(parts)-1 {
+			if len(part) == 1 {
+				part = strings.ToLower(part) // GTK writes letter keys in lower case
+			}
+			out.WriteString(part)
+			continue
+		}
+		switch strings.ToLower(part) {
+		case "ctrl", "control", "primary":
+			out.WriteString("<Control>")
+		case "alt", "mod1":
+			out.WriteString("<Alt>")
+		case "shift":
+			out.WriteString("<Shift>")
+		case "super", "win", "windows", "meta", "cmd":
+			out.WriteString("<Super>")
+		default:
+			return in // unknown modifier: leave it for ValidateAccel to refuse
+		}
+	}
+	return out.String()
+}
+
 // ValidateAccel checks a combination written in GTK format: Print, <Super>s,
 // <Control><Alt>p.
 func ValidateAccel(accel string) error {

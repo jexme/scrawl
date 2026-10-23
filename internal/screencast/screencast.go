@@ -97,7 +97,7 @@ type Frame struct {
 func New() (*Portal, error) {
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(i18n.T("the desktop portal is not available (it needs GNOME with xdg-desktop-portal): %w"), err)
 	}
 	// Registration must come before any other portal calls on this connection. The timeout is
 	// short: if the portal hangs, it is better to work without registration than to hang.
