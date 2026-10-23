@@ -1043,3 +1043,25 @@ func TestSetupCaptureButton(t *testing.T) {
 		t.Errorf("a failed first step must stop the second: %q failed=%v order=%v", msg, failed, order)
 	}
 }
+
+// Opening the settings window must not change the settings: every slider starts at the saved
+// value. The tool widths used to be erased by the first frame.
+func TestOpeningWindowKeepsSavedSettings(t *testing.T) {
+	testenv.Config(t, t.TempDir())
+	testenv.Cache(t, t.TempDir())
+	want := settings.Default()
+	want.Tools.Arrow.Color, want.Tools.Arrow.Width = "#00FF00", 15
+	want.Tools.Pen.Width = 9
+	want.Tools.Marker.Width = 7
+	want.DimPercent = 55
+	want.Glue.Pad = 40
+	if err := settings.Save(want); err != nil {
+		t.Fatal(err)
+	}
+	s := newState(settings.NewStore())
+	s.layout(frameContext(700, 3300))
+	s.layout(frameContext(700, 3300))
+	if got := settings.Load(); got != want {
+		t.Errorf("opening the window changed the settings:\n got %+v\nwant %+v", got.Tools, want.Tools)
+	}
+}

@@ -722,6 +722,9 @@ func (s *state) initTools(cur settings.Settings) {
 		},
 			func(c settings.Settings) float64 { return c.Tools.Of(name).Width },
 			func(c *settings.Settings, v float64) { c.Tools.Of(name).Width = v })
+		// A slider made after the first sync must get its saved value too, or the first frame
+		// writes its zero to the file and erases the width the user chose.
+		row.sl.Set(row.sl.get(cur))
 		s.toolRows = append(s.toolRows, row)
 	}
 }
