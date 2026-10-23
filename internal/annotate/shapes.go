@@ -115,6 +115,11 @@ func (s Shape) Degenerate() bool {
 		return r.Dx() < 4 || r.Dy() < 4
 	case ToolPen, ToolStamp:
 		return len(s.Pts) < 1
+	case ToolMarker:
+		// A freehand stroke is judged by having moved at all, not by the distance between its
+		// first two points: they are close together when the hand starts slowly, and the whole
+		// long stroke used to vanish on release. A click without moving leaves no mark.
+		return len(s.Pts) < 2
 	default:
 		if len(s.Pts) < 2 {
 			return true
