@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -404,15 +405,21 @@ const StampLayout = "20060102-150405"
 const maxFilePrefix = 60
 
 // ValidateFilePrefix checks the start of the file name: empty (meaning the default) or
-// text without path separators and control characters, at most 60 characters.
+// text that is a valid file name part on every supported system, at most 60 characters.
+// So it rejects control characters, the characters Windows forbids in file names
+// (< > : " / \ | ? *; a colon would even make NTFS create an alternate data stream for
+// "a:b") and a trailing dot or space, which Windows silently strips.
 func ValidateFilePrefix(p string) error {
 	if utf8.RuneCountInString(p) > maxFilePrefix {
 		return fmt.Errorf(i18n.T("at most %d characters"), maxFilePrefix)
 	}
 	for _, r := range p {
-		if r == '/' || r == '\\' || unicode.IsControl(r) {
-			return errors.New(i18n.T("/ \\ and control characters are not allowed"))
+		if strings.ContainsRune(`<>:"/\|?*`, r) || unicode.IsControl(r) {
+			return errors.New(i18n.T("the characters < > : \" / \\ | ? * and control characters are not allowed"))
 		}
+	}
+	if strings.HasSuffix(p, ".") || strings.HasSuffix(p, " ") {
+		return errors.New(i18n.T("the name must not end with a dot or a space"))
 	}
 	return nil
 }
@@ -466,10 +473,18 @@ func (s Settings) NumberedFileName(stamp string, n int) string {
 	return fmt.Sprintf("%s-%s-%d%s", s.Prefix(), stamp, n, s.Ext())
 }
 
+// isHomePath reports whether dir is "~" or a path below it. On Windows ~\ works as well as
+// ~/ (that is what Explorer shows). windows is a parameter so that the tests can cover both
+// spellings on any OS.
+func isHomePath(dir string, windows bool) bool {
+	return dir == "~" || strings.HasPrefix(dir, "~/") || (windows && strings.HasPrefix(dir, `~\`))
+}
+
 // ValidateSaveDir checks the save directory value: empty (meaning the default
-// directory), an absolute path or a path from the home directory (~ and ~/...).
+// directory), an absolute path or a path from the home directory (~ and ~/...; on
+// Windows also ~\...).
 func ValidateSaveDir(dir string) error {
-	if dir == "" || dir == "~" || strings.HasPrefix(dir, "~/") || filepath.IsAbs(dir) {
+	if dir == "" || isHomePath(dir, runtime.GOOS == "windows") || filepath.IsAbs(dir) {
 		return nil
 	}
 	return errors.New(i18n.T("the path must be absolute or start with ~/"))
@@ -478,7 +493,7 @@ func ValidateSaveDir(dir string) error {
 // ExpandDir expands a leading ~ to the home directory. An empty string stays empty:
 // it means the default directory.
 func ExpandDir(dir string) (string, error) {
-	if dir != "~" && !strings.HasPrefix(dir, "~/") {
+	if !isHomePath(dir, runtime.GOOS == "windows") {
 		return dir, nil
 	}
 	home, err := os.UserHomeDir()
