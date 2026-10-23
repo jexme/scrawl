@@ -181,7 +181,14 @@ type monitor struct {
 	shapes      []annotate.Shape
 	cur         *annotate.Shape
 	stroke      []f32.Point // the raw path of the pen or marker stroke being drawn
-	shift       bool        // Shift is held (the last pointer event): straight lines and squares
+	// before is the selection and annotations that a new selection drag replaced: a click
+	// without dragging brings them back instead of leaving the user with nothing.
+	before struct {
+		sel    image.Rectangle
+		has    bool
+		shapes []annotate.Shape
+	}
+	shift bool // Shift is held (the last pointer event): straight lines and squares
 
 	editing bool
 	editAt  f32.Point
@@ -455,7 +462,7 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 				break
 			}
 			if e, ok := ev.(key.Event); ok && e.State == key.Press {
-				m.quit()
+				m.cancelText() // Esc drops the text being typed, not the whole overlay
 			}
 		}
 		for {
@@ -688,6 +695,8 @@ func (m *monitor) press(p f32.Point) {
 		m.claim()
 		m.dragging = true
 		m.selStart = p
+		m.before.sel, m.before.has, m.before.shapes = m.sel, m.hasSel, m.shapes
+		m.shapes, m.cur = nil, nil // annotations belong to the old area, a new area starts clean
 		m.sel = rectOf(p, p)
 		m.hasSel = false
 		return
@@ -723,29 +732,41 @@ func (m *monitor) drag(p f32.Point) {
 		m.sel = rectOf(m.selStart, p)
 	case m.cur != nil:
 		p = m.clamp(p)
-		switch m.cur.Tool {
-		case annotate.ToolPen, annotate.ToolMarker:
+		if t := m.cur.Tool; t == annotate.ToolPen || t == annotate.ToolMarker {
 			m.stroke = append(m.stroke, p)
-			if m.shift {
-				// Shift: a straight line from where the stroke began, snapped to 45 degrees. The
-				// raw path is kept, so releasing Shift brings the freehand stroke back.
-				m.cur.Pts = []f32.Point{m.stroke[0], snapAngle(m.stroke[0], p, m.sel)}
-			} else {
-				m.cur.Pts = m.stroke
-			}
-		case annotate.ToolStamp:
-			m.cur.Pts[0] = p
-		case annotate.ToolLine, annotate.ToolArrow:
-			if m.shift {
-				p = snapAngle(m.cur.Pts[0], p, m.sel)
-			}
-			m.cur.Pts[1] = p
-		default: // box and blur: Shift makes a square
-			if m.shift {
-				p = squareTo(m.cur.Pts[0], p, m.sel)
-			}
-			m.cur.Pts[1] = p
 		}
+		m.applyModifiers(p)
+	}
+}
+
+// applyModifiers sets the shape being drawn from its anchor and the cursor position p,
+// taking Shift into account: a straight line for the pen and the marker, a 45-degree
+// snap for a line and an arrow, a square for a box and a blur.
+func (m *monitor) applyModifiers(p f32.Point) {
+	p = m.clamp(p)
+	switch m.cur.Tool {
+	case annotate.ToolPen, annotate.ToolMarker:
+		if len(m.stroke) < 2 {
+			return
+		}
+		if m.shift {
+			// The raw path is kept, so releasing Shift brings the freehand stroke back.
+			m.cur.Pts = []f32.Point{m.stroke[0], snapAngle(m.stroke[0], m.stroke[len(m.stroke)-1], m.sel)}
+		} else {
+			m.cur.Pts = m.stroke
+		}
+	case annotate.ToolStamp:
+		m.cur.Pts[0] = p
+	case annotate.ToolLine, annotate.ToolArrow:
+		if m.shift {
+			p = snapAngle(m.cur.Pts[0], p, m.sel)
+		}
+		m.cur.Pts[1] = p
+	default: // box and blur
+		if m.shift {
+			p = squareTo(m.cur.Pts[0], p, m.sel)
+		}
+		m.cur.Pts[1] = p
 	}
 }
 
@@ -758,12 +779,18 @@ func (m *monitor) release(p f32.Point) {
 		m.sel = rectOf(m.selStart, p).Intersect(m.frame.Img.Bounds())
 		// A plain click without dragging is not counted as a region.
 		m.hasSel = m.sel.Dx() >= 4 && m.sel.Dy() >= 4
-		if !m.hasSel {
-			m.sel = image.Rectangle{}
-		} else {
+		switch {
+		case m.hasSel:
 			m.useDefaultTool()
+		case m.before.has:
+			// A click without dragging: keep the previous selection and its annotations.
+			m.sel, m.hasSel, m.shapes = m.before.sel, true, m.before.shapes
+		default:
+			m.sel = image.Rectangle{}
 		}
+		m.before.has, m.before.shapes = false, nil
 	case m.cur != nil:
+		m.applyModifiers(p) // Shift pressed or released without moving the mouse
 		if !m.cur.Degenerate() {
 			m.shapes = append(m.shapes, *m.cur)
 		}
@@ -929,15 +956,23 @@ func (m *monitor) export(toClipboard, toFile bool) {
 		}
 		msg, done = path, i18n.T("Saved: ")+filepath.Base(path)
 	}
+	clipboardFailed := false
 	if toClipboard {
 		if err := copyPNG(data); err != nil {
 			fail(i18n.T("clipboard"), err)
+			// Notifications may be unavailable too (no notify-send), and a window that closes
+			// would hide the failure: say it on the screen and keep the editor open.
+			m.showError(err.Error())
+			clipboardFailed = true
 		} else if msg == "" {
 			msg, done = i18n.T("copied to the clipboard"), i18n.T("Copied to the clipboard")
 		} else {
 			msg += i18n.T(" (and to the clipboard)")
 			done += i18n.T(", copied")
 		}
+	}
+	if clipboardFailed {
+		return
 	}
 	m.inform(i18n.T("Screenshot ready"), msg)
 	if m.store.Get().KeepOpen {
@@ -979,9 +1014,12 @@ func fail(what string, err error) {
 }
 
 func rectOf(a, b f32.Point) image.Rectangle {
+	// The corner that is further right and down is rounded up: the pixel under the cursor
+	// belongs to the area, and a drag to the last pixel of the screen reaches the edge of the
+	// frame instead of stopping one pixel short.
 	return image.Rect(
-		int(math.Min(float64(a.X), float64(b.X))), int(math.Min(float64(a.Y), float64(b.Y))),
-		int(math.Max(float64(a.X), float64(b.X))), int(math.Max(float64(a.Y), float64(b.Y))),
+		int(math.Floor(math.Min(float64(a.X), float64(b.X)))), int(math.Floor(math.Min(float64(a.Y), float64(b.Y)))),
+		int(math.Ceil(math.Max(float64(a.X), float64(b.X)))), int(math.Ceil(math.Max(float64(a.Y), float64(b.Y)))),
 	)
 }
 

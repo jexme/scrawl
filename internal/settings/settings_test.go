@@ -768,3 +768,24 @@ func TestBlurWidthIsLevel(t *testing.T) {
 		t.Error("MaxWidthOf: размытие шесть уровней, остальные 30")
 	}
 }
+
+// Two processes (the overlay and the settings window) each hold a Store: a change saved by one
+// must not be undone when the other saves a different setting.
+func TestStoreUpdateKeepsOtherProcessChanges(t *testing.T) {
+	sandbox(t)
+	overlay, window := NewStore(), NewStore()
+	if err := overlay.Update(func(s *Settings) { s.CustomColor = "#112233" }); err != nil {
+		t.Fatal(err)
+	}
+	// The settings window still holds the old copy and saves another setting.
+	if err := window.Update(func(s *Settings) { s.DimPercent = 50 }); err != nil {
+		t.Fatal(err)
+	}
+	got := Load()
+	if got.CustomColor != "#112233" || got.DimPercent != 50 {
+		t.Errorf("a change was lost: custom colour %q, dimming %d", got.CustomColor, got.DimPercent)
+	}
+	if window.Get().CustomColor != "#112233" {
+		t.Errorf("after saving, the store must hold the merged settings: %q", window.Get().CustomColor)
+	}
+}

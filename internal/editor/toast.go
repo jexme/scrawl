@@ -53,6 +53,12 @@ func (m *monitor) showMessage(txt string) {
 	m.toastUntil = time.Now().Add(toastLife + 700*time.Millisecond)
 }
 
+// showError shows an error text on the screen for a long time.
+func (m *monitor) showError(txt string) {
+	m.toastMsg = txt
+	m.toastUntil = time.Now().Add(8 * time.Second)
+}
+
 // layoutToast draws the "Thickness: N" toast with a line sample and fades it out smoothly.
 // It hangs in the upper part of the selection and is not tied to the cursor.
 func (m *monitor) layoutToast(gtx layout.Context, win image.Point, selWin image.Rectangle) {

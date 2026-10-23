@@ -340,18 +340,23 @@ func (st *Store) Get() Settings {
 	return st.s
 }
 
-// Update applies a change and saves the result (if it changed anything). If writing to
-// disk fails, the setting still changes in memory and the error is returned.
+// Update applies a change to the settings as they are on disk now and saves the result (if it
+// changed anything). The file is read again first because the overlay and the settings window
+// are separate processes: saving this process's older copy of everything would silently undo
+// what the other one saved meanwhile (for example a custom colour picked in the overlay). If
+// writing to disk fails, the setting still changes in memory and the error is returned.
 func (st *Store) Update(change func(*Settings)) error {
 	st.mu.Lock()
 	defer st.mu.Unlock()
-	before := st.s
-	change(&st.s)
-	st.s.normalize()
-	if st.s == before {
+	disk := Load()
+	next := disk
+	change(&next)
+	next.normalize()
+	st.s = next
+	if next == disk {
 		return nil // nothing changed: leave the file alone
 	}
-	return Save(st.s)
+	return Save(next)
 }
 
 // Bounds of the selection border values.
