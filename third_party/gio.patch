@@ -1,3 +1,79 @@
+--- a/app/internal/windows/windows.go
++++ b/app/internal/windows/windows.go
+@@ -372,6 +372,7 @@
+ 	WM_POINTERDOWN           = 0x0246
+ 	WM_POINTERUP             = 0x0247
+ 	WM_POINTERUPDATE         = 0x0245
++	WM_POINTERLEAVE          = 0x024A
+ 	WM_POINTERWHEEL          = 0x024E
+ 	WM_POINTERHWHEEL         = 0x024F
+ 	WM_QUIT                  = 0x0012
+--- a/app/internal/xkb/xkb_unix.go
++++ b/app/internal/xkb/xkb_unix.go
+@@ -164,7 +164,16 @@
+ 	}
+ 	sym := C.xkb_state_key_get_one_sym(x.state, kc)
+ 	symbol = uint32(sym)
+-	if name, ok := convertKeysym(sym); ok {
++	name, ok := convertKeysym(sym)
++	if !ok {
++		// A key of a non-Latin layout (Cyrillic, Greek, ...): name it by the Latin letter of the
++		// same physical key in another layout, as GTK does, so shortcuts keep working.
++		// Typed text is not affected: it comes from the EditEvent below.
++		if latin, found := x.latinKeysym(kc); found {
++			name, ok = convertKeysym(latin)
++		}
++	}
++	if ok {
+ 		cmd := key.Event{
+ 			Name:      name,
+ 			Modifiers: x.Modifiers(),
+@@ -213,6 +222,45 @@
+ 	return
+ }
+ 
++// latinKeysym returns the Latin keysym (a letter, a digit or ASCII punctuation) that the
++// physical key kc produces in the first layout of the keymap that has one.
++func (x *Context) latinKeysym(kc C.xkb_keycode_t) (C.xkb_keysym_t, bool) {
++	layouts := C.xkb_keymap_num_layouts_for_key(x.keyMap, kc)
++	for l := C.xkb_layout_index_t(0); l < layouts; l++ {
++		var syms *C.xkb_keysym_t
++		if C.xkb_keymap_key_get_syms_by_level(x.keyMap, kc, l, 0, &syms) < 1 {
++			continue
++		}
++		if s := *syms; ' ' < s && s <= '~' {
++			return s, true
++		}
++	}
++	// No layout with Latin letters at all (for example only "ru"): fall back to the position
++	// of the key on a QWERTY keyboard. Keycodes here are evdev codes plus 8.
++	if r, ok := qwertyKeys[kc]; ok {
++		return C.xkb_keysym_t(r), true
++	}
++	return 0, false
++}
++
++// qwertyKeys maps the xkb keycodes of the letter and digit keys to what a US keyboard has on them.
++var qwertyKeys = func() map[C.xkb_keycode_t]rune {
++	m := make(map[C.xkb_keycode_t]rune)
++	for i, r := range "qwertyuiop" {
++		m[C.xkb_keycode_t(24+i)] = r
++	}
++	for i, r := range "asdfghjkl" {
++		m[C.xkb_keycode_t(38+i)] = r
++	}
++	for i, r := range "zxcvbnm" {
++		m[C.xkb_keycode_t(52+i)] = r
++	}
++	for i, r := range "1234567890" {
++		m[C.xkb_keycode_t(10+i)] = r
++	}
++	return m
++}()
++
+ func (x *Context) charsForKeycode(keyCode C.xkb_keycode_t) []byte {
+ 	size := C.xkb_state_key_get_utf8(x.state, keyCode, (*C.char)(unsafe.Pointer(unsafe.SliceData(x.utf8Buf))), C.size_t(len(x.utf8Buf)))
+ 	if int(size) >= len(x.utf8Buf) {
 --- a/app/os.go
 +++ b/app/os.go
 @@ -49,6 +49,10 @@
@@ -60,51 +136,6 @@
  	if size != w.config.Size {
  		w.config.Size = size
  		w.ProcessEvent(ConfigEvent{Config: w.config})
---- a/app/window.go
-+++ b/app/window.go
-@@ -980,6 +980,16 @@
- 	}
- }
- 
-+// FullscreenAt sets the Fullscreen mode on the monitor whose top-left corner
-+// is at (x, y) in the compositor's coordinate space. It is supported on
-+// Wayland and X11; other platforms behave like Fullscreen.
-+func FullscreenAt(x, y int) Option {
-+	return func(_ unit.Metric, cnf *Config) {
-+		cnf.Mode = Fullscreen
-+		cnf.OutputPos = &image.Point{X: x, Y: y}
-+	}
-+}
-+
- // TopMost windows will be rendered above all other non-top-most windows.
- //
- // TopMost windows are supported on macOS, Windows.
---- a/app/os_x11.go
-+++ b/app/os_x11.go
-@@ -184,6 +184,13 @@
- 			fallthrough
- 		default:
- 			w.config.Mode = Fullscreen
-+			// Move the window onto the requested monitor first: the window
-+			// manager makes it fullscreen on the monitor it currently covers.
-+			// Requests of one client are handled in order, so the move is
-+			// seen before the state change.
-+			if pos := cnf.OutputPos; pos != nil {
-+				C.XMoveWindow(w.x, w.xw, C.int(pos.X), C.int(pos.Y))
-+			}
- 			w.sendWMStateEvent(_NET_WM_STATE_ADD, w.atoms.wmStateFullscreen, 0)
- 		}
- 	case Minimized:
---- a/app/internal/windows/windows.go
-+++ b/app/internal/windows/windows.go
-@@ -372,6 +372,7 @@
- 	WM_POINTERDOWN           = 0x0246
- 	WM_POINTERUP             = 0x0247
- 	WM_POINTERUPDATE         = 0x0245
-+	WM_POINTERLEAVE          = 0x024A
- 	WM_POINTERWHEEL          = 0x024E
- 	WM_POINTERHWHEEL         = 0x024F
- 	WM_QUIT                  = 0x0012
 --- a/app/os_windows.go
 +++ b/app/os_windows.go
 @@ -39,8 +39,10 @@
@@ -198,3 +229,38 @@
  }
  
  func (w *window) WriteClipboard(mime string, s []byte) {
+--- a/app/os_x11.go
++++ b/app/os_x11.go
+@@ -184,6 +184,13 @@
+ 			fallthrough
+ 		default:
+ 			w.config.Mode = Fullscreen
++			// Move the window onto the requested monitor first: the window
++			// manager makes it fullscreen on the monitor it currently covers.
++			// Requests of one client are handled in order, so the move is
++			// seen before the state change.
++			if pos := cnf.OutputPos; pos != nil {
++				C.XMoveWindow(w.x, w.xw, C.int(pos.X), C.int(pos.Y))
++			}
+ 			w.sendWMStateEvent(_NET_WM_STATE_ADD, w.atoms.wmStateFullscreen, 0)
+ 		}
+ 	case Minimized:
+--- a/app/window.go
++++ b/app/window.go
+@@ -980,6 +980,16 @@
+ 	}
+ }
+ 
++// FullscreenAt sets the Fullscreen mode on the monitor whose top-left corner
++// is at (x, y) in the compositor's coordinate space. It is supported on
++// Wayland and X11; other platforms behave like Fullscreen.
++func FullscreenAt(x, y int) Option {
++	return func(_ unit.Metric, cnf *Config) {
++		cnf.Mode = Fullscreen
++		cnf.OutputPos = &image.Point{X: x, Y: y}
++	}
++}
++
+ // TopMost windows will be rendered above all other non-top-most windows.
+ //
+ // TopMost windows are supported on macOS, Windows.

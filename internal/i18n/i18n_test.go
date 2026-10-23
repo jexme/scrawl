@@ -213,7 +213,7 @@ func TestCatalogCompleteness(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() && (d.Name() == "third_party" || d.Name() == ".git" || d.Name() == ".deps" || d.Name() == "capturespike") {
+		if d.IsDir() && (d.Name() == "third_party" || d.Name() == ".git" || d.Name() == ".deps" || d.Name() == ".claude" || d.Name() == "capturespike") {
 			return filepath.SkipDir
 		}
 		if d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") || strings.Contains(filepath.ToSlash(path), "internal/i18n") {
