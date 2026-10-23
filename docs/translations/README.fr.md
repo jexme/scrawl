@@ -145,7 +145,7 @@ Faites la première capture et appuyez sur `A`. Faites la suivante : la zone pr�
 
 ## Icône de la zone de notification et démarrage automatique
 
-`scrawl -tray` garde une icône dans la zone de notification : le clic gauche fait une capture et le menu propose « Screenshot », « Settings » et « Quit ». Pour la lancer à l'ouverture de session, activez *Settings → System → Autostart*. Sous GNOME, l'icône nécessite l'extension AppIndicator (activée par défaut dans Ubuntu).
+`scrawl -tray` garde une icône dans la zone de notification : le clic gauche fait une capture et le menu propose « Take screenshot », « Settings » et « Quit ». Pour la lancer à l'ouverture de session, activez *Settings → System → Autostart*. Sous GNOME, l'icône nécessite l'extension AppIndicator (activée par défaut dans Ubuntu).
 
 ## Réglages
 
@@ -171,6 +171,7 @@ Ouvrez-les depuis la barre d'outils (engrenage), avec `scrawl -settings` ou depu
 | `-fresh` | ne propose pas la zone de la capture précédente |
 | `-v` | affiche les temps mesurés |
 | `-version` | affiche la version et quitte |
+| `-exit-after DURATION` | quitte normalement après la durée donnée, pour les tests (par exemple `-exit-after 3s`) |
 
 ## Dépannage
 

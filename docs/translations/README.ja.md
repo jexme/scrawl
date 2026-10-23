@@ -145,7 +145,7 @@ Scrawl は screen-editor の新しい名前です。`~/.config/scrawl/config.jso
 
 ## トレイアイコンと自動起動
 
-`scrawl -tray` は通知領域にアイコンを置きます。左クリックでスクリーンショット、メニューには “Screenshot”、“Settings”、“Quit” があります。ログイン時に起動するには *Settings → System → Autostart* をオンにします。GNOME ではアイコンの表示に AppIndicator 拡張機能が必要です（Ubuntu では既定で有効）。
+`scrawl -tray` は通知領域にアイコンを置きます。左クリックでスクリーンショット、メニューには “Take screenshot”、“Settings”、“Quit” があります。ログイン時に起動するには *Settings → System → Autostart* をオンにします。GNOME ではアイコンの表示に AppIndicator 拡張機能が必要です（Ubuntu では既定で有効）。
 
 ## 設定
 
@@ -171,6 +171,7 @@ Scrawl は screen-editor の新しい名前です。`~/.config/scrawl/config.jso
 | `-fresh` | 前回の範囲を提案しない |
 | `-v` | 所要時間を表示する |
 | `-version` | バージョンを表示して終了する |
+| `-exit-after DURATION` | 指定した時間がたつと通常どおり終了する。テスト用 (例: `-exit-after 3s`) |
 
 ## トラブルシューティング
 

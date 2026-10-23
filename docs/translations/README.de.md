@@ -145,7 +145,7 @@ Machen Sie die erste Aufnahme und drücken Sie `A`. Machen Sie die nächste: Der
 
 ## Tray-Symbol und Autostart
 
-`scrawl -tray` hält ein Symbol im Benachrichtigungsbereich: Linksklick macht einen Screenshot, das Menü bietet „Screenshot“, „Settings“ und „Quit“. Damit es beim Anmelden startet, schalten Sie *Settings → System → Autostart* ein. Unter GNOME braucht das Symbol die AppIndicator-Erweiterung (unter Ubuntu standardmäßig aktiv).
+`scrawl -tray` hält ein Symbol im Benachrichtigungsbereich: Linksklick macht einen Take screenshot, das Menü bietet „Screenshot“, „Settings“ und „Quit“. Damit es beim Anmelden startet, schalten Sie *Settings → System → Autostart* ein. Unter GNOME braucht das Symbol die AppIndicator-Erweiterung (unter Ubuntu standardmäßig aktiv).
 
 ## Einstellungen
 
@@ -171,6 +171,7 @@ Machen Sie die erste Aufnahme und drücken Sie `A`. Machen Sie die nächste: Der
 | `-fresh` | bietet den Bereich der vorherigen Aufnahme nicht an |
 | `-v` | gibt Zeitmessungen aus |
 | `-version` | gibt die Version aus und beendet das Programm |
+| `-exit-after DURATION` | beendet sich nach der angegebenen Zeit normal, für Tests (zum Beispiel `-exit-after 3s`) |
 
 ## Fehlerbehebung
 

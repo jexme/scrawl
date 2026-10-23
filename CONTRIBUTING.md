@@ -31,7 +31,7 @@ sending a change.
 ## Maintainer: keep personal e-mail out of the history
 
 `make hooks` turns on `.githooks/`: a pre-commit check and a pre-push check that refuse any author or committer
-address that is not a `...@users.noreply.github.com` one. CI repeats the check on every push to `main`.
+address that is not a `...@users.noreply.github.com` one. CI repeats the check on every push to any branch (not on pull requests, which come with their authors' own addresses).
 
 ## Where things are
 

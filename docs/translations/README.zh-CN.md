@@ -145,7 +145,7 @@ Scrawl 是 screen-editor 的新名称。在 `~/.config/scrawl/config.json` 出�
 
 ## 托盘图标与自启动
 
-`scrawl -tray` 会在通知区域保留一个图标：左键单击截图，菜单中有 “Screenshot”、“Settings” 和 “Quit”。要在登录时启动，请打开 *Settings → System → Autostart*。在 GNOME 上，图标需要 AppIndicator 扩展（Ubuntu 默认已启用）。
+`scrawl -tray` 会在通知区域保留一个图标：左键单击截图，菜单中有 “Take screenshot”、“Settings” 和 “Quit”。要在登录时启动，请打开 *Settings → System → Autostart*。在 GNOME 上，图标需要 AppIndicator 扩展（Ubuntu 默认已启用）。
 
 ## 设置
 
@@ -171,6 +171,7 @@ Scrawl 是 screen-editor 的新名称。在 `~/.config/scrawl/config.json` 出�
 | `-fresh` | 不提供上一次截图的区域 |
 | `-v` | 打印耗时 |
 | `-version` | 打印版本并退出 |
+| `-exit-after DURATION` | 在给定时间后正常退出，用于测试（例如 `-exit-after 3s`） |
 
 ## 常见问题
 

@@ -145,7 +145,7 @@ Haz la primera captura y pulsa `A`. Haz la siguiente: el área anterior ya está
 
 ## Icono en la bandeja e inicio automático
 
-`scrawl -tray` mantiene un icono en el área de notificaciones: el clic izquierdo hace una captura y el menú tiene «Screenshot», «Settings» y «Quit». Para iniciarlo al entrar en la sesión, activa *Settings → System → Autostart*. En GNOME el icono necesita la extensión AppIndicator (activada por defecto en Ubuntu).
+`scrawl -tray` mantiene un icono en el área de notificaciones: el clic izquierdo hace una captura y el menú tiene «Take screenshot», «Settings» y «Quit». Para iniciarlo al entrar en la sesión, activa *Settings → System → Autostart*. En GNOME el icono necesita la extensión AppIndicator (activada por defecto en Ubuntu).
 
 ## Ajustes
 
@@ -171,6 +171,7 @@ Haz la primera captura y pulsa `A`. Haz la siguiente: el área anterior ya está
 | `-fresh` | no ofrece el área de la captura anterior |
 | `-v` | muestra los tiempos |
 | `-version` | muestra la versión y sale |
+| `-exit-after DURATION` | sale normalmente tras el tiempo indicado, para pruebas (por ejemplo `-exit-after 3s`) |
 
 ## Solución de problemas
 

@@ -145,7 +145,7 @@ Scrawl은 screen-editor의 새 이름입니다. `~/.config/scrawl/config.json`�
 
 ## 트레이 아이콘과 자동 시작
 
-`scrawl -tray`는 알림 영역에 아이콘을 둡니다. 왼쪽 클릭은 스크린샷, 메뉴에는 “Screenshot”, “Settings”, “Quit”이 있습니다. 로그인할 때 시작하려면 *Settings → System → Autostart*를 켜세요. GNOME에서는 아이콘을 보려면 AppIndicator 확장이 필요합니다(Ubuntu에서는 기본으로 켜져 있습니다).
+`scrawl -tray`는 알림 영역에 아이콘을 둡니다. 왼쪽 클릭은 스크린샷, 메뉴에는 “Take screenshot”, “Settings”, “Quit”이 있습니다. 로그인할 때 시작하려면 *Settings → System → Autostart*를 켜세요. GNOME에서는 아이콘을 보려면 AppIndicator 확장이 필요합니다(Ubuntu에서는 기본으로 켜져 있습니다).
 
 ## 설정
 
@@ -171,6 +171,7 @@ Scrawl은 screen-editor의 새 이름입니다. `~/.config/scrawl/config.json`�
 | `-fresh` | 이전 촬영의 영역을 제안하지 않는다 |
 | `-v` | 소요 시간을 출력한다 |
 | `-version` | 버전을 출력하고 종료한다 |
+| `-exit-after DURATION` | 지정한 시간이 지나면 정상 종료한다. 테스트용 (예: `-exit-after 3s`) |
 
 ## 문제 해결
 

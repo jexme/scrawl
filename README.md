@@ -254,7 +254,7 @@ at the bottom of the screen shows what is in the collection and has the same act
 ## Tray icon and autostart
 
 `scrawl -tray` keeps an icon in the notification area: left click takes a screenshot,
-the menu has "Screenshot", "Settings" and "Quit". To start it at login, switch on
+the menu has "Take screenshot", "Settings" and "Quit". To start it at login, switch on
 *Settings → System → Autostart*. On GNOME the icon needs the AppIndicator
 extension (enabled by default in Ubuntu).
 
@@ -286,6 +286,7 @@ Every key is described in the [settings reference](docs/SETTINGS.md).
 | `-fresh` | do not offer the area of the previous shot |
 | `-v` | print timings |
 | `-version` | print the version and exit |
+| `-exit-after DURATION` | exit normally after the given time, for testing (for example `-exit-after 3s`) |
 
 ## Troubleshooting
 
