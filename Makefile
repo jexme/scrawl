@@ -30,7 +30,11 @@ third_party/gio/.scrawl-patched: third_party/gio.patch scripts/setup-gio.sh go.m
 	./scripts/setup-gio.sh -f
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null)
-LDFLAGS := $(if $(VERSION),-ldflags "-X github.com/jexme/scrawl/internal/version.Version=$(VERSION)")
+# Release targets (dist, deb) strip the symbol table and DWARF (-s -w): a smaller binary and
+# package. `make build` keeps them for debugging.
+STRIP :=
+dist deb: STRIP := -s -w
+LDFLAGS = $(if $(or $(STRIP),$(VERSION)),-ldflags "$(STRIP) $(if $(VERSION),-X github.com/jexme/scrawl/internal/version.Version=$(VERSION))")
 
 build: gio
 	$(GO) build $(LDFLAGS) -o bin/scrawl ./cmd/scrawl
