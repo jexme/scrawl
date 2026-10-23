@@ -317,4 +317,5 @@ var ko = map[string]string{
 	"Set up once. 1. Type the hotkey (Print by default), press \"Assign\" and, if GNOME's own screenshot tool uses that key, \"Free the key\" (on KDE, Xfce and others bind the command \"scrawl\" to a key in the system keyboard settings). 2. Press the hotkey, drag an area and press Enter.":                                "처음 한 번만 설정합니다. 1. 실행 키(기본값 Print)를 입력하고 \"할당\"을 누릅니다. GNOME 기본 스크린샷 도구가 그 키를 쓰고 있으면 \"키 해제\"도 누릅니다(KDE, Xfce 등에서는 시스템 키보드 설정에서 \"scrawl\" 명령을 키에 지정하세요). 2. 키를 누르고 영역을 드래그한 뒤 Enter를 누릅니다.",
 	"Set up once. 1. Type the hotkey (Print by default) and press \"Assign\". 2. Press the hotkey, drag an area and press Enter.":                                                                                                                                                                                                "처음 한 번만 설정합니다. 1. 실행 키(기본값 Print)를 입력하고 \"할당\"을 누릅니다. 2. 키를 누르고 영역을 드래그한 뒤 Enter를 누릅니다.",
 	"Drag to select an area  ·  Enter copies and saves  ·  Esc cancels": "드래그로 영역 선택  ·  Enter로 복사 및 저장  ·  Esc로 취소",
+	"More: settings, to collection":                                     "더보기: 설정, 컬렉션에 추가",
 }

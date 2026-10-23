@@ -255,3 +255,53 @@ func TestEscDuringTextKeepsOverlay(t *testing.T) {
 		t.Errorf("Esc while typing must not close the overlay or drop annotations: finished=%v shapes=%d", finished, len(m.shapes))
 	}
 }
+
+// Esc closes an open menu or colour popup first; the overlay closes on the next Esc.
+func TestEscClosesMenuBeforeOverlay(t *testing.T) {
+	testenv.Config(t, t.TempDir())
+	m, finished := newTestMonitor(t)
+	m.sel, m.hasSel = image.Rect(10, 10, 200, 150), true
+	m.menuOpen = true
+	m.cancel()
+	if m.menuOpen || *finished {
+		t.Fatalf("the first Esc closes the menu only: menuOpen=%v finished=%v", m.menuOpen, *finished)
+	}
+	m.pick.open = true
+	m.cancel()
+	if m.pick.open || *finished {
+		t.Fatalf("the next Esc closes the colour popup only: open=%v finished=%v", m.pick.open, *finished)
+	}
+	m.cancel()
+	if !*finished {
+		t.Error("with nothing open Esc closes the overlay")
+	}
+}
+
+// Ctrl+A selects the whole frame; Shift makes a new selection square.
+func TestSelectAllAndShiftSquare(t *testing.T) {
+	testenv.Config(t, t.TempDir())
+	m, _ := newTestMonitor(t)
+	m.selectAll()
+	if !m.hasSel || m.sel != m.frame.Img.Bounds() {
+		t.Errorf("select all: hasSel=%v sel=%v", m.hasSel, m.sel)
+	}
+	found := false
+	for _, kb := range m.keys {
+		if kb.action == "select-all" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("Ctrl+A must be among the overlay keys")
+	}
+
+	m.hasSel = false
+	m.setTool(annotate.ToolSelect)
+	m.shift = true
+	m.press(f32.Pt(50, 50))
+	m.drag(f32.Pt(250, 120))
+	m.release(f32.Pt(250, 120))
+	if !m.hasSel || m.sel.Dx() != m.sel.Dy() || m.sel.Dx() < 150 {
+		t.Errorf("with Shift the selection must be a square: %v", m.sel)
+	}
+}

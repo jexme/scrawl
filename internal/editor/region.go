@@ -87,19 +87,45 @@ func applyResize(start image.Rectangle, e edge, p f32.Point, bounds image.Rectan
 	r := start
 	px := clampInt(int(math.Round(float64(p.X))), bounds.Min.X, bounds.Max.X)
 	py := clampInt(int(math.Round(float64(p.Y))), bounds.Min.Y, bounds.Max.Y)
-	switch e.hx {
-	case -1:
-		r.Min.X = min(px, r.Max.X-minSelection)
-	case 1:
-		r.Max.X = max(px, r.Min.X+minSelection)
+	if e.hx != 0 {
+		opp := start.Min.X // the edge that stays in place
+		if e.hx == -1 {
+			opp = start.Max.X
+		}
+		r.Min.X, r.Max.X = resizeAxis(opp, px, minSelection, bounds.Min.X, bounds.Max.X)
 	}
-	switch e.hy {
-	case -1:
-		r.Min.Y = min(py, r.Max.Y-minSelection)
-	case 1:
-		r.Max.Y = max(py, r.Min.Y+minSelection)
+	if e.hy != 0 {
+		opp := start.Min.Y
+		if e.hy == -1 {
+			opp = start.Max.Y
+		}
+		r.Min.Y, r.Max.Y = resizeAxis(opp, py, minSelection, bounds.Min.Y, bounds.Max.Y)
 	}
 	return r
+}
+
+// resizeAxis returns the span between the fixed edge opp and the dragged edge at p. Dragging
+// past the fixed edge flips the span instead of stopping at it; it is never shorter than min
+// and stays inside lo..hi.
+func resizeAxis(opp, p, min, lo, hi int) (a, b int) {
+	a, b = opp, p
+	if a > b {
+		a, b = b, a
+	}
+	if b-a < min {
+		if p >= opp {
+			b = a + min
+		} else {
+			a = b - min
+		}
+	}
+	if b > hi {
+		b, a = hi, hi-min
+	}
+	if a < lo {
+		a, b = lo, lo+min
+	}
+	return a, b
 }
 
 // applyMove shifts frame start by (dx, dy), without letting it go outside bounds.

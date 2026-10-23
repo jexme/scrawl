@@ -317,4 +317,5 @@ var zh = map[string]string{
 	"Set up once. 1. Type the hotkey (Print by default), press \"Assign\" and, if GNOME's own screenshot tool uses that key, \"Free the key\" (on KDE, Xfce and others bind the command \"scrawl\" to a key in the system keyboard settings). 2. Press the hotkey, drag an area and press Enter.":                                "只需设置一次。1. 输入启动快捷键（默认 Print），点击“分配”；如果 GNOME 自带截图工具占用了该键，再点击“释放按键”（在 KDE、Xfce 等环境中，请在系统键盘设置中把命令“scrawl”绑定到某个键）。2. 按下快捷键，拖出区域，再按 Enter。",
 	"Set up once. 1. Type the hotkey (Print by default) and press \"Assign\". 2. Press the hotkey, drag an area and press Enter.":                                                                                                                                                                                                "只需设置一次。1. 输入启动快捷键（默认 Print），点击“分配”。2. 按下快捷键，拖出区域，再按 Enter。",
 	"Drag to select an area  ·  Enter copies and saves  ·  Esc cancels": "拖动选择区域  ·  Enter 复制并保存  ·  Esc 取消",
+	"More: settings, to collection":                                     "更多：设置、加入合集",
 }

@@ -183,6 +183,12 @@ type monitor struct {
 	shapes      []annotate.Shape
 	cur         *annotate.Shape
 	stroke      []f32.Point // the raw path of the pen or marker stroke being drawn
+	// Tooltip of the toolbar button under the cursor: what it is offered this frame, what is
+	// shown now and since when the cursor has been resting on it.
+	tipCand, tipText string
+	tipCandRect      image.Rectangle
+	tipRect          image.Rectangle
+	tipSince         time.Time
 	// before is the selection and annotations that a new selection drag replaced: a click
 	// without dragging brings them back instead of leaving the user with nothing.
 	before struct {
@@ -361,9 +367,10 @@ func (m *monitor) layoutSizeLabel(gtx layout.Context, selWin image.Rectangle) {
 
 	w, h := dims.Size.X+2*pad, dims.Size.Y+pad
 	x, y := selWin.Min.X, selWin.Min.Y-h-gtx.Dp(4)
-	if y < 0 {
+	if y < 0 || image.Rect(x, y, x+w, y+h).Overlaps(m.barSpace) {
+		// No room above the selection, or the toolbar stands there: inside the selection.
 		y = selWin.Min.Y + gtx.Dp(4)
-		x += gtx.Dp(4)
+		x = selWin.Min.X + gtx.Dp(4)
 	}
 	defer op.Offset(image.Pt(x, y)).Push(gtx.Ops).Pop()
 	bg := clip.UniformRRect(image.Rect(0, 0, w, h), gtx.Dp(4))
@@ -501,6 +508,43 @@ func (m *monitor) handleKeys(gtx layout.Context) {
 	}
 }
 
+// cancel is what Esc does: it closes the open menu or colour popup first, and only then
+// closes the overlay.
+func (m *monitor) cancel() {
+	switch {
+	case m.menuOpen:
+		m.menuOpen = false
+	case m.pick.open:
+		m.pick.open = false
+	default:
+		m.quit()
+	}
+}
+
+// addBuiltinKeys adds the keys that cannot be remapped: Ctrl+A selects the whole frame.
+// A key that the user has given to another action is left to that action.
+func (m *monitor) addBuiltinKeys() {
+	b, ok := keymap.Parse("Ctrl+A")
+	if !ok {
+		return
+	}
+	probe := key.Event{Name: "A", Modifiers: key.ModCtrl, State: key.Press}
+	for _, kb := range m.keys {
+		if kb.binding.Matches(probe) {
+			return
+		}
+	}
+	m.keys = append(m.keys, keyBinding{action: "select-all", binding: b, run: m.selectAll})
+}
+
+// selectAll selects the whole frame (the whole monitor).
+func (m *monitor) selectAll() {
+	m.claim()
+	m.shapes, m.cur = nil, nil
+	m.sel, m.hasSel = m.frame.Img.Bounds(), true
+	m.useDefaultTool()
+}
+
 // keyBinding is an overlay key and the action it triggers.
 type keyBinding struct {
 	action  string
@@ -514,7 +558,7 @@ func (m *monitor) initKeys() {
 	keys := m.store.Get().Keys
 	actions := map[string]func(){
 		settings.ActionConfirm: func() { m.export(m.store.Get().Enter.Targets()) },
-		settings.ActionCancel:  m.quit,
+		settings.ActionCancel:  m.cancel,
 		settings.ActionRestore: m.applyLast,
 		settings.ActionAdd:     m.addToCollection,
 		settings.ActionGlue: func() {
@@ -544,6 +588,7 @@ func (m *monitor) initKeys() {
 		}
 	}
 	m.keys = nil
+	defer m.addBuiltinKeys()
 	for _, action := range settings.KeyActions {
 		b, ok := keymap.Parse(keys.Of(action))
 		if !ok {
@@ -735,6 +780,9 @@ func (m *monitor) drag(p f32.Point) {
 	case m.adjust == adjustMove:
 		m.sel = applyMove(m.adjStartSel, int(p.X-m.adjStartPt.X), int(p.Y-m.adjStartPt.Y), m.frame.Img.Bounds())
 	case m.dragging:
+		if m.shift {
+			p = squareTo(m.selStart, p, m.frame.Img.Bounds())
+		}
 		m.sel = rectOf(m.selStart, p)
 	case m.cur != nil:
 		p = m.clamp(p)
@@ -782,6 +830,9 @@ func (m *monitor) release(p f32.Point) {
 		m.adjust = adjustNone
 	case m.dragging:
 		m.dragging = false
+		if m.shift {
+			p = squareTo(m.selStart, p, m.frame.Img.Bounds())
+		}
 		m.sel = rectOf(m.selStart, p).Intersect(m.frame.Img.Bounds())
 		// A plain click without dragging is not counted as a region.
 		m.hasSel = m.sel.Dx() >= 4 && m.sel.Dy() >= 4

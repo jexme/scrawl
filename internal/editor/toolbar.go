@@ -236,6 +236,7 @@ func (m *monitor) toolbarClicks(gtx layout.Context) {
 func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.Rectangle) {
 	t := m.bar
 	m.toolbarClicks(gtx)
+	m.tipCand = ""
 	btn := gtx.Dp(34)
 	gap := gtx.Dp(4)
 	sep := gtx.Dp(10)
@@ -310,12 +311,14 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 					return layout.Dimensions{Size: g.Constraints.Min}
 				})
 			})
-			m.drawKeyCaption(gtx, image.Pt(x0, pad+btn), capKey(settings.ToolAction(settings.ToolNames[i])))
+			key := capKey(settings.ToolAction(settings.ToolNames[i]))
+			m.drawKeyCaption(gtx, image.Pt(x0, pad+btn), key)
+			m.hoverTip(tb.btn.Hovered(), r1.Min, x0, pad, btn, tipText(i18n.T(toolTipNames[i]), key))
 		}
 		p.divider()
 
 		acts := m.toolbarActions()
-		drawAct := func(a *actionButton) {
+		drawAct := func(a *actionButton, tip string) {
 			x0 := p.center()
 			p.place(func(g layout.Context) layout.Dimensions {
 				return a.btn.Layout(g, func(g layout.Context) layout.Dimensions {
@@ -324,15 +327,20 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 					return layout.Dimensions{Size: g.Constraints.Min}
 				})
 			})
+			key := ""
 			if a.action != "" {
-				m.drawKeyCaption(gtx, image.Pt(x0, pad+btn), capKey(a.action))
+				key = capKey(a.action)
+				m.drawKeyCaption(gtx, image.Pt(x0, pad+btn), key)
 			}
+			m.hoverTip(a.btn.Hovered(), r1.Min, x0, pad, btn, tipText(tip, key))
 		}
-		for _, act := range acts[:3] {
-			drawAct(act.a)
+		actTips := []string{i18n.T("Undo the last annotation"), i18n.T("Copy only"), i18n.T("Save only"), i18n.T("Close the overlay")}
+		for i, act := range acts[:3] {
+			drawAct(act.a, actTips[i])
 		}
 		p.divider()
 		m.menuAnchor = r1.Min.X + p.center()
+		moreX := p.center()
 		p.place(func(g layout.Context) layout.Dimensions {
 			return t.more.btn.Layout(g, func(g layout.Context) layout.Dimensions {
 				drawButton(g, m.menuOpen, t.more.btn.Hovered(), t.more.icon)
@@ -340,7 +348,8 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 				return layout.Dimensions{Size: g.Constraints.Min}
 			})
 		})
-		drawAct(acts[3].a)
+		m.hoverTip(t.more.btn.Hovered() && !m.menuOpen, r1.Min, moreX, pad, btn, i18n.T("More: settings, to collection"))
+		drawAct(acts[3].a, actTips[3])
 
 		// Absorb the toolbar events so they do not reach the canvas.
 		for {
@@ -385,6 +394,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 
 			// Line thickness, text size, blur strength: "−", current value, "+".
 			ic := iconColor
+			minusX := p.center()
 			p.place(func(g layout.Context) layout.Dimensions {
 				return t.wMinus.btn.Layout(g, func(g layout.Context) layout.Dimensions {
 					drawButtonColored(g, false, t.wMinus.btn.Hovered(), t.wMinus.icon, ic)
@@ -392,10 +402,12 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 					return layout.Dimensions{Size: g.Constraints.Min}
 				})
 			})
+			m.hoverTip(t.wMinus.btn.Hovered(), r2.Min, minusX, pad, btn, i18n.T("Thinner (text size, blur strength)"))
 			p.place(func(g layout.Context) layout.Dimensions {
 				m.drawWidthValue(g, true)
 				return layout.Dimensions{Size: g.Constraints.Min}
 			})
+			plusX := p.center()
 			p.place(func(g layout.Context) layout.Dimensions {
 				return t.wPlus.btn.Layout(g, func(g layout.Context) layout.Dimensions {
 					drawButtonColored(g, false, t.wPlus.btn.Hovered(), t.wPlus.icon, ic)
@@ -403,6 +415,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 					return layout.Dimensions{Size: g.Constraints.Min}
 				})
 			})
+			m.hoverTip(t.wPlus.btn.Hovered(), r2.Min, plusX, pad, btn, i18n.T("Thicker (text size, blur strength)"))
 
 			for {
 				if _, ok := gtx.Event(pointer.Filter{Target: &t.area2, Kinds: pointer.Press | pointer.Release | pointer.Drag}); !ok {
@@ -412,6 +425,7 @@ func (m *monitor) layoutToolbar(gtx layout.Context, win image.Point, sel image.R
 		}()
 	}
 
+	m.layoutTip(gtx, win)
 	m.layoutOverflowMenu(gtx, win)
 }
 

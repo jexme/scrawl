@@ -96,8 +96,8 @@ func TestToast(t *testing.T) {
 // TestSizeLabelSetting: the "W × H" label is drawn until it is turned off in the settings.
 func TestSizeLabelSetting(t *testing.T) {
 	sandbox(t)
-	const W, H = 400, 300
-	m, _ := newTestMonitor(t)
+	const W, H = 400, 520 // tall enough for the toolbar to sit below the selection, not over the label
+	m := newMonitor(Config{Fresh: true}, &screencast.Frame{Img: solid(W, H, color.RGBA{R: 40, G: 90, B: 200, A: 255})}, func() {})
 	m.sel, m.hasSel = image.Rect(100, 120, 300, 220), true
 
 	win, err := headless.NewWindow(W, H)

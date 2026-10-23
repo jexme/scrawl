@@ -47,10 +47,24 @@ func TestApplyResize(t *testing.T) {
 	if want := image.Rect(100, 100, 400, 350); got != want {
 		t.Errorf("правый нижний угол: %v, ожидали %v", got, want)
 	}
-	// The frame cannot be turned inside out: the left side stops at the right minus the minimum.
+	// Dragging a side past the opposite one turns the frame over instead of stopping at it.
 	got = applyResize(start, edge{-1, 0}, f32.Pt(500, 150), bounds)
+	if want := image.Rect(300, 100, 500, 200); got != want {
+		t.Errorf("левая сторона за правую: %v, ожидали %v", got, want)
+	}
+	// Right at the opposite side the frame keeps its minimum size.
+	got = applyResize(start, edge{-1, 0}, f32.Pt(299, 150), bounds)
 	if got.Dx() != minSelection || got.Max.X != 300 {
-		t.Errorf("левая сторона за правую: %v", got)
+		t.Errorf("у самой противоположной стороны: %v", got)
+	}
+	// A corner flips both ways at once, and the result stays inside the frame.
+	got = applyResize(start, edge{1, 1}, f32.Pt(10, 10), bounds)
+	if want := image.Rect(10, 10, 100, 100); got != want {
+		t.Errorf("правый нижний угол за левый верхний: %v, ожидали %v", got, want)
+	}
+	got = applyResize(start, edge{-1, -1}, f32.Pt(-50, -50), bounds)
+	if !got.In(bounds) || got.Max != start.Max {
+		t.Errorf("за границей кадра: %v", got)
 	}
 	// Going outside the frame is clipped.
 	got = applyResize(start, edge{1, 1}, f32.Pt(5000, 5000), bounds)
