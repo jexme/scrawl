@@ -69,7 +69,7 @@ it stops any running `scrawl.exe` (`taskkill`, first politely, then forced); uni
 and leaves the settings in `%AppData%\scrawl`. Build it locally after `scripts\build-windows.ps1`:
 
 ```powershell
-iscc /DAppVersion=0.1.0-rc3 /DNumVersion=0.1.0.0 packaging\windows\scrawl.iss   # dist\scrawl-v0.1.0-rc3-windows-amd64-setup.exe
+iscc /DAppVersion=0.1.0-rc3 /DNumVersion=0.1.0.0 packaging\windows\scrawl.iss   # dist\scrawl-v0.1.0-rc4-windows-amd64-setup.exe
 ```
 
 **The installer step is not tested.** It was written without a Windows machine and has never run on a real runner. The

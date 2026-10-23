@@ -60,7 +60,7 @@ sudo apt update && sudo apt install scrawl
 
 ## ステータス
 
-個人プロジェクトで、活発に開発中です。現在のバージョンはプレリリースです（`v0.1.0-rc3`）。すぐ使えるパッケージは [Releases](https://github.com/jexme/scrawl/releases) ページにあります。ソースからビルドすることもできます（数分で終わります）。Linux：主な対象は Wayland 上の GNOME です。**X11** セッション（Xorg 上の GNOME、KDE、XFCE など）でも動作しますが、このサポートは新しく、今のところ仮想 X サーバーでしか試していません。実機での報告を歓迎します。**Windows 10 と 11** でも動作します（画面取得、注釈、クリップボード、トレイアイコン、グローバルホットキー）。この移植版は新しく、100% のスケールでしか試していません。ビルド方法と未対応の点は [docs/WINDOWS.md](../WINDOWS.md) を参照してください。
+個人プロジェクトで、活発に開発中です。現在のバージョンはプレリリースです（`v0.1.0-rc4`）。すぐ使えるパッケージは [Releases](https://github.com/jexme/scrawl/releases) ページにあります。ソースからビルドすることもできます（数分で終わります）。Linux：主な対象は Wayland 上の GNOME です。**X11** セッション（Xorg 上の GNOME、KDE、XFCE など）でも動作しますが、このサポートは新しく、今のところ仮想 X サーバーでしか試していません。実機での報告を歓迎します。**Windows 10 と 11** でも動作します（画面取得、注釈、クリップボード、トレイアイコン、グローバルホットキー）。この移植版は新しく、100% のスケールでしか試していません。ビルド方法と未対応の点は [docs/WINDOWS.md](../WINDOWS.md) を参照してください。
 
 ## 必要なもの
 
@@ -133,7 +133,7 @@ Go（バージョンは `go.mod` を参照）が必要です。`sudo` が使え�
 そのほかの方法：
 
 - **ポータブル zip。** `scrawl-VERSION-windows-amd64.zip` とその `.sha256` をダウンロードし、常設のフォルダーに展開して（アーカイブビューアーから直接ではなく）`scrawl.exe` を実行します。`scrawl.exe` をダブルクリックすると、通知領域のアイコンが起動します。単体の `scrawl-VERSION-windows-amd64.exe` も公開されています。更新するには、アイコンのメニューから Scrawl を終了して、ファイルを置き換えます。
-- **[Scoop](https://scoop.sh)：** `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc3/scrawl.json`。このアドレスは 1 つのプレリリースに固定されているため、リリース候補の間で更新するには、`scoop uninstall scrawl` を実行してから、新しいバージョンの URL で `scoop install` を実行します（安定版リリースか bucket ができるまで）。マニフェストを `https://github.com/jexme/scrawl/releases/latest/download/scrawl.json` から取得できるようになれば（安定版リリースがあれば）、`scoop update scrawl` が使えます。
+- **[Scoop](https://scoop.sh)：** `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc4/scrawl.json`。このアドレスは 1 つのプレリリースに固定されているため、リリース候補の間で更新するには、`scoop uninstall scrawl` を実行してから、新しいバージョンの URL で `scoop install` を実行します（安定版リリースか bucket ができるまで）。マニフェストを `https://github.com/jexme/scrawl/releases/latest/download/scrawl.json` から取得できるようになれば（安定版リリースがあれば）、`scoop update scrawl` が使えます。
 
 - **アイコン**は通知領域にあります。Windows 11 では時計の横の `^` 矢印の中に隠れることがあるので、外へドラッグしておくと常に表示されます。
 - **Print キー**は既定のホットキーです。ほかのプログラム（Greenshot、ShareX、Lightshot）がこのキーを握っていることがよくあります。Windows 自体が握っていることもあります：設定 → アクセシビリティ → キーボード → *Print Screen ボタンを使って画面キャプチャを開く*：これをオフにしてください。または `scrawl.exe -settings` で別のキー（たとえば `<Control><Alt>a`）を選びます。キーが使われているときはアイコンが知らせ、そのまま再試行を続けます。

@@ -68,7 +68,7 @@ Otros sistemas: [Windows](#windows-10-y-11), otras distribuciones de Linux (un a
 
 ## Estado
 
-Proyecto personal en desarrollo activo; la versión actual es una versión preliminar (`v0.1.0-rc3`). Los paquetes ya hechos están en la página de
+Proyecto personal en desarrollo activo; la versión actual es una versión preliminar (`v0.1.0-rc4`). Los paquetes ya hechos están en la página de
 [Releases](https://github.com/jexme/scrawl/releases); también puedes compilarlo desde el código fuente (lleva unos minutos).
 Linux: el objetivo principal es GNOME en Wayland. Las sesiones **X11** (GNOME sobre Xorg, KDE,
 XFCE y otras) también funcionan, pero ese soporte es nuevo y hasta ahora solo se ha probado en un
@@ -162,7 +162,7 @@ Alternativas:
 - **Zip portátil.** Descarga `scrawl-VERSION-windows-amd64.zip` y su `.sha256`, descomprímelo en una carpeta permanente (no
   directamente desde el visor del archivo comprimido) y ejecuta `scrawl.exe`. Al hacer doble clic en `scrawl.exe` se inicia el icono del área de notificación.
   También se publica un único `scrawl-VERSION-windows-amd64.exe`. Para actualizar, cierra Scrawl desde el menú de su icono y sustituye el archivo.
-- **[Scoop](https://scoop.sh):** `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc3/scrawl.json`.
+- **[Scoop](https://scoop.sh):** `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc4/scrawl.json`.
   Esa dirección fija una versión preliminar concreta, así que entre una versión candidata y otra se actualiza con `scoop uninstall scrawl` y `scoop install`
   con la URL de la nueva versión (hasta que haya una versión estable o un bucket). Cuando el manifiesto se sirva desde
   `https://github.com/jexme/scrawl/releases/latest/download/scrawl.json` (exista una versión estable), `scoop update scrawl` funcionará.

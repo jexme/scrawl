@@ -60,7 +60,7 @@ sudo apt update && sudo apt install scrawl
 
 ## 상태
 
-활발히 개발 중인 개인 프로젝트이며, 현재 버전은 사전 릴리스입니다(`v0.1.0-rc3`). 바로 쓸 수 있는 패키지는 [Releases](https://github.com/jexme/scrawl/releases) 페이지에 있으며, 소스에서 빌드할 수도 있습니다(몇 분이면 됩니다). Linux: 주요 대상은 Wayland의 GNOME입니다. **X11** 세션(Xorg의 GNOME, KDE, XFCE 등)에서도 동작하지만, 이 지원은 새것이고 지금까지 가상 X 서버에서만 테스트했습니다. 실제 기기에서의 제보를 환영합니다. **Windows 10과 11**에서도 동작합니다(캡처, 주석, 클립보드, 트레이 아이콘, 전역 단축키). 이 포팅은 새것이며 100% 배율에서만 시험해 보았습니다. 빌드 방법과 아직 없는 기능은 [docs/WINDOWS.md](../WINDOWS.md)를 참고하세요.
+활발히 개발 중인 개인 프로젝트이며, 현재 버전은 사전 릴리스입니다(`v0.1.0-rc4`). 바로 쓸 수 있는 패키지는 [Releases](https://github.com/jexme/scrawl/releases) 페이지에 있으며, 소스에서 빌드할 수도 있습니다(몇 분이면 됩니다). Linux: 주요 대상은 Wayland의 GNOME입니다. **X11** 세션(Xorg의 GNOME, KDE, XFCE 등)에서도 동작하지만, 이 지원은 새것이고 지금까지 가상 X 서버에서만 테스트했습니다. 실제 기기에서의 제보를 환영합니다. **Windows 10과 11**에서도 동작합니다(캡처, 주석, 클립보드, 트레이 아이콘, 전역 단축키). 이 포팅은 새것이며 100% 배율에서만 시험해 보았습니다. 빌드 방법과 아직 없는 기능은 [docs/WINDOWS.md](../WINDOWS.md)를 참고하세요.
 
 ## 요구 사항
 
@@ -133,7 +133,7 @@ Go(`go.mod`에 적힌 버전)가 필요합니다. `sudo`가 없다면 `scripts/f
 다른 방법:
 
 - **휴대용 zip.** `scrawl-VERSION-windows-amd64.zip`과 해당 `.sha256`을 받아 고정된 폴더에 풀고(압축 파일 뷰어에서 바로 실행하지 마세요) `scrawl.exe`를 실행합니다. `scrawl.exe`를 더블 클릭하면 알림 영역 아이콘이 시작됩니다. 단독 파일인 `scrawl-VERSION-windows-amd64.exe`도 공개됩니다. 업데이트하려면 아이콘 메뉴에서 Scrawl을 종료한 다음 파일을 교체하세요.
-- **[Scoop](https://scoop.sh):** `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc3/scrawl.json`. 이 주소는 사전 릴리스 하나에 고정되어 있으므로, 릴리스 후보 사이에는 `scoop uninstall scrawl`을 실행한 뒤 새 버전의 URL로 `scoop install`을 실행해 업데이트합니다(정식 릴리스나 bucket이 생길 때까지). 매니페스트를 `https://github.com/jexme/scrawl/releases/latest/download/scrawl.json`에서 받을 수 있게 되면(정식 릴리스가 생기면) `scoop update scrawl`이 동작합니다.
+- **[Scoop](https://scoop.sh):** `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc4/scrawl.json`. 이 주소는 사전 릴리스 하나에 고정되어 있으므로, 릴리스 후보 사이에는 `scoop uninstall scrawl`을 실행한 뒤 새 버전의 URL로 `scoop install`을 실행해 업데이트합니다(정식 릴리스나 bucket이 생길 때까지). 매니페스트를 `https://github.com/jexme/scrawl/releases/latest/download/scrawl.json`에서 받을 수 있게 되면(정식 릴리스가 생기면) `scoop update scrawl`이 동작합니다.
 
 - **아이콘**은 알림 영역에 있습니다. Windows 11에서는 시계 옆의 `^` 화살표 뒤에 숨을 수 있으니, 밖으로 끌어내면 계속 보입니다.
 - **Print 키**가 기본 단축키입니다. 다른 프로그램(Greenshot, ShareX, Lightshot)이 이 키를 쥐고 있는 경우가 많습니다. Windows 자체가 쥐고 있을 수도 있습니다: 설정 → 접근성 → 키보드 → *Print Screen 단추를 사용하여 화면 캡처 열기*: 이것을 끄세요. 또는 `scrawl.exe -settings`에서 다른 키(예: `<Control><Alt>a`)를 고르세요. 키가 이미 사용 중이면 아이콘이 알려 주고 계속 다시 시도합니다.

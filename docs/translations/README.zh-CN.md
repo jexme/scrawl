@@ -60,7 +60,7 @@ sudo apt update && sudo apt install scrawl
 
 ## 状态
 
-个人项目，正在积极开发；当前版本是预发布版本（`v0.1.0-rc3`）。现成的安装包在 [Releases](https://github.com/jexme/scrawl/releases) 页面；也可以从源码构建（几分钟即可）。Linux：主要目标是 Wayland 下的 GNOME。**X11 会话**（Xorg 下的 GNOME、KDE、XFCE 等）也能使用，但这项支持是新的，目前只在虚拟 X 服务器上测试过，欢迎在真实机器上反馈。**Windows 10 和 11** 也能使用（截图、标注、剪贴板、托盘图标和全局快捷键）；这个移植版是新的，目前只在 100% 缩放下试用过，构建方法和尚未实现的部分见 [docs/WINDOWS.md](../WINDOWS.md)。
+个人项目，正在积极开发；当前版本是预发布版本（`v0.1.0-rc4`）。现成的安装包在 [Releases](https://github.com/jexme/scrawl/releases) 页面；也可以从源码构建（几分钟即可）。Linux：主要目标是 Wayland 下的 GNOME。**X11 会话**（Xorg 下的 GNOME、KDE、XFCE 等）也能使用，但这项支持是新的，目前只在虚拟 X 服务器上测试过，欢迎在真实机器上反馈。**Windows 10 和 11** 也能使用（截图、标注、剪贴板、托盘图标和全局快捷键）；这个移植版是新的，目前只在 100% 缩放下试用过，构建方法和尚未实现的部分见 [docs/WINDOWS.md](../WINDOWS.md)。
 
 ## 系统要求
 
@@ -133,7 +133,7 @@ make install            # 构建并安装到 ~/.local（系统级安装用 PREFI
 其他方式：
 
 - **便携 zip。**下载 `scrawl-VERSION-windows-amd64.zip` 和对应的 `.sha256`，解压到一个固定的文件夹（不要直接在压缩包查看器里运行），然后运行 `scrawl.exe`。双击 `scrawl.exe` 会启动通知区域图标。同时还提供单独的 `scrawl-VERSION-windows-amd64.exe`。更新时，请先从图标菜单退出 Scrawl，再替换文件。
-- **[Scoop](https://scoop.sh)：**`scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc3/scrawl.json`。这个地址固定指向某一个预发布版本，所以在候选版本之间更新要先执行 `scoop uninstall scrawl`，再用新版本的地址执行 `scoop install`（直到有正式版本或 bucket 为止）。一旦清单可以通过 `https://github.com/jexme/scrawl/releases/latest/download/scrawl.json` 获取（即已有正式版本），`scoop update scrawl` 就可以使用了。
+- **[Scoop](https://scoop.sh)：**`scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc4/scrawl.json`。这个地址固定指向某一个预发布版本，所以在候选版本之间更新要先执行 `scoop uninstall scrawl`，再用新版本的地址执行 `scoop install`（直到有正式版本或 bucket 为止）。一旦清单可以通过 `https://github.com/jexme/scrawl/releases/latest/download/scrawl.json` 获取（即已有正式版本），`scoop update scrawl` 就可以使用了。
 
 - **图标**在通知区域；在 Windows 11 中它可能藏在时钟旁边的 `^` 箭头后面，把它拖出来就能一直显示。
 - **Print 键**是默认快捷键。它常被其他程序占用（Greenshot、ShareX、Lightshot），Windows 本身也可能占用：设置 → 辅助功能 → 键盘 → *使用 Print Screen 按钮打开屏幕截图*：把它关掉。或者在 `scrawl.exe -settings` 中换一个键，例如 `<Control><Alt>a`。如果这个键被占用，图标会告诉你，并持续重试。

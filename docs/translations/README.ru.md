@@ -76,7 +76,7 @@ sudo apt update && sudo apt install scrawl
 
 ## Статус
 
-Личный проект в активной разработке; текущая версия предварительная (`v0.1.0-rc3`). Готовые пакеты лежат на странице
+Личный проект в активной разработке; текущая версия предварительная (`v0.1.0-rc4`). Готовые пакеты лежат на странице
 [Releases](https://github.com/jexme/scrawl/releases); можно и собрать из исходников (несколько минут). Linux: основная цель это GNOME на Wayland. **Сеансы X11** (GNOME на Xorg, KDE, XFCE и другие)
 тоже работают, но эта поддержка новая и пока проверена только на виртуальном X-сервере, так что
 отчёты с настоящих машин нужны. **Windows 10 и 11** тоже работают (захват, аннотации,
@@ -172,7 +172,7 @@ make install            # собирает и ставит в ~/.local (PREFIX=/
 - **Портативный zip.** Скачайте `scrawl-ВЕРСИЯ-windows-amd64.zip` и его `.sha256`, распакуйте в постоянную папку (не
   прямо из просмотрщика архивов) и запустите `scrawl.exe`. Двойной клик по `scrawl.exe` запускает значок в области уведомлений.
   Публикуется и один файл `scrawl-ВЕРСИЯ-windows-amd64.exe`. Чтобы обновиться, закройте Scrawl из меню значка и замените файл.
-- **[Scoop](https://scoop.sh):** `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc3/scrawl.json`.
+- **[Scoop](https://scoop.sh):** `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc4/scrawl.json`.
   Этот адрес привязан к одному предварительному выпуску, поэтому между кандидатами в релизы обновляйтесь командами
   `scoop uninstall scrawl` и `scoop install` с адресом новой версии (пока нет стабильного релиза или bucket). Когда манифест
   будет отдаваться по адресу `https://github.com/jexme/scrawl/releases/latest/download/scrawl.json` (появится стабильный

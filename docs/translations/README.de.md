@@ -67,7 +67,7 @@ unten [Installation](#installation).
 
 ## Status
 
-Ein persönliches Projekt in aktiver Entwicklung; die aktuelle Version ist eine Vorabversion (`v0.1.0-rc3`). Fertige Pakete gibt es auf der Seite
+Ein persönliches Projekt in aktiver Entwicklung; die aktuelle Version ist eine Vorabversion (`v0.1.0-rc4`). Fertige Pakete gibt es auf der Seite
 [Releases](https://github.com/jexme/scrawl/releases); man kann es auch aus dem Quellcode bauen (ein paar Minuten).
 Linux: Hauptziel ist GNOME unter Wayland. **X11**-Sitzungen (GNOME unter Xorg, KDE,
 XFCE und andere) funktionieren ebenfalls, doch diese Unterstützung ist neu und bisher nur auf einem
@@ -159,7 +159,7 @@ Alternativen:
 - **Portables zip.** Laden Sie `scrawl-VERSION-windows-amd64.zip` und die zugehörige `.sha256` herunter, entpacken Sie es in einen dauerhaften Ordner (nicht
   direkt aus dem Archivbetrachter) und führen Sie `scrawl.exe` aus. Ein Doppelklick auf `scrawl.exe` startet das Symbol im Infobereich.
   Auch eine einzelne `scrawl-VERSION-windows-amd64.exe` wird veröffentlicht. Zum Aktualisieren beenden Sie Scrawl über das Menü des Symbols und ersetzen die Datei.
-- **[Scoop](https://scoop.sh):** `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc3/scrawl.json`.
+- **[Scoop](https://scoop.sh):** `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc4/scrawl.json`.
   Diese Adresse ist an eine Vorabversion gebunden; zwischen Release-Kandidaten aktualisieren Sie daher mit `scoop uninstall scrawl` und `scoop install`
   mit der URL der neuen Version (bis es ein stabiles Release oder einen Bucket gibt). Sobald das Manifest unter
   `https://github.com/jexme/scrawl/releases/latest/download/scrawl.json` ausgeliefert wird (ein stabiles Release existiert), funktioniert `scoop update scrawl`.
