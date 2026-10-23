@@ -32,8 +32,8 @@ The `.sources` file carries the signing key inside it, so there is no separate k
 built for **amd64** only; on arm64 [build from source](#install).
 
 **2. Set up once:** start Scrawl from the application menu (or run `scrawl`): the first launch opens a short guide
-on the tab "System" (you can open it any time with `scrawl -settings`). On Wayland press "Pick monitors again"
-(GNOME asks once per monitor; tick "Remember this choice") and "Grant permission". Then type a hotkey
+on the tab "System" (you can open it any time with `scrawl -settings`). On Wayland press "Set up capture"
+(GNOME asks once per monitor: choose a different monitor in each dialog and tick "Remember this choice"). Then type a hotkey
 (`Print` by default) and press "Assign". GNOME's own screenshot tool also uses `Print`: press "Free the key" to
 turn that built-in shortcut off (only that one key, and you can undo it). On X11 only the hotkey is needed.
 
@@ -197,7 +197,7 @@ Build from source and what is missing: [docs/WINDOWS.md](docs/WINDOWS.md).
 
 *On X11 steps 1 and 2 are not needed (there is no portal), only the hotkey.*
 
-Open the settings window (`scrawl -settings`, tab "System") and use these buttons, or run the commands:
+Open the settings window (`scrawl -settings`, tab "System"). The button "Set up capture" does steps 1 and 2 in one go (on the very first launch the window opens by itself). Or use the separate buttons or run the commands:
 
 1. **Pick the monitors:** button "Pick monitors again" or `scrawl -setup`.
    GNOME shows one dialog **per monitor**. In each, choose a *different* monitor,
@@ -236,7 +236,8 @@ at `scrawl`. The last area and the collection start fresh.
 | `Enter` | copy to the clipboard **and** save to a file (what it does is configurable) |
 | `Ctrl+C` / `Ctrl+S` | only copy / only save |
 | `Ctrl+Z` | undo the last annotation |
-| `Esc` | cancel |
+| `Esc` | cancel (closes an open menu first; while typing a text it drops only the text) |
+| `Ctrl+A` | select the whole screen of the monitor (not remappable) |
 | `R` | restore the area of the previous shot |
 | `V` `P` `L` `W` `B` `M` `U` `T` `N` | tools: select, pen, line, arrow, box, marker, blur, text, number stamp (when an area is selected) |
 | `+` / `-` | thickness, text size or blur strength of the current tool (like the mouse wheel) |
@@ -244,6 +245,7 @@ at `scrawl`. The last area and the collection start fresh.
 | `G` | glue the collection (and the current area) into one image |
 | `D` | save the collection as separate files and put the file list in the clipboard |
 | mouse wheel | thickness, text size or blur strength of the current tool |
+| `Shift` while drawing | pen and marker: a straight line; line and arrow: snap to 45°; box and blur: a square. `Shift` while selecting an area: a square |
 
 Every key can be changed in the settings window (the "Keys" tab).
 
@@ -257,7 +259,7 @@ While a drawing tool is on, a second row appears under it: eight colours, a rain
 your own colour (opens a palette; the colour is remembered) and `−` thickness `+`. The "select"
 tool has neither, so the row is hidden.
 
-The buttons that have a key show it under the icon (the keys come from the settings).
+The buttons that have a key show it under the icon (the keys come from the settings). Hold the cursor on a button for a moment to see its name and key. Shortcuts work in any keyboard layout (a Russian layout, for example), by the position of the key.
 
 ### Before/after collections
 
