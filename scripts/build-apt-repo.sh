@@ -47,10 +47,17 @@ cp "$in"/*.deb "$out/$pool/"
 	} > "dists/$suite/Release"
 
 	if [ -n "${GPG_KEY_ID:-}" ]; then
-		gpg --batch --yes --pinentry-mode loopback ${GPG_PASSPHRASE:+--passphrase "$GPG_PASSPHRASE"} \
-			-u "$GPG_KEY_ID" --clearsign -o "dists/$suite/InRelease" "dists/$suite/Release"
-		gpg --batch --yes --pinentry-mode loopback ${GPG_PASSPHRASE:+--passphrase "$GPG_PASSPHRASE"} \
-			-u "$GPG_KEY_ID" --armor --detach-sign -o "dists/$suite/Release.gpg" "dists/$suite/Release"
+		# The passphrase goes to gpg through a pipe (--passphrase-fd 0), never through argv,
+		# where every local user could read it in the process list.
+		sign() {
+			if [ -n "${GPG_PASSPHRASE:-}" ]; then
+				printf '%s' "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 -u "$GPG_KEY_ID" "$@"
+			else
+				gpg --batch --yes --pinentry-mode loopback -u "$GPG_KEY_ID" "$@"
+			fi
+		}
+		sign --clearsign -o "dists/$suite/InRelease" "dists/$suite/Release"
+		sign --armor --detach-sign -o "dists/$suite/Release.gpg" "dists/$suite/Release"
 		# The public key for apt: signed-by accepts a binary (dearmored) file, and the armored
 		# one can be embedded into a deb822 .sources file.
 		gpg --batch --yes --export "$GPG_KEY_ID" > scrawl-archive-keyring.gpg
