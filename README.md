@@ -148,20 +148,33 @@ Make sure `~/.local/bin` is in your `PATH`.
 
 ### Windows 10 and 11
 
-Download `scrawl-VERSION-windows-amd64.zip` and its `.sha256` from the [Releases](https://github.com/jexme/scrawl/releases)
-page, unpack it anywhere and run `scrawl.exe -tray`. It is a portable program: no installer, nothing else to install.
-If you prefer a single file, download `scrawl-VERSION-windows-amd64.exe` (with its `.sha256`) instead and run it the same way.
-With [Scoop](https://scoop.sh): `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc3/scrawl.json` (the `releases/latest/...` address works only once there is a stable release, pre-releases are skipped).
+**Recommended: the installer.** Download `scrawl-VERSION-windows-amd64-setup.exe` from the
+[Releases](https://github.com/jexme/scrawl/releases) page and run it. It installs for your account only (no administrator
+rights), adds a Start menu entry, can start Scrawl when you sign in, and starts it when it is done. To update, run the newer
+setup: it quits the old Scrawl first. If a release has no setup file, use one of the options below.
+
+Alternatives:
+
+- **Portable zip.** Download `scrawl-VERSION-windows-amd64.zip` and its `.sha256`, unpack it into a permanent folder (not
+  straight from the archive viewer) and run `scrawl.exe`. Double-clicking `scrawl.exe` starts the notification-area icon.
+  A single `scrawl-VERSION-windows-amd64.exe` is published too. To update, quit Scrawl from its icon menu and replace the file.
+- **[Scoop](https://scoop.sh):** `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc3/scrawl.json`.
+  That address pins one pre-release, so between release candidates you update with `scoop uninstall scrawl` and `scoop install`
+  with the new version's URL (until there is a stable release or a bucket). Once the manifest is served from
+  `https://github.com/jexme/scrawl/releases/latest/download/scrawl.json` (a stable release exists), `scoop update scrawl` works.
 
 - **The icon** is in the notification area; in Windows 11 it may hide behind the `^` arrow next to the clock, drag it out to keep it visible.
 - **The Print key** is the default hotkey. Another program often holds it (Greenshot, ShareX, Lightshot). Windows itself may too:
   Settings, Accessibility, Keyboard, *Use the Print screen button to open screen capture*: turn it off. Or pick another key in
   `scrawl.exe -settings`, for example `<Control><Alt>a`. The icon tells you when the key is taken and keeps trying.
-- **"Windows protected your PC"** (SmartScreen) may appear: the program is not code-signed yet. Check the SHA-256 against the
-  `.sha256` file (`Get-FileHash scrawl-*.zip`), then *More info*, *Run anyway*. The build comes from public CI:
-  `gh attestation verify scrawl-*.zip --repo jexme/scrawl` proves it. Antivirus programs may flag any new unsigned Go program;
-  report such a case as an issue.
-- **Autostart** is the checkbox in `scrawl.exe -settings`, tab *System* (a value in `HKCU\...\Run`). Keep the folder where it is, or toggle it again after moving.
+- **"Windows protected your PC"** (SmartScreen) appears because the program is not code-signed yet: click *More info*, then
+  *Run anyway*. To check the file first, compare `Get-FileHash` with the `.sha256` file, or run
+  `gh attestation verify scrawl-*-setup.exe --repo jexme/scrawl` (the build comes from public CI). Antivirus programs may flag
+  any new unsigned Go program; report such a case as an issue.
+- **Autostart** is the checkbox in `scrawl.exe -settings`, tab *System* (a value in `HKCU\...\Run`), or a box in the installer.
+  If you move or update the program, the next start of the icon rewrites the entry to the new place (a disabled autostart stays off).
+- **Starting a newer version while an older one is running:** Scrawl tells you which version is running; quit it from the
+  icon menu first, then start the new one.
 
 Build from source and what is missing: [docs/WINDOWS.md](docs/WINDOWS.md).
 
