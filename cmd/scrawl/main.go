@@ -18,6 +18,7 @@ import (
 	"github.com/jexme/scrawl/internal/autostart"
 	"github.com/jexme/scrawl/internal/editor"
 	"github.com/jexme/scrawl/internal/fonts"
+	"github.com/jexme/scrawl/internal/hotkey"
 	"github.com/jexme/scrawl/internal/i18n"
 	"github.com/jexme/scrawl/internal/screencast"
 	"github.com/jexme/scrawl/internal/settings"
@@ -36,6 +37,7 @@ func main() {
 	verbose := flag.Bool("v", false, i18n.T("print timings"))
 	fresh := flag.Bool("fresh", false, i18n.T("do not offer the area of the previous screenshot"))
 	openSettings := flag.Bool("settings", false, i18n.T("open the settings window"))
+	removeHotkey := flag.Bool("remove-hotkey", false, i18n.T("remove the Scrawl shortcut from the GNOME keyboard settings and exit"))
 	grant := flag.Bool("grant-screenshot", false, i18n.T("allow the app the fallback capture through the Screenshot portal and exit"))
 	exitAfter := flag.Duration("exit-after", 0, i18n.T("exit normally after the given time (for testing)"))
 	trayMode := flag.Bool("tray", false, i18n.T("keep an icon in the notification area (for starting at login)"))
@@ -56,6 +58,19 @@ func main() {
 		if running := runTray(*exitAfter, bare, *autostartRun); !running || *trayMode {
 			return
 		}
+	}
+
+	if *removeHotkey {
+		n, err := hotkey.Remove()
+		switch {
+		case err != nil:
+			fatal(i18n.T("could not remove the shortcut: %v"), err)
+		case n == 0:
+			fmt.Println(i18n.T("There is no Scrawl shortcut in the GNOME keyboard settings"))
+		default:
+			fmt.Println(i18n.T("The Scrawl shortcut was removed from the GNOME keyboard settings"))
+		}
+		return
 	}
 
 	if *grant && x11capture.IsSession() {

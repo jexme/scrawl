@@ -255,6 +255,41 @@ func Assign(accel, bin string) (Result, error) {
 	return res, nil
 }
 
+// Remove deletes the program's own shortcut (or shortcuts) from the GNOME keyboard settings and
+// returns how many were removed. A package manager cannot do this for a user on removal, so
+// the user runs `scrawl -remove-hotkey` first. Other shortcuts are not touched.
+func Remove() (int, error) {
+	if onWindows {
+		return 0, nil // the combination lives in a file next to the settings, nothing in the system
+	}
+	list, err := listShortcuts()
+	if err != nil {
+		return 0, err
+	}
+	var keep []string
+	var gone []shortcut
+	for _, sc := range list {
+		if sc.ours() {
+			gone = append(gone, sc)
+		} else {
+			keep = append(keep, sc.path)
+		}
+	}
+	if len(gone) == 0 {
+		return 0, nil
+	}
+	// The list first: GNOME stops looking at the shortcut at once, and only then are its fields reset.
+	if _, err := gsettings("set", schema, "custom-keybindings", quoteList(keep)); err != nil {
+		return 0, fmt.Errorf("gsettings: %w", err)
+	}
+	for _, sc := range gone {
+		for _, f := range []string{"name", "command", "binding"} {
+			gsettings("reset", sc.key(), f) // a failure here leaves a harmless unlisted entry
+		}
+	}
+	return len(gone), nil
+}
+
 // FreeBuiltin removes the combination accel from the built-in GNOME shortcuts that use it: the
 // GNOME screenshot tool takes Print by default, so without this the Print key opens it instead
 // of Scrawl. It returns the names of the settings that were changed. Nothing else is touched,

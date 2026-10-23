@@ -245,7 +245,7 @@ at `scrawl`. The last area and the collection start fresh.
 | `G` | glue the collection (and the current area) into one image |
 | `D` | save the collection as separate files and put the file list in the clipboard |
 | mouse wheel | thickness, text size or blur strength of the current tool |
-| `Shift` while drawing | pen and marker: a straight line; line and arrow: snap to 45°; box and blur: a square. `Shift` while selecting an area: a square |
+| `Shift` while drawing | pen and marker: a straight line (horizontal, vertical or at 45°); line and arrow: snap to 45°; box and blur: a square. `Shift` while selecting an area: a square |
 
 Every key can be changed in the settings window (the "Keys" tab).
 
@@ -300,6 +300,8 @@ Every key is described in the [settings reference](docs/SETTINGS.md).
 | `-setup` | pick the monitors again (GNOME dialogs) |
 | `-grant-screenshot` | grant the fallback capture permission and exit |
 | `-tray` | keep the notification-area icon |
+| `-shot` | take one screenshot (what the tray icon and its hotkey run) |
+| `-remove-hotkey` | remove the Scrawl shortcut from the GNOME keyboard settings and exit |
 | `-fresh` | do not offer the area of the previous shot |
 | `-v` | print timings |
 | `-version` | print the version and exit |
@@ -328,12 +330,11 @@ sudo rm /etc/apt/sources.list.d/scrawl.sources   # optional: forget the reposito
 ```
 
 apt cannot touch your home folder, so some per-user leftovers stay: the GNOME hotkey, the autostart entry if you
-turned it on, and your settings. Remove the hotkey with Scrawl's `gnome-hotkey.sh` (it is in `scripts/` of the
-repository and in the release archive) or by hand in *Settings → Keyboard → View and Customize Shortcuts → Custom
-Shortcuts*; the rest is plain files:
+turned it on, and your settings. Remove the hotkey **before** removing the package, with `scrawl -remove-hotkey` (or by
+hand in *Settings → Keyboard → View and Customize Shortcuts → Custom Shortcuts*); the rest is plain files:
 
 ```bash
-sh gnome-hotkey.sh --remove
+scrawl -remove-hotkey
 rm -f ~/.config/autostart/io.github.jexme.Scrawl.desktop
 rm -rf ~/.config/scrawl ~/.cache/scrawl     # optional: settings and cache
 ```

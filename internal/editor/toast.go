@@ -5,6 +5,8 @@ import (
 	"image"
 	"image/color"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"gioui.org/f32"
 	"gioui.org/layout"
@@ -55,6 +57,9 @@ func (m *monitor) showMessage(txt string) {
 
 // showError shows an error text on the screen for a long time.
 func (m *monitor) showError(txt string) {
+	if r, n := utf8.DecodeRuneInString(txt); n > 0 {
+		txt = string(unicode.ToUpper(r)) + txt[n:]
+	}
 	m.toastMsg = txt
 	m.toastUntil = time.Now().Add(8 * time.Second)
 }

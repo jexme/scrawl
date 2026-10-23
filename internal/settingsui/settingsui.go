@@ -1097,7 +1097,7 @@ func (s *state) tabs() []settingsTab {
 		s.row(i18n.T("Interface language"), i18n.T("The settings window changes at once; the overlay and notifications change on the next shot."),
 			s.languageRadios()),
 		s.section(i18n.T("Actions")),
-		s.row(i18n.T("Double click inside the selection"), i18n.T("Works with the \"select\" tool, not on the frame."),
+		s.row(i18n.T("Double click inside the selection"), i18n.T("Works with any tool except text and stamp, not on the frame."),
 			radios(
 				s.radio(&s.choice, string(settings.DoubleClickOff), i18n.T("Nothing")),
 				s.radio(&s.choice, string(settings.DoubleClickCopy), i18n.T("Copy to the clipboard")),

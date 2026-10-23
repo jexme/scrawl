@@ -25,6 +25,9 @@ func (f *fakeGSettings) run(args ...string) (string, error) {
 		f.values[key] = args[len(args)-1]
 		f.sets = append(f.sets, key)
 		return "", nil
+	case "reset":
+		delete(f.values, key)
+		return "", nil
 	}
 	return "", errors.New("неизвестная команда")
 }
@@ -212,5 +215,30 @@ func TestNormalizeAccel(t *testing.T) {
 	}
 	if err := ValidateAccel(NormalizeAccel("Ctrl+Shift+S")); err != nil {
 		t.Errorf("a normalised combination must be valid: %v", err)
+	}
+}
+
+func TestRemoveDeletesOnlyOurShortcut(t *testing.T) {
+	v := map[string]string{}
+	p0 := entry(v, 0, "Handy", "handy", "<Control>space")
+	p1 := entry(v, 1, "scrawl", "/home/me/.local/bin/scrawl", "Print")
+	v[schema+" custom-keybindings"] = quoteList([]string{p0, p1})
+	install(t, v)
+
+	n, err := Remove()
+	if err != nil || n != 1 {
+		t.Fatalf("removed %d, error %v", n, err)
+	}
+	if got := parseStrings(v[schema+" custom-keybindings"]); len(got) != 1 || got[0] != p0 {
+		t.Errorf("only the foreign shortcut stays in the list: %v", got)
+	}
+	if _, left := v[schema+".custom-keybinding:"+p1+" binding"]; left {
+		t.Error("the fields of the removed shortcut must be reset")
+	}
+	if v[schema+".custom-keybinding:"+p0+" binding"] != "'<Control>space'" {
+		t.Error("the foreign shortcut must stay as it was")
+	}
+	if n, err := Remove(); err != nil || n != 0 {
+		t.Errorf("the second call must be a no-op: %d %v", n, err)
 	}
 }

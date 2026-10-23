@@ -324,8 +324,12 @@ func (m *monitor) layout(gtx layout.Context, win image.Point) {
 		}
 		m.layoutToast(gtx, win, m.selWin)
 	}
-	if m.cfg.Hint && !m.hasSel && !m.dragging && m.alone() {
-		m.layoutHint(gtx, win)
+	if m.cfg.Hint && !m.dragging && !m.editing && m.alone() {
+		if m.hasSel {
+			m.layoutHint(gtx, win, i18n.T("Enter copies and saves  ·  Esc cancels  ·  drag the corners to resize"))
+		} else {
+			m.layoutHint(gtx, win, i18n.T("Drag to select an area  ·  Enter copies and saves  ·  Esc cancels"))
+		}
 	}
 	m.layoutDock(gtx, win)
 	m.layoutLoupe(gtx, win, sx, sy)
@@ -540,7 +544,7 @@ func (m *monitor) addBuiltinKeys() {
 // selectAll selects the whole frame (the whole monitor).
 func (m *monitor) selectAll() {
 	m.claim()
-	m.shapes, m.cur = nil, nil
+	m.cur = nil // the annotations stay: they sit on the content, which is still in the frame
 	m.sel, m.hasSel = m.frame.Img.Bounds(), true
 	m.useDefaultTool()
 }

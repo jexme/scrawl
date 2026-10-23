@@ -14,7 +14,6 @@ import (
 	"gioui.org/widget"
 
 	"github.com/jexme/scrawl/internal/annotate"
-	"github.com/jexme/scrawl/internal/i18n"
 )
 
 // hintLaunches is how many first launches show the hint on the overlay.
@@ -47,9 +46,8 @@ func NextHint() bool {
 	return true
 }
 
-// layoutHint draws the hint near the top of the window while nothing is selected yet.
-func (m *monitor) layoutHint(gtx layout.Context, win image.Point) {
-	txt := i18n.T("Drag to select an area  ·  Enter copies and saves  ·  Esc cancels")
+// layoutHint draws a hint near the top of the window: the first launches say what to do next.
+func (m *monitor) layoutHint(gtx layout.Context, win image.Point, txt string) {
 	rec := op.Record(gtx.Ops)
 	paint.ColorOp{Color: iconColor}.Add(gtx.Ops)
 	mat := rec.Stop()

@@ -305,3 +305,15 @@ func TestSelectAllAndShiftSquare(t *testing.T) {
 		t.Errorf("with Shift the selection must be a square: %v", m.sel)
 	}
 }
+
+// Ctrl+A keeps the annotations: they sit on the content, which stays in the frame.
+func TestSelectAllKeepsAnnotations(t *testing.T) {
+	testenv.Config(t, t.TempDir())
+	m, _ := newTestMonitor(t)
+	m.sel, m.hasSel = image.Rect(50, 50, 200, 150), true
+	m.shapes = []annotate.Shape{{Tool: annotate.ToolRect, Pts: []f32.Point{f32.Pt(60, 60), f32.Pt(120, 100)}}}
+	m.selectAll()
+	if len(m.shapes) != 1 {
+		t.Errorf("select all dropped the annotations: %d left", len(m.shapes))
+	}
+}
