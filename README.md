@@ -71,7 +71,7 @@ Other systems: [Windows](#windows-10-and-11), other Linux distributions (a relea
 
 ## Status
 
-A personal project under active development; the current version is a pre-release (`v0.1.0-rc2`). Ready-made packages are on the
+A personal project under active development; the current version is a pre-release (`v0.1.0-rc3`). Ready-made packages are on the
 [Releases](https://github.com/jexme/scrawl/releases) page; you can also build it from source (a few minutes).
 Linux: GNOME on Wayland is the main target. **X11 sessions** (GNOME on Xorg, KDE,
 XFCE and others) work too, but that support is new and has so far been tested only on a
@@ -151,7 +151,7 @@ Make sure `~/.local/bin` is in your `PATH`.
 Download `scrawl-VERSION-windows-amd64.zip` and its `.sha256` from the [Releases](https://github.com/jexme/scrawl/releases)
 page, unpack it anywhere and run `scrawl.exe -tray`. It is a portable program: no installer, nothing else to install.
 If you prefer a single file, download `scrawl-VERSION-windows-amd64.exe` (with its `.sha256`) instead and run it the same way.
-With [Scoop](https://scoop.sh): `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc2/scrawl.json` (the `releases/latest/...` address works only once there is a stable release, pre-releases are skipped).
+With [Scoop](https://scoop.sh): `scoop install https://github.com/jexme/scrawl/releases/download/v0.1.0-rc3/scrawl.json` (the `releases/latest/...` address works only once there is a stable release, pre-releases are skipped).
 
 - **The icon** is in the notification area; in Windows 11 it may hide behind the `^` arrow next to the clock, drag it out to keep it visible.
 - **The Print key** is the default hotkey. Another program often holds it (Greenshot, ShareX, Lightshot). Windows itself may too:
