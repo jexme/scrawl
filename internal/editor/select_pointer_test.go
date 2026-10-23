@@ -2,6 +2,7 @@ package editor
 
 import (
 	"image"
+	"runtime"
 	"testing"
 	"time"
 
@@ -199,6 +200,9 @@ func TestShiftOnReleaseWithoutMoving(t *testing.T) {
 // notify-send either, the user would otherwise see only an overlay that closes with nothing
 // copied.
 func TestClipboardFailureStaysVisible(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows copies through its own clipboard API; there is no external tool that can be missing")
+	}
 	testenv.Config(t, t.TempDir())
 	empty := t.TempDir()
 	t.Setenv("PATH", empty) // neither wl-copy, xclip nor notify-send
