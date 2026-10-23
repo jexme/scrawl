@@ -57,12 +57,20 @@ sudo apt install xclip libnotify-bin          # X11
 **从 apt 仓库安装**（Debian、Ubuntu；更新通过 `apt upgrade` 获取）：
 
 ```bash
-curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/sources.list.d/scrawl.sources
 sudo apt update && sudo apt install scrawl
 ```
 
 仓库使用以下密钥签名：`E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`。
+密钥已嵌入 `.sources` 文件。软件包仅提供 amd64 版本；arm64 请从源码构建。
+
+在较旧的系统上（Ubuntu 20.04、Debian 11：apt 低于 2.4），请改用单独的密钥环和单行格式的源（命令和文件名与英文版 README 相同，保持不变）：
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
 
 **从源码构建（现在可用）：**
 

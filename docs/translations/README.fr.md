@@ -57,12 +57,20 @@ sudo apt install xclip libnotify-bin          # X11
 **Depuis le dépôt apt** (Debian, Ubuntu ; les mises à jour arrivent avec `apt upgrade`) :
 
 ```bash
-curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/sources.list.d/scrawl.sources
 sudo apt update && sudo apt install scrawl
 ```
 
 Le dépôt est signé avec la clé `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`.
+La clé est incluse dans le fichier `.sources`. Les paquets ne sont construits que pour amd64 ; sur arm64, compilez depuis les sources.
+
+Sur les systèmes plus anciens (Ubuntu 20.04, Debian 11 : apt antérieur à 2.4), utilisez plutôt un trousseau séparé et une source sur une ligne (les commandes et les noms de fichiers restent identiques à ceux du README anglais) :
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
 
 **Depuis les sources (fonctionne dès aujourd'hui) :**
 

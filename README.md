@@ -24,10 +24,12 @@ On Ubuntu or Debian (Wayland or X11) it takes three steps.
 **1. Install** from the signed apt repository (updates then come with `apt upgrade`):
 
 ```bash
-curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/sources.list.d/scrawl.sources
 sudo apt update && sudo apt install scrawl
 ```
+
+The `.sources` file carries the signing key inside it, so there is no separate keyring to manage. The packages are
+built for **amd64** only; on arm64 [build from source](#install).
 
 **2. Set up once:** run `scrawl -settings`, open the tab "System". On Wayland press "Pick monitors again"
 (GNOME asks once per monitor; tick "Remember this choice") and "Grant permission". Then type a hotkey
@@ -103,12 +105,23 @@ sudo apt install xclip libnotify-bin          # X11
 **From the apt repository** (Debian, Ubuntu; updates come with `apt upgrade`):
 
 ```bash
+sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/sources.list.d/scrawl.sources
+sudo apt update && sudo apt install scrawl
+```
+
+The packages are built for amd64 only (arm64 users: build from source, see below). The repository is signed with the
+key `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`, which is embedded in `scrawl.sources`.
+
+On older systems (Ubuntu 20.04, Debian 11: apt older than 2.4 cannot read a key inside a `.sources` file) use a
+separate keyring and a one-line source instead:
+
+```bash
 curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
 echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
 sudo apt update && sudo apt install scrawl
 ```
 
-The repository is signed with the key `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`.
+The key is also published ASCII-armored as `scrawl-archive-keyring.asc`.
 
 **From a .deb package** (Debian, Ubuntu): download `scrawl_VERSION_amd64.deb`
 from the [Releases](https://github.com/jexme/scrawl/releases) page, then
@@ -121,7 +134,7 @@ Build it yourself with `make deb`.
 [Releases](https://github.com/jexme/scrawl/releases) page, then:
 
 ```bash
-sha256sum -c --ignore-missing SHA256SUMS   # the .deb is listed with "~" but GitHub saves it with "."; check it by hand
+sha256sum -c --ignore-missing SHA256SUMS   # checks every downloaded file listed in SHA256SUMS
 tar xzf scrawl-*-linux-amd64.tar.gz && cd scrawl-*-linux-amd64
 ./install.sh            # to ~/.local (PREFIX=/usr/local for system-wide)
 sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland-cursor0 \

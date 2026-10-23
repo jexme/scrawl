@@ -24,8 +24,7 @@
 **1. Установите** из подписанного apt-репозитория (обновления потом приходят с `apt upgrade`):
 
 ```bash
-curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/sources.list.d/scrawl.sources
 sudo apt update && sudo apt install scrawl
 ```
 
@@ -102,12 +101,20 @@ sudo apt install xclip libnotify-bin          # X11
 **Из apt-репозитория** (Debian, Ubuntu; обновления приходят с `apt upgrade`):
 
 ```bash
-curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/sources.list.d/scrawl.sources
 sudo apt update && sudo apt install scrawl
 ```
 
 Репозиторий подписан ключом `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`.
+Ключ встроен в файл `.sources`. Пакеты собираются только для amd64; на arm64 собирайте из исходников.
+
+На старых системах (Ubuntu 20.04, Debian 11: apt старше 2.4) используйте вместо этого отдельную связку ключей и однострочный источник (команды и имена файлов те же, что в английском README):
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
 
 **Из пакета .deb** (Debian, Ubuntu): скачайте `scrawl_ВЕРСИЯ_amd64.deb`
 со страницы [Releases](https://github.com/jexme/scrawl/releases) и выполните
@@ -119,7 +126,7 @@ sudo apt update && sudo apt install scrawl
 и `SHA256SUMS` со страницы [Releases](https://github.com/jexme/scrawl/releases), затем:
 
 ```bash
-sha256sum -c --ignore-missing SHA256SUMS   # .deb в списке с «~», а GitHub сохраняет его с «.»: сверьте его вручную
+sha256sum -c --ignore-missing SHA256SUMS   # проверяет каждый скачанный файл из SHA256SUMS
 tar xzf scrawl-*-linux-amd64.tar.gz && cd scrawl-*-linux-amd64
 ./install.sh            # в ~/.local (PREFIX=/usr/local для всей системы)
 sudo apt install libpipewire-0.3-0 libwayland-client0 libwayland-egl1 libwayland-cursor0 \

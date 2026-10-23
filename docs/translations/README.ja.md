@@ -57,12 +57,20 @@ sudo apt install xclip libnotify-bin          # X11
 **apt リポジトリから** (Debian、Ubuntu。更新は `apt upgrade` で届きます):
 
 ```bash
-curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo curl -fsSL https://jexme.github.io/scrawl/scrawl.sources -o /etc/apt/sources.list.d/scrawl.sources
 sudo apt update && sudo apt install scrawl
 ```
 
 リポジトリは次の鍵で署名されています: `E62C DAF5 A1C9 0DB7 A899 D24D FA43 15C7 154A 9EF0`。
+鍵は `.sources` ファイルに埋め込まれています。パッケージは amd64 のみです。arm64 ではソースからビルドしてください。
+
+古いシステム (Ubuntu 20.04、Debian 11。apt 2.4 未満) では、代わりに別個のキーリングと 1 行形式のソースを使います (コマンドとファイル名は英語版 README と同じです):
+
+```bash
+curl -fsSL https://jexme.github.io/scrawl/scrawl-archive-keyring.gpg | sudo tee /usr/share/keyrings/scrawl-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/scrawl-archive-keyring.gpg] https://jexme.github.io/scrawl stable main" | sudo tee /etc/apt/sources.list.d/scrawl.list
+sudo apt update && sudo apt install scrawl
+```
 
 **ソースから（今すぐ使えます）：**
 
