@@ -65,12 +65,37 @@ jobs:
         shell: pwsh
         run: ./scripts/build-windows.ps1 -Version "${env:GITHUB_REF_NAME}" -Package
 
+      # The Inno Setup installer. It has not been tried on a real runner yet, so a failure here
+      # (no iscc, a script error) must never block the release: continue-on-error. If it fails,
+      # the release simply has no setup exe, and the later steps skip it.
+      - name: Installer (Inno Setup)
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $ver = "${env:GITHUB_REF_NAME}".TrimStart('v')
+          # The file version resource needs four numbers: 0.1.0-rc3 -> 0.1.0.0
+          $num = "0.0.0.0"
+          if ($ver -match '^(\d+)\.(\d+)\.(\d+)') { $num = "$($Matches[1]).$($Matches[2]).$($Matches[3]).0" }
+          $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+            $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          }
+          & $iscc "/DAppVersion=$ver" "/DNumVersion=$num" packaging\windows\scrawl.iss
+          if ($LASTEXITCODE -ne 0) { throw "iscc exited with code $LASTEXITCODE" }
+          $setup = Get-Item "dist/scrawl-v$ver-windows-amd64-setup.exe"
+          $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLower()
+          "$hash  $($setup.Name)" | Set-Content "$($setup.FullName).sha256" -Encoding ascii
+          Write-Host "Installer: $($setup.Name) $hash"
+
       - name: Аттестация сборки
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             dist/scrawl-*-windows-amd64.zip
             dist/scrawl-*-windows-amd64.exe
+            dist/scrawl-*-windows-amd64-setup.exe
 
       - name: Манифест Scoop
         shell: pwsh
@@ -87,6 +112,8 @@ jobs:
         run: |
           # PowerShell does not expand * for external programs, so we build the file list ourselves.
           $files = Get-ChildItem dist/scrawl-*-windows-amd64.zip, dist/scrawl-*-windows-amd64.zip.sha256, dist/scrawl-*-windows-amd64.exe, dist/scrawl-*-windows-amd64.exe.sha256, dist/scrawl.json | ForEach-Object FullName
+          # The installer and its hash exist only if the optional installer step worked.
+          $files += Get-ChildItem dist/scrawl-*-windows-amd64-setup.exe, dist/scrawl-*-windows-amd64-setup.exe.sha256 -ErrorAction SilentlyContinue | ForEach-Object FullName
           gh release upload "${env:GITHUB_REF_NAME}" @files --clobber
 
   # After the release we update the apt repository (if a signing key is configured).
