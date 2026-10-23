@@ -1,3 +1,17 @@
+--- a/app/d3d11_windows.go
++++ b/app/d3d11_windows.go
+@@ -36,6 +36,11 @@
+ 				flags,
+ 			)
+ 			if err != nil {
++				// No GPU driver (a virtual machine, remote desktop): WARP, the software
++				// rasteriser built into Windows, draws instead of failing to open the window.
++				dev, ctx, _, err = d3d11.CreateDevice(d3d11.DRIVER_TYPE_WARP, flags)
++			}
++			if err != nil {
+ 				return nil, fmt.Errorf("NewContext: %v", err)
+ 			}
+ 			swchain, err := d3d11.CreateSwapChain(dev, hwnd)
 --- a/app/internal/windows/windows.go
 +++ b/app/internal/windows/windows.go
 @@ -372,6 +372,7 @@
@@ -264,3 +278,26 @@
  // TopMost windows will be rendered above all other non-top-most windows.
  //
  // TopMost windows are supported on macOS, Windows.
+--- a/gpu/headless/headless_windows.go
++++ b/gpu/headless/headless_windows.go
+@@ -20,6 +20,10 @@
+ 			0,
+ 		)
+ 		if err != nil {
++			// No GPU driver: render the saved screenshot with the software rasteriser.
++			dev, ctx, _, err = d3d11.CreateDevice(d3d11.DRIVER_TYPE_WARP, 0)
++		}
++		if err != nil {
+ 			return nil, err
+ 		}
+ 		// Don't need it.
+--- a/internal/d3d11/d3d11_windows.go
++++ b/internal/d3d11/d3d11_windows.go
+@@ -634,6 +634,7 @@
+ const (
+ 	SDK_VERSION          = 7
+ 	DRIVER_TYPE_HARDWARE = 1
++	DRIVER_TYPE_WARP     = 5 // the software rasteriser that ships with Windows
+ 
+ 	DXGI_FORMAT_UNKNOWN             = 0
+ 	DXGI_FORMAT_R16_FLOAT           = 54
