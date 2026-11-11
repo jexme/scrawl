@@ -12,6 +12,7 @@ const (
 	idSettings int32 = 2
 	idSep      int32 = 3
 	idQuit     int32 = 4
+	idHide     int32 = 5
 )
 
 // Handlers are the actions of the menu items and of a left click on the icon.
@@ -19,6 +20,7 @@ type Handlers struct {
 	Shot     func() // take a shot
 	Settings func() // open the settings
 	Quit     func() // remove the tray icon (Run itself returns after this)
+	Hide     func() // hide the icon for good (nil: the menu has no such item)
 
 	// Windows only (the StatusNotifierItem ignores them):
 	Version string // program version, shown in the icon tooltip
@@ -37,13 +39,15 @@ type item struct {
 	label string // empty for a separator
 }
 
-func items() []item {
-	return []item{
+func (h Handlers) items() []item {
+	list := []item{
 		{idShot, i18n.T("Take screenshot")},
 		{idSettings, i18n.T("Settings")},
-		{idSep, ""},
-		{idQuit, i18n.T("Quit")},
 	}
+	if h.Hide != nil {
+		list = append(list, item{idHide, i18n.T("Hide the icon")})
+	}
+	return append(list, item{idSep, ""}, item{idQuit, i18n.T("Quit")})
 }
 
 func itemProps(it item) map[string]dbus.Variant {
@@ -66,13 +70,13 @@ type menu struct {
 // GetLayout returns the whole menu: there are few items, so depth does not matter.
 func (m *menu) GetLayout(parent int32, depth int32, props []string) (uint32, layout, *dbus.Error) {
 	root := layout{ID: 0, Props: map[string]dbus.Variant{"children-display": dbus.MakeVariant("submenu")}}
-	for _, it := range items() {
+	for _, it := range m.h.items() {
 		root.Children = append(root.Children, dbus.MakeVariant(layout{ID: it.id, Props: itemProps(it), Children: []dbus.Variant{}}))
 	}
 	if parent == 0 {
 		return m.revision, root, nil
 	}
-	for _, it := range items() {
+	for _, it := range m.h.items() {
 		if it.id == parent {
 			return m.revision, layout{ID: it.id, Props: itemProps(it), Children: []dbus.Variant{}}, nil
 		}
@@ -87,7 +91,7 @@ type groupItem struct {
 
 func (m *menu) GetGroupProperties(ids []int32, props []string) ([]groupItem, *dbus.Error) {
 	var out []groupItem
-	for _, it := range items() {
+	for _, it := range m.h.items() {
 		for _, id := range ids {
 			if id == it.id {
 				out = append(out, groupItem{it.id, itemProps(it)})
@@ -98,7 +102,7 @@ func (m *menu) GetGroupProperties(ids []int32, props []string) ([]groupItem, *db
 }
 
 func (m *menu) GetProperty(id int32, name string) (dbus.Variant, *dbus.Error) {
-	for _, it := range items() {
+	for _, it := range m.h.items() {
 		if it.id == id {
 			if v, ok := itemProps(it)[name]; ok {
 				return v, nil
@@ -147,6 +151,8 @@ func (m *menu) activate(id int32) {
 		f = m.h.Settings
 	case idQuit:
 		f = m.h.Quit
+	case idHide:
+		f = m.h.Hide
 	}
 	if f != nil {
 		go f() // the call came from a D-Bus handler: do not delay the reply

@@ -370,7 +370,7 @@ func (s *state) showMenu() {
 		return
 	}
 	defer procDestroyMenu.Call(menu)
-	for _, it := range items() {
+	for _, it := range s.h.items() {
 		if it.label == "" {
 			procAppendMenuW.Call(menu, mfSeparator, 0, 0)
 			continue

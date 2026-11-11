@@ -15,6 +15,7 @@ func init() {
 	autostartOn = func() bool { return false }
 	autostartEnable = func(string) error { return nil }
 	autostartOff = func() error { return nil }
+	startTray = func() {}
 	checkUpdate = func() (update.Result, error) {
 		return update.Result{}, errors.New("тест не ходит в сеть")
 	}

@@ -2,6 +2,8 @@ package settingsui
 
 import (
 	"context"
+	"os"
+	"os/exec"
 	"runtime"
 	"sync"
 
@@ -35,7 +37,21 @@ var (
 	autostartOn     = autostart.Enabled
 	autostartEnable = autostart.Enable
 	autostartOff    = autostart.Disable
+	startTray       = spawnTray
 )
+
+// spawnTray starts the tray icon as a separate process; if one is already running, the new one
+// exits silently (-autostart).
+func spawnTray() {
+	exe, err := os.Executable()
+	if err != nil {
+		return
+	}
+	cmd := exec.Command(exe, "-tray", "-autostart")
+	if cmd.Start() == nil {
+		go cmd.Wait()
+	}
+}
 
 // task is a button that starts an action in the background, and a result line under it.
 // The action may wait on the user for a long time (portal dialogs), so the window does not

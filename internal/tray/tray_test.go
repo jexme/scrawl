@@ -46,6 +46,26 @@ func TestMenuLayout(t *testing.T) {
 	}
 }
 
+func TestMenuHideItem(t *testing.T) {
+	var hidden atomic.Int32
+	m := &menu{h: Handlers{Hide: func() { hidden.Add(1) }}}
+	_, root, err := m.GetLayout(0, -1, nil)
+	if err != nil || len(root.Children) != 5 {
+		t.Fatalf("с Hide в меню 5 пунктов: %d %v", len(root.Children), err)
+	}
+	if v, err := m.GetProperty(idHide, "label"); err != nil || v.Value() != "Hide the icon" {
+		t.Errorf("GetProperty(idHide): %v %v", v, err)
+	}
+	m.Event(idHide, "clicked", dbus.MakeVariant(0), 0)
+	deadline := time.Now().Add(time.Second)
+	for time.Now().Before(deadline) && hidden.Load() == 0 {
+		time.Sleep(5 * time.Millisecond)
+	}
+	if hidden.Load() != 1 {
+		t.Errorf("Hide вызван %d раз", hidden.Load())
+	}
+}
+
 func TestMenuEventsRunHandlers(t *testing.T) {
 	var shot, settings, quit atomic.Int32
 	m := &menu{h: Handlers{

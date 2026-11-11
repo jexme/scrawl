@@ -101,6 +101,7 @@ type state struct {
 	checkUpd   widget.Bool        // check for updates at startup
 	update     task               // update check
 	autostart  widget.Bool        // launch the tray icon at login
+	trayIcon   widget.Bool        // show the tray icon (Linux)
 	autoErr    string
 	keyRows    []*keyRow
 	capturing  *keyRow // the row waiting for a key press
@@ -164,6 +165,7 @@ func newState(store *settings.Store) *state {
 	s.initKeys()
 	s.checkUpd.Value = store.Get().CheckUpdates
 	s.autostart.Value = autostartOn()
+	s.trayIcon.Value = store.Get().TrayIcon
 	s.lang.Value = store.Get().Language
 	s.hotkeyEd.SingleLine = true
 	s.hotkeyEd.SetText("Print")
@@ -292,6 +294,14 @@ func (s *state) apply(gtx layout.Context) {
 	}
 	if s.update.btn.Clicked(gtx) {
 		s.checkNow()
+	}
+	s.trayIcon.Update(gtx)
+	if want := s.trayIcon.Value; want != s.store.Get().TrayIcon {
+		if err := s.store.Update(func(c *settings.Settings) { c.TrayIcon = want }); err != nil {
+			s.dirErr = i18n.T("Could not save: ") + err.Error()
+		} else if want {
+			startTray() // the running tray hides itself when the setting goes off; this brings it back
+		}
 	}
 	s.autostart.Update(gtx)
 	if want := s.autostart.Value; want != autostartOn() {
@@ -1165,8 +1175,13 @@ func (s *state) tabs() []settingsTab {
 			s.keyControls()),
 	}
 	system := append([]layout.Widget{s.section(i18n.T("Screen capture"))}, s.captureRows()...)
+	system = append(system, s.section(i18n.T("Startup")))
+	if !onWindows {
+		system = append(system, s.row(i18n.T("Tray icon"),
+			i18n.T("The icon appears by itself with the first screenshot and at login. Left click takes a screenshot, right click opens the menu. Switch it off to hide it."),
+			s.checkbox(&s.trayIcon, i18n.T("Show the tray icon"))))
+	}
 	system = append(system,
-		s.section(i18n.T("Startup")),
 		s.row(i18n.T("Autostart"), i18n.T("At login a notification-area icon is started (scrawl -tray): left click takes a screenshot. GNOME needs the AppIndicator extension."),
 			s.autostartControl()),
 	)

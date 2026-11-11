@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/jexme/scrawl/internal/autostart"
 )
 
 // Small facts about the tray process that other starts of the program need. They live in
@@ -49,4 +52,24 @@ func runningTrayVersion() string {
 		return ""
 	}
 	return strings.TrimSpace(string(data))
+}
+
+// enableAutostartOnce turns on the start of the tray at login the first time the tray runs on
+// this account, so that the icon is there by default. It happens once: a user who switches
+// autostart off in the settings is not overridden on the next start. A binary in a temporary
+// folder (go run, an opened archive) is never written into autostart.
+func enableAutostartOnce(exe string) {
+	path := cacheFile("tray-autostart-default")
+	if _, err := os.Stat(path); err == nil {
+		return
+	}
+	if !strings.HasPrefix(exe, os.TempDir()+string(filepath.Separator)) && !autostart.Enabled() {
+		if err := autostart.Enable(exe); err != nil {
+			fmt.Fprintln(os.Stderr, "autostart:", err)
+			return
+		}
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err == nil {
+		os.WriteFile(path, []byte("1\n"), 0o600)
+	}
 }

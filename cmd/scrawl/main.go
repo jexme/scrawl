@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"sync"
 	"time"
 
 	"gioui.org/app"
@@ -120,6 +121,10 @@ func main() {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
 		// Screen capture, the clipboard and the hotkey are not written for this system yet.
 		fatal("%s", i18n.T("screen capture is only available on Linux (GNOME, Wayland) and Windows for now; the settings window works: scrawl -settings"))
+	}
+
+	if !*setup {
+		ensureTray()
 	}
 
 	var (
@@ -266,7 +271,21 @@ func runTray(exitAfter time.Duration, bare, autostartLaunch bool) (alreadyRunnin
 	if err != nil {
 		fatal("%v", err)
 	}
+	// The icon can be hidden for good (tray_icon: false). A start at login or from a shot then
+	// stays silent; `scrawl -tray` typed by hand means "show it", so it switches the setting on.
+	hidable := runtime.GOOS != "windows"
+	if hidable && !settings.Load().TrayIcon {
+		if autostartLaunch {
+			return false
+		}
+		if err := settings.NewStore().Update(func(c *settings.Settings) { c.TrayIcon = true }); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+	}
 	recordTrayVersion(version.String())
+	if hidable {
+		enableAutostartOnce(exe)
+	}
 	// Self-healing autostart: if it is enabled but points elsewhere (the exe was moved or
 	// updated in place), it is rewritten to this exe. A disabled autostart stays disabled.
 	if _, err := autostart.Heal(exe); err != nil {
@@ -280,10 +299,34 @@ func runTray(exitAfter time.Duration, bare, autostartLaunch bool) (alreadyRunnin
 		}
 		go cmd.Wait() // so as not to leave a zombie process
 	}
-	var stop chan struct{}
+	stop := make(chan struct{})
+	var stopOnce sync.Once
+	closeStop := func() { stopOnce.Do(func() { close(stop) }) }
 	if exitAfter > 0 {
-		stop = make(chan struct{})
-		time.AfterFunc(exitAfter, func() { close(stop) })
+		time.AfterFunc(exitAfter, closeStop)
+	}
+	var hide func()
+	if hidable {
+		hide = func() {
+			if err := settings.NewStore().Update(func(c *settings.Settings) { c.TrayIcon = false }); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+			closeStop()
+		}
+		// The settings window is another process: it switches the icon off in the file, and
+		// every couple of seconds the tray looks there.
+		go func() {
+			for {
+				select {
+				case <-stop:
+					return
+				case <-time.After(2 * time.Second):
+					if !settings.Load().TrayIcon {
+						closeStop()
+					}
+				}
+			}
+		}()
 	}
 	if settings.Load().CheckUpdates {
 		go watchUpdates()
@@ -291,6 +334,7 @@ func runTray(exitAfter time.Duration, bare, autostartLaunch bool) (alreadyRunnin
 	err = tray.Run(tray.Handlers{
 		Shot:     func() { spawn("-shot") },
 		Settings: func() { spawn("-settings") },
+		Hide:     hide,
 		Version:  version.String(),
 		Welcome:  firstRunHint(),
 	}, stop)

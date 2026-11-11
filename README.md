@@ -272,10 +272,13 @@ at the bottom of the screen shows what is in the collection and has the same act
 
 ## Tray icon and autostart
 
-`scrawl -tray` keeps an icon in the notification area: left click takes a screenshot,
-the menu has "Take screenshot", "Settings" and "Quit". To start it at login, switch on
-*Settings → System → Autostart*. On GNOME the icon needs the AppIndicator
-extension (enabled by default in Ubuntu).
+The tray icon is on by default. It starts by itself with your first screenshot, and its
+first start also turns on *Settings → System → Autostart*, so it comes back at every login.
+Left click takes a screenshot; right click opens the menu: "Take screenshot", "Settings",
+"Hide the icon" and "Quit". "Quit" only closes it until the next screenshot or login.
+To hide it for good, pick "Hide the icon" or untick *Settings → System → Tray icon*
+(`tray_icon` in the config); `scrawl -tray` run by hand brings it back. On GNOME the icon needs
+the AppIndicator extension (enabled by default in Ubuntu).
 
 ## Settings
 

@@ -103,6 +103,10 @@ type Settings struct {
 	// CheckUpdates asks GitHub about a new version when the tray icon and the settings
 	// window start. The program's only access to the internet; off by default.
 	CheckUpdates bool `json:"check_updates"`
+	// TrayIcon keeps the notification-area icon on Linux: a screenshot starts it if it is not
+	// running, and its first start enables autostart. False hides it for good: nothing starts it
+	// until it is switched on again (or `scrawl -tray` is run by hand, which switches it on).
+	TrayIcon bool `json:"tray_icon"`
 	// Keys holds the overlay action keys; empty means the defaults.
 	Keys Keys `json:"keys"`
 	// IncludeCursor draws the mouse cursor in the screenshot (only for PipeWire capture).
@@ -113,7 +117,7 @@ type Settings struct {
 
 // Default returns the default settings.
 func Default() Settings {
-	return Settings{DoubleClick: DoubleClickCopy, Enter: EnterCopySave, Notifications: true, RememberRegion: true, DimPercent: 86,
+	return Settings{DoubleClick: DoubleClickCopy, Enter: EnterCopySave, Notifications: true, TrayIcon: true, RememberRegion: true, DimPercent: 86,
 		BorderWidth: 1, BorderDash: 4.6, BorderGap: 2, BorderColor: "#FFFFFF", HandleRadius: 3, ShowSize: true, ShowLoupe: true, DefaultTool: "select", Palette: DefaultPalette, MarkerOpacity: 43, Glue: DefaultGlue(), Format: FormatPNG, JPEGQuality: 90, Language: i18n.Auto}
 }
 

@@ -35,3 +35,6 @@ func showAlreadyRunning(running string) {
 	m, _ := windows.UTF16PtrFromString(msg)
 	windows.MessageBox(0, m, t, windows.MB_OK|windows.MB_ICONINFORMATION|windows.MB_SETFOREGROUND)
 }
+
+// ensureTray does nothing here: on Windows the tray is what a bare start runs.
+func ensureTray() {}

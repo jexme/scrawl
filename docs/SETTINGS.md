@@ -47,6 +47,7 @@ Example:
 | `default_tool` | `select`, `pen`, `line`, `arrow`, `rect`, `marker`, `blur`, `text`, `stamp` | tool switched on as soon as an area is selected |
 | `keys` | object | overlay keys, see below |
 | `language` | `auto`, `ru`, `en`, `zh`, `es`, `pt`, `ja`, `de`, `fr`, `ko` | interface language (Russian, English, Chinese, Spanish, Portuguese, Japanese, German, French, Korean); `auto` follows the system locale. Regional forms such as `zh-CN` or `pt_BR` are accepted |
+| `tray_icon` | `true`, `false` | the notification-area icon (Linux): a screenshot starts it if it is not running, and its first start turns on autostart. `false` hides it for good (the "Hide the icon" menu item sets it); `scrawl -tray` run by hand sets it back to `true` |
 | `check_updates` | `false`, `true` | ask GitHub Releases for a new version when the settings window and the tray icon start. This is the only network access of the program; the "Check now" button works either way |
 
 ### Keys
